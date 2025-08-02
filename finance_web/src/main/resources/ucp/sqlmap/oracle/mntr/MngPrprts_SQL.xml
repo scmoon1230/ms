@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.co.ucp.mntr.mng.service.impl.MngPrprtsMapper">
+
+    <select id="prprtsIdList" parameterType="java.util.HashMap" resultType="egovMap">
+    /* prprtsIdList */
+        select distinct PRPRTS_ID
+          from CM_PRPRTS cp 
+      order by PRPRTS_ID
+    </select>
+
+    <select id="prprtsTyList" parameterType="java.util.HashMap" resultType="egovMap">
+    /* prprtsTyList */
+        select distinct PRPRTS_TY
+          from CM_PRPRTS cp 
+      order by PRPRTS_TY
+    </select>
+
+    <select id="prprtsList" parameterType="java.util.HashMap" resultType="egovMap">
+    /* prprtsList */
+        select AA.*
+             , ( select COUNT(*)
+                   from cm_prprts cp 
+                  where 1 = 1
+                             <if test="PRPRTS_TY   != null and PRPRTS_TY   != '' "> and cp.PRPRTS_TY = #{PRPRTS_TY}                                      </if>
+                             <if test="PRPRTS_ID   != null and PRPRTS_ID   != '' "> and cp.PRPRTS_ID = #{PRPRTS_ID}                                      </if>
+                             <if test="PRPRTS_KEY  != null and PRPRTS_KEY  != '' "> and upper(cp.PRPRTS_KEY) LIKE upper(CONCAT('%', #{PRPRTS_KEY}, '%')) </if>
+                             <if test="PRPRTS_VAL  != null and PRPRTS_VAL  != '' "> and upper(cp.PRPRTS_VAL) LIKE upper(CONCAT('%', #{PRPRTS_VAL}, '%')) </if>
+                             <if test="DSCRT       != null and DSCRT       != '' "> and upper(cp.DSCRT) LIKE upper(CONCAT('%', #{DSCRT}, '%'))           </if>
+                             <if test="USE_TY_CD   != null and USE_TY_CD   != '' "> and cp.USE_TY_CD = #{USE_TY_CD}                                      </if>
+               ) as ROWCNT
+          from ( select ROW_NUMBER() OVER(order by ${sidx} ${sord}) as RK
+                      , A.*
+                   from ( select PRPRTS_ID        , PRPRTS_TY         , PRPRTS_KEY
+                               , PRPRTS_VAL       , DEFAULT_VAL       , DSCRT
+                               , SORT_ORDR        , USE_TY_CD         , B.CD_NM_KO as USE_NM
+                            from CM_PRPRTS cp 
+                       left join ( select CD_ID, CD_NM_KO from CM_TC_CODE where CD_GRP_ID = 'USE_TY' and CD_TY = 'C'
+                                 ) B ON cp.USE_TY_CD = B.CD_ID
+                           where 1 = 1
+                             <if test="PRPRTS_TY   != null and PRPRTS_TY   != '' "> and cp.PRPRTS_TY = #{PRPRTS_TY}                                      </if>
+                             <if test="PRPRTS_ID   != null and PRPRTS_ID   != '' "> and cp.PRPRTS_ID = #{PRPRTS_ID}                                      </if>
+                             <if test="PRPRTS_KEY  != null and PRPRTS_KEY  != '' "> and upper(cp.PRPRTS_KEY) LIKE upper(CONCAT('%', #{PRPRTS_KEY}, '%')) </if>
+                             <if test="PRPRTS_VAL  != null and PRPRTS_VAL  != '' "> and upper(cp.PRPRTS_VAL) LIKE upper(CONCAT('%', #{PRPRTS_VAL}, '%')) </if>
+                             <if test="DSCRT       != null and DSCRT       != '' "> and upper(cp.DSCRT) LIKE upper(CONCAT('%', #{DSCRT}, '%'))           </if>
+                             <if test="USE_TY_CD   != null and USE_TY_CD   != '' "> and cp.USE_TY_CD = #{USE_TY_CD}                                      </if>
+                        ) A
+               ) AA
+        OFFSET ((#{pageNo}::integer - 1) * #{rowsPerPage}::integer)
+         LIMIT #{rowsPerPage}::integer
+    </select>
+
+    <insert id="insert" parameterType="java.util.HashMap">
+    /* insert */
+        insert into CM_PRPRTS
+             ( PRPRTS_ID    , PRPRTS_TY    , PRPRTS_KEY    , PRPRTS_VAL    , DEFAULT_VAL    , DSCRT    , SORT_ORDR    , USE_TY_CD    )
+        values
+             ( #{PRPRTS_ID} , #{PRPRTS_TY} , #{PRPRTS_KEY} , #{PRPRTS_VAL} , #{DEFAULT_VAL} , #{DSCRT} , #{SORT_ORDR}::numeric , #{USE_TY_CD} )
+    </insert>
+
+    <update id="update" parameterType="java.util.HashMap">
+    /* update */
+        update CM_PRPRTS
+           set PRPRTS_VAL  = #{PRPRTS_VAL}
+           <if test="DEFAULT_VAL != null                     "> , DEFAULT_VAL = #{DEFAULT_VAL}        </if>
+           <if test="DSCRT       != null                     "> , DSCRT       = #{DSCRT}              </if>
+           <if test="SORT_ORDR   != null and SORT_ORDR != '' "> , SORT_ORDR   = #{SORT_ORDR}::numeric </if>
+           <if test="USE_TY_CD   != null                     "> , USE_TY_CD   = #{USE_TY_CD}          </if>
+         where PRPRTS_ID   = #{PRPRTS_ID}
+           and PRPRTS_TY   = #{PRPRTS_TY}
+           and PRPRTS_KEY  = #{PRPRTS_KEY}
+    </update>
+
+    <delete id="delete"  parameterType="java.util.HashMap">
+    /* delete */
+        update CM_PRPRTS
+           set USE_TY_CD = 'D'
+         where PRPRTS_ID   = #{PRPRTS_ID}
+           and PRPRTS_TY   = #{PRPRTS_TY}
+           and PRPRTS_KEY  = #{PRPRTS_KEY}
+    </delete>
+
+</mapper>
+
+

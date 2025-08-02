@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE form-validation PUBLIC
+    "-//Apache Software Foundation//DTD Commons Validator Rules Configuration 1.1//EN"
+    "http://jakarta.apache.org/commons/dtds/validator_1_1.dtd">
+
+<form-validation>
+	<formset>
+		<form name="fcltVO">
+			<field property="fcltLblNm" depends="required">
+				<arg0 key="시설물명" resource="false" />
+			</field>
+			<field property="sysCd" depends="required">
+				<arg0 key="서비스명" resource="false" />
+			</field>
+			<field property="fcltKndCd" depends="required">
+				<arg0 key="종류" resource="false" />
+			</field>
+			<field property="fcltUsedTyCd" depends="required">
+				<arg0 key="종류" resource="false" />
+			</field>
+			<field property="sigunguCd" depends="required">
+				<arg0 key="시군구" resource="false" />
+			</field>
+			<field property="pointX" depends="required">
+				<arg0 key="좌표X" resource="false" />
+			</field>
+			<field property="pointY" depends="required">
+				<arg0 key="좌표Y" resource="false" />
+			</field>
+			<field property="useTyCd" depends="required">
+				<arg0 key="사용유형" resource="false" />
+			</field>
+		</form>
+		<form name="configureVO">
+			<field property="gisLabelViewScale" depends="required,integer">
+				<arg0 key="레이블표시 축척" resource="false" />
+			</field>
+			<field property="gisLabelViewScale" depends="required,integer">
+				<arg0 key="아이콘표시 축척" resource="false" />
+			</field>
+			<field property="radsClmt" depends="required,integer">
+				<arg0 key="발생위치 주변 표시 반경" resource="false" />
+			</field>
+			<field property="radsRoute" depends="required,integer">
+				<arg0 key="경로상 주변 표시 반경" resource="false" />
+			</field>
+			<field property="mntrViewLeft" depends="required,integer,intRange">
+				<arg0 key="좌측넓이" resource="false" />
+				<arg1 key="300" resource="false" />
+				<arg2 key="500" resource="false" />
+				<var>
+					<var-name>min</var-name>
+					<var-value>300</var-value>
+				</var>
+				<var>
+					<var-name>max</var-name>
+					<var-value>1500</var-value>
+				</var>
+			</field>
+			<field property="mntrViewRight" depends="required,integer,intRange">
+				<arg0 key="우측넓이" resource="false" />
+				<arg1 key="300" resource="false" />
+				<arg2 key="500" resource="false" />
+				<var>
+					<var-name>min</var-name>
+					<var-value>30</var-value>
+				</var>
+				<var>
+					<var-name>max</var-name>
+					<var-value>500</var-value>
+				</var>
+			</field>
+			<field property="mntrViewBottom" depends="required,integer,intRange">
+				<arg0 key="하단높이" resource="false" />
+				<arg1 key="300" resource="false" />
+				<arg2 key="500" resource="false" />
+				<var>
+					<var-name>min</var-name>
+					<var-value>300</var-value>
+				</var>
+				<var>
+					<var-name>max</var-name>
+					<var-value>500</var-value>
+				</var>
+			</field>
+			<field property="popHeight" depends="required,integer">
+				<arg0 key="팝업높이" resource="false" />
+			</field>
+			<field property="popWidth" depends="required,integer">
+				<arg0 key="팝업넓이" resource="false" />
+			</field>
+			<field property="cctvViewRads" depends="required,integer">
+				<arg0 key="참여 CCTV 검색 반경" resource="false" />
+			</field>
+			<field property="playTime" depends="required,integer">
+				<arg0 key="기본재생시간" resource="false" />
+			</field>
+			<field property="basePlaybacktime" depends="required,integer">
+				<arg0 key="기본PLAYBACKTIME" resource="false" />
+			</field>
+			<field property="maxPlaybacktime" depends="required,integer">
+				<arg0 key="최대PLAYBACKTIME" resource="false" />
+			</field>
+			<field property="maxAfPlaybacktime" depends="required,integer">
+				<arg0 key="최대이후PLAYBACKTIME" resource="false" />
+			</field>
+			<field property="maxBfPlaybacktime" depends="required,integer">
+				<arg0 key="최대이전PLAYBACKTIME" resource="false" />
+			</field>
+		</form>
+	</formset>
+</form-validation>

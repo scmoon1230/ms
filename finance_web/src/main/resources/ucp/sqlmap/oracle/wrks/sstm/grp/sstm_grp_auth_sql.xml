@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+
+<mapper namespace="kr.co.ucp.wrks.sstm.grp.service.GrpAuthMapper">
+
+    <!-- 그룹목록 조건검색 -->
+    <select id="list" parameterType="java.util.HashMap" resultType="egovMap">
+    /* GrpAuthMapper.list */
+        select A.GRP_NM_KO        , A.DSTRT_CD        , B.DSTRT_NM        , A.GRP_ID
+          from CM_GROUP A
+     left join (select DSTRT_CD, DSTRT_NM from CM_DSTRT_CD_MNG) B
+            on A.DSTRT_CD = B.DSTRT_CD
+         where 1 = 1
+           and A.USE_TY_CD = 'Y'
+            <if test="GRP_NM_KO != null and GRP_NM_KO != '' "> and A.GRP_NM_KO LIKE CONCAT('%', #{GRP_NM_KO}, '%') </if>
+            <if test="DSTRT_CD  != null and DSTRT_CD  != '' "> and A.DSTRT_CD  LIKE CONCAT('%', #{DSTRT_CD}, '%')  </if>
+         order by ${sidx} ${sord}
+    </select>
+
+    <!-- 권한레벨 조회 -->
+    <select id="authList" parameterType="java.util.HashMap" resultType="egovMap">
+        select GRP_ID         , AUTH_LVL      , AUTH_LVL_NM     , AUTH_LVL_TOP
+             , RGS_USER_ID    , TO_CHAR(RGS_DATE, 'YYYY-MM-DD') as RGS_DATE
+             , UPD_USER_ID    , TO_CHAR(UPD_DATE, 'YYYY-MM-DD') as UPD_DATE
+          from CM_GRP_AUTH_LVL
+         where GRP_ID = #{GRP_ID}
+         order by ${sidx} ${sord}
+    </select>
+
+    <!-- 권한레벨 등록 -->
+    <insert id="insert" parameterType="java.util.HashMap">
+        insert into CM_GRP_AUTH_LVL(
+                GRP_ID         , AUTH_LVL             , AUTH_LVL_NM    , AUTH_LVL_TOP
+              , RGS_USER_ID    , RGS_DATE             , UPD_USER_ID    , UPD_DATE
+            )VALUES(
+                #{GRP_ID}      , #{AUTH_LVL}::numeric , #{AUTH_LVL_NM} , #{AUTH_LVL_TOP}::numeric
+              , #{RGS_USER_ID} , NOW()                , #{RGS_USER_ID} , NOW()
+            )
+    </insert>
+
+    <!-- 권한레벨 수정 -->
+    <update id="update" parameterType="java.util.HashMap">
+        update CM_GRP_AUTH_LVL
+           set AUTH_LVL_NM  = #{AUTH_LVL_NM}
+             , AUTH_LVL_TOP = #{AUTH_LVL_TOP}::numeric
+             , UPD_USER_ID  = #{UPD_USER_ID}
+             , UPD_DATE     = NOW()
+         where GRP_ID   = #{GRP_ID}
+           and AUTH_LVL = #{AUTH_LVL}::numeric
+    </update>
+
+    <!-- 권한레벨 삭제 -->
+    <delete id="delete" parameterType="java.util.HashMap">
+        delete from CM_GRP_AUTH_LVL
+         where GRP_ID   = #{GRP_ID}
+           and AUTH_LVL = #{AUTH_LVL}::numeric
+    </delete>
+    
+</mapper>

@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ucp.env.service.DeptMapper">
+
+    <select id="selectDept" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectDept */
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingHeader"/>
+        select d.DEPT_CODE , d.DEPT_NAME
+             , tb.STAN_YMD, tb.REGION_NUM
+          from TB_DEPT d
+     left join ( select dr.DEPT_CODE , dr.STAN_YMD, dr.REGION_NUM 
+                   from TB_DEPT_REGION dr 
+                  where dr.DEPT_CODE || '-' || dr.STAN_YMD
+                     IN ( select DEPT_CODE || '-' || max(STAN_YMD) LAST_STAN_YMD
+                            from TB_DEPT_REGION tdr 
+                        group BY DEPT_CODE 
+                        )
+               ) tb ON d.DEPT_CODE = tb.dept_code
+         where 1 = 1
+           <if test="deptName != null and deptName != '' "> and d.DEPT_NAME LIKE #{deptName} || '%' </if>
+      order by ${sidx} ${sord}
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingBottom"/>
+    </select>
+    
+    <insert id="insertDept" parameterType="java.util.HashMap">
+    /* insertDept */
+        insert into TB_DEPT
+             ( DEPT_CODE      , DEPT_NAME      )
+        values
+             ( #{deptCode}    , #{deptName}    )
+    </insert>
+    
+    <update id="updateDept" parameterType="java.util.HashMap">
+    /* updateDept */
+        update TB_DEPT
+           set DEPT_CODE = #{deptCode}
+             , DEPT_NAME = #{deptName}
+         where DEPT_CODE = #{deptCode}
+    </update>
+
+    <delete id="deleteDept" parameterType="java.util.HashMap">
+    /* deleteDept */
+        delete from TB_DEPT
+         where DEPT_CODE = #{deptCode}
+    </delete>
+    
+    
+    <insert id="insertDeptRegion" parameterType="java.util.HashMap">
+    /* insertDeptRegion */
+        insert into TB_DEPT_REGION
+             ( DEPT_CODE      , STAN_YMD                      , REGION_NUM     )
+        values
+             ( #{deptCode}    , TO_CHAR(SYSDATE, 'YYYYMMDD')  , #{regionNum}   )
+    </insert>
+    <!-- 
+    <update id="updateDeptRegion" parameterType="java.util.HashMap">
+    /* updateDeptRegion */
+        update TB_DEPT_REGION
+           set DEPT_CODE = #{deptCode}
+             , STAN_YMD = TO_CHAR(SYSDATE, 'YYYYMMDD')
+             , REGION_NUM = #{regionNum}
+         where DEPT_CODE= #{deptCode}
+    </update>
+     -->
+    <delete id="deleteDeptRegion" parameterType="java.util.HashMap">
+    /* deleteDeptRegion */
+        delete from TB_DEPT_REGION
+         where DEPT_CODE = #{deptCode}
+           and STAN_YMD  = TO_CHAR(SYSDATE, 'YYYYMMDD')
+    </delete>
+    
+</mapper>

@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ucp.sheet2.service.Sheet2mngMapper">
+
+    <select id="selectSheet2Mng" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectSheet2Mng */
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingHeader"/>
+        select A.SEQ_NO        , TO_CHAR(TO_DATE(A.STAN_YMD, 'YYYYMMDD'), 'YYYY-MM-DD') STAN_YMD
+             , A.ACCT_GB
+             , (SELECT ACCT_GB_NAME from TB_ACCT_GB AG where AG.ACCT_GB = A.ACCT_GB) ACCT_GB_NAME
+             , A.ACCT_CODE     , B.ACCT_NAME  , B.PRINT_NAME, B.INOUT_GB
+             , A.MONEY_AMT     , A.ACCT_REMARK
+             , B.LINK_ACCT_CODE, B.LINK_NAME , B.LINK_PNAME
+             , D.USER_NAME
+          from TB_MAST_ACCT A
+             , ( select X.STAN_YY                , X.ACCT_GB                  , X.ACCT_CODE
+                      , X.LINK_ACCT_GB           , X.LINK_ACCT_CODE
+                      , X.ACCT_NAME              , X.PRINT_NAME               , X.INOUT_GB
+                      , L.ACCT_NAME AS LINK_NAME , L.PRINT_NAME AS LINK_PNAME
+                      , Z.FROM_YMD   , Z.END_YMD
+                   from TB_ACCTCODE X
+                      , TB_ACCTCODE L
+                      , TB_ACCTYEAR Z
+                  where X.STAN_YY        = L.STAN_YY
+                    and X.LINK_ACCT_GB   = L.ACCT_GB
+                    and X.LINK_ACCT_CODE = L.ACCT_CODE
+                    and X.STAN_YY        = Z.STAN_YY
+               ) B
+             , TB_USER D
+         where A.ACCT_GB   = B.ACCT_GB
+           and A.ACCT_CODE = B.ACCT_CODE
+           and A.STAN_YMD  BETWEEN B.FROM_YMD and B.END_YMD
+           and A.USER_ID   = D.USER_ID(+)
+           <if test="stanYmd  != null and stanYmd  != '' "> and A.STAN_YMD = #{stanYmd}  </if>
+           <if test="acctGb   != null and acctGb   != '' "> and A.ACCT_GB  = #{acctGb}   </if>
+           <if test="inoutGb  != null and inoutGb  != '' "> and B.INOUT_GB = #{inoutGb}  </if>
+      order by ${sidx} ${sord}
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingBottom"/>
+    </select>
+
+    <select id="selectSheet2MngTotalAmnt" parameterType="java.util.HashMap" resultType="String">
+    /* selectSheet2MngTotalAmnt */
+        select nvl(sum(A.MONEY_AMT),'0') MONEY_AMT
+          from TB_MAST_ACCT A
+             , ( select X.STAN_YY                , X.ACCT_GB                  , X.ACCT_CODE
+                      , X.LINK_ACCT_GB           , X.LINK_ACCT_CODE
+                      , X.ACCT_NAME              , X.PRINT_NAME               , X.INOUT_GB
+                      , L.ACCT_NAME AS LINK_NAME , L.PRINT_NAME AS LINK_PNAME
+                      , Z.FROM_YMD   , Z.END_YMD
+                   from TB_ACCTCODE X
+                      , TB_ACCTCODE L
+                      , TB_ACCTYEAR Z
+                  where X.STAN_YY        = L.STAN_YY
+                    and X.LINK_ACCT_GB   = L.ACCT_GB
+                    and X.LINK_ACCT_CODE = L.ACCT_CODE
+                    and X.STAN_YY        = Z.STAN_YY
+               ) B
+             , TB_USER D
+         where A.ACCT_GB   = B.ACCT_GB
+           and A.ACCT_CODE = B.ACCT_CODE
+           and A.STAN_YMD  BETWEEN B.FROM_YMD and B.END_YMD
+           and A.USER_ID   = D.USER_ID(+)
+           <if test="stanYmd  != null and stanYmd  != '' "> and A.STAN_YMD = #{stanYmd}  </if>
+           <if test="acctGb   != null and acctGb   != '' "> and A.ACCT_GB  = #{acctGb}   </if>
+           <if test="inoutGb  != null and inoutGb  != '' "> and B.INOUT_GB = #{inoutGb}  </if>
+    </select>
+    
+    
+    
+    
+    <!-- 전표마감 월간합계 -->
+    <select id="select2NewMonthSumList" parameterType="java.util.HashMap" resultType="egovMap">
+    /* select2NewMonthSumList */
+        select #{stanYm} STAN_YM           , AC.LINK_ACCT_GB ACCT_GB  , AC.LINK_ACCT_CODE ACCT_CODE
+             , SUM(MA.MONEY_AMT) MONEY_AMT
+          from TB_MAST_ACCT MA
+             , TB_ACCTCODE  AC
+             , TB_ACCTCODE  L
+         where AC.ACCT_GB   = MA.ACCT_GB
+           and AC.ACCT_CODE = MA.ACCT_CODE
+           and AC.STAN_YY   = ( select STAN_YY from TB_ACCTYEAR AY
+                                 where AY.FROM_YMD <![CDATA[<=]]> MA.STAN_YMD and MA.STAN_YMD <![CDATA[<=]]> AY.END_YMD )
+           and ( #{stanYm}||'01' <![CDATA[<=]]> MA.STAN_YMD and MA.STAN_YMD <![CDATA[<=]]> #{stanYmd} )
+           and AC.STAN_YY        = L.STAN_YY
+           and AC.LINK_ACCT_GB   = L.ACCT_GB
+           and AC.LINK_ACCT_CODE = L.ACCT_CODE
+      group by AC.LINK_ACCT_GB, AC.LINK_ACCT_CODE
+      order by AC.LINK_ACCT_GB, AC.LINK_ACCT_CODE
+    </select>
+        
+    <select id="select2NewMonthSum" parameterType="java.util.HashMap" resultType="egovMap">
+    /* select2NewMonthSum */
+        select #{stanYm} STAN_YM        , NVL(SUM(MA.MONEY_AMT),0) MONEY_AMT
+          from TB_MAST_ACCT MA
+             , TB_ACCTCODE  AC
+             , TB_ACCTCODE  L
+         where AC.ACCT_GB   = MA.ACCT_GB
+           and AC.ACCT_CODE = MA.ACCT_CODE
+           and AC.STAN_YY   = ( select STAN_YY from TB_ACCTYEAR AY
+                                 where AY.FROM_YMD <![CDATA[<=]]> MA.STAN_YMD and MA.STAN_YMD <![CDATA[<=]]> AY.END_YMD )
+           and ( #{stanYm}||'01' <![CDATA[<=]]> MA.STAN_YMD and MA.STAN_YMD <![CDATA[<=]]> #{stanYmd} )
+           and AC.STAN_YY        = L.STAN_YY
+           and AC.LINK_ACCT_GB   = L.ACCT_GB
+           and AC.LINK_ACCT_CODE = L.ACCT_CODE
+           and AC.LINK_ACCT_CODE LIKE #{acctUpCode}||'%'
+    </select>
+        
+</mapper>

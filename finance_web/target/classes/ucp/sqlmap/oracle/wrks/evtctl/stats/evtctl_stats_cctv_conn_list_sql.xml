@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ucp.wrks.evtctl.stats.service.CctvConnListMapper">
+
+	<!-- 영상접속목록 -->
+    <sql id="cctvConnListSql">
+    select A.*
+      from (
+        select TO_CHAR(VL.CONN_DATE,'YYYY-MM-DD HH24:MI:SS') AS CONN_DATE
+             , VL.USER_ID
+           <if test="saltText == null ">
+             , VU.USER_NM
+           </if>
+           <if test="saltText != null ">
+             , convert_from(decrypt(decode(VU.USER_NM,'hex')::bytea,#{saltText}::bytea,'aes'),'utf8') USER_NM
+           </if>
+             , VU.INSTT_NM
+             , VU.DEPT_NM
+             , COALESCE(TO_CHAR(TO_TIMESTAMP(NULLIF(VDO_SEA_YMDHMS_FR, ''), 'YYYYMMDDHH24MISS'), 'YYYY-MM-DD HH24:MI:SS'), '') AS VDO_SEA_YMDHMS_FR
+             , COALESCE(TO_CHAR(TO_TIMESTAMP(NULLIF(VDO_SEA_YMDHMS_TO, ''), 'YYYYMMDDHH24MISS'), 'YYYY-MM-DD HH24:MI:SS'), '') AS VDO_SEA_YMDHMS_TO
+             , VU.GRP_NM
+             , VL.FCLT_ID     as CCTV_ID
+             , CF.FCLT_LBL_NM as CCTV_NM
+             , VU.DSTRT_NM
+             , VU.AUTH_LVL_NM
+             , TVR.VIEW_RQST_NO
+             , TVR.RQST_RSN_TY_CD
+             , FN_GET_TC_CODE('RQST_RSN_TY', COALESCE(TVR.RQST_RSN_TY_CD, '')) as RQST_RSN_TY_NM
+             , COALESCE(TVR.EVT_NO   , '')            as EVT_NO 
+             , COALESCE(TVR.PAPER_NO , '')            as PAPER_NO
+             , COALESCE( TVR.PAPER_NM, TVR.PAPER_NO ) as REASON
+          from UM_CCTV_VIEW_LOG VL
+          join VW_USER       VU  on VL.DSTRT_CD = VU.DSTRT_CD and VL.USER_ID = VU.USER_ID and VU.TEST_YN = 'N'
+     left join CM_FACILITY   CF  on CF.FCLT_ID = VL.FCLT_ID
+     left join TVO_VIEW_RQST TVR on TVR.VIEW_RQST_NO = VL.VIEW_RQST_NO
+         where VL.CONN_DATE between TO_TIMESTAMP(#{searchStartDate} || '000000', 'YYYYMMDDHH24MISS')
+                                and TO_TIMESTAMP(#{searchEndDate} || '235959', 'YYYYMMDDHH24MISS')
+           <if test='searchEvtNo   != null and searchEvtNo   != ""'> and TVR.EVT_NO     like '%' || #{searchEvtNo}   || '%' </if>
+           <if test='searchPaperNo != null and searchPaperNo != ""'> and TVR.PAPER_NO   like '%' || #{searchPaperNo} || '%' </if>
+           <if test='searchCctvNm  != null and searchCctvNm  != ""'> and CF.FCLT_LBL_NM like '%' || #{searchCctvNm}  || '%' </if>
+           ) A
+     where 1 = 1
+           <if test='searchUserNm  != null and searchUserNm  != ""'> and USER_NM     like '%' || #{searchUserNm}  || '%' </if>
+    </sql>
+    
+    <select id="cctvConnList" parameterType="java.util.HashMap" resultType="egovMap">
+    /* cctvConnList */
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingHeader"/>
+            <include refid="cctvConnListSql"/>
+        order by CONN_DATE desc
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingBottom"/>
+    </select>
+
+    <select id="cctvConnListExcel" parameterType="java.util.HashMap" resultType="egovMap">
+    /* cctvConnListExcel */
+        <include refid="cctvConnListSql"/>
+        order by CONN_DATE desc
+    </select>
+    
+    
+    
+    
+    
+	<!-- 영상접속통계(사용자별) -->
+    <sql id="selectMonthSql">
+        select CASE WHEN A.USER_INFO = '-' THEN '-합계-'
+                     <if test="saltText == null ">
+                    ELSE COALESCE(NULLIF((select CONCAT(VU.dstrt_nm, ' ',USER_NM_KO, '(', A.USER_ID, ')') from CM_USER where USER_ID = A.USER_ID),''), A.USER_ID)
+                     </if>
+                     <if test="saltText != null ">
+                    ELSE CONCAT(VU.dstrt_nm, ' ',FN_USER_NM_DEC(A.USER_ID, #{saltText}::bytea), '(', A.USER_ID, ')')
+                     </if>
+                     END as USER_NM
+             , A.*
+          from ( select COALESCE(NULLIF(USER_INFO,''), '-') as USER_INFO
+                      , split_part(USER_INFO,'-',2) USER_ID
+                      , SUM(CASE WHEN MON = '01'  THEN CONN_CNT ELSE 0 END ) as M_01
+                      , SUM(CASE WHEN MON = '02'  THEN CONN_CNT ELSE 0 END ) as M_02
+                      , SUM(CASE WHEN MON = '03'  THEN CONN_CNT ELSE 0 END ) as M_03
+                      , SUM(CASE WHEN MON = '04'  THEN CONN_CNT ELSE 0 END ) as M_04
+                      , SUM(CASE WHEN MON = '05'  THEN CONN_CNT ELSE 0 END ) as M_05
+                      , SUM(CASE WHEN MON = '06'  THEN CONN_CNT ELSE 0 END ) as M_06
+                      , SUM(CASE WHEN MON = '07'  THEN CONN_CNT ELSE 0 END ) as M_07
+                      , SUM(CASE WHEN MON = '08'  THEN CONN_CNT ELSE 0 END ) as M_08
+                      , SUM(CASE WHEN MON = '09'  THEN CONN_CNT ELSE 0 END ) as M_09
+                      , SUM(CASE WHEN MON = '10'  THEN CONN_CNT ELSE 0 END ) as M_10
+                      , SUM(CASE WHEN MON = '11'  THEN CONN_CNT ELSE 0 END ) as M_11
+                      , SUM(CASE WHEN MON = '12'  THEN CONN_CNT ELSE 0 END ) as M_12
+                      , SUM(CASE WHEN MON IS NULL THEN CONN_CNT ELSE 0 END ) as M_TT
+                   from ( select TO_CHAR(A.CONN_DATE, 'MM') as MON, CONCAT(A.DSTRT_CD,'-',A.USER_ID) USER_INFO, COUNT(A.USER_ID) as CONN_CNT
+                            from UM_CCTV_VIEW_LOG A
+                            join CM_USER CU on A.USER_ID = CU.USER_ID and A.DSTRT_CD = CU.DSTRT_CD and CU.TEST_YN = 'N'
+                           where 1 = 1
+                           <!-- 
+                             <if test='searchUserNm != null and searchUserNm != ""'>
+                             and VU.USER_NM LIKE concat('%' , #{searchUserNm} , '%')
+                             </if>
+                            -->
+                             and A.CONN_DATE between TO_TIMESTAMP(#{searchYear} || '0101', 'YYYYMMDD')+'1 seconds'
+                                                 and TO_TIMESTAMP(#{searchYear} || '0101', 'YYYYMMDD')+'1 years -1 seconds'
+                        group by rollup(TO_CHAR(A.CONN_DATE, 'MM'), USER_INFO)
+                       union all
+                          select null as MON                      , CONCAT(A.DSTRT_CD,'-',A.USER_ID) USER_INFO, COUNT(A.USER_ID) as CONN_CNT
+                            from UM_CCTV_VIEW_LOG A
+                            join CM_USER CU on A.USER_ID = CU.USER_ID and A.DSTRT_CD = CU.DSTRT_CD and CU.TEST_YN = 'N'
+                           where 1 = 1
+                           <!-- 
+                             <if test='searchUserNm != null and searchUserNm != ""'>
+                             and VU.USER_NM LIKE concat('%' , #{searchUserNm} , '%')
+                             </if>
+                            -->
+                             and A.CONN_DATE between TO_TIMESTAMP(#{searchYear} || '0101', 'YYYYMMDD')+'1 seconds'
+                                                 and TO_TIMESTAMP(#{searchYear} || '0101', 'YYYYMMDD')+'1 years -1 seconds'
+                        group by USER_INFO
+                        ) A
+               group by USER_INFO
+               ) A
+     left join VW_USER VU on concat(VU.dstrt_cd,'-',VU.USER_ID) = A.USER_INFO
+    </sql>
+
+    <select id="selectMonthList" parameterType="map" resultType="egovMap">
+    /* selectMonthList */
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingHeader"/>
+        <include refid="selectMonthSql"/>
+        order by USER_INFO asc
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingBottom"/>
+    </select>
+
+    <select id="selectMonthExcel" parameterType="map" resultType="egovMap">
+    /* selectMonthExcel */
+        <include refid="selectMonthSql"/>
+        order by USER_ID asc
+    </select>
+
+
+
+    <sql id="selectDaySql">
+        select CASE WHEN A.USER_INFO = '-' THEN '-합계-'
+                     <if test="saltText == null ">
+                    ELSE COALESCE(NULLIF((select CONCAT(VU.dstrt_nm, ' ',USER_NM_KO, '(', A.USER_ID, ')') from CM_USER where USER_ID = A.USER_ID ),''),A.USER_ID)
+                     </if>
+                     <if test="saltText != null ">
+                    ELSE CONCAT(VU.dstrt_nm, ' ',FN_USER_NM_DEC(A.USER_ID, #{saltText}::bytea), '(', A.USER_ID, ')')
+                     </if>
+                     END as USER_NM
+             , A.*
+          from ( select COALESCE(NULLIF(USER_INFO,''),'-') as USER_INFO
+                      , split_part(USER_INFO,'-',2)        as USER_ID
+                      , SUM(CASE WHEN CONN_DAY = '01'  THEN CONN_CNT ELSE 0 END ) as DAY_01
+                      , SUM(CASE WHEN CONN_DAY = '02'  THEN CONN_CNT ELSE 0 END ) as DAY_02
+                      , SUM(CASE WHEN CONN_DAY = '03'  THEN CONN_CNT ELSE 0 END ) as DAY_03
+                      , SUM(CASE WHEN CONN_DAY = '04'  THEN CONN_CNT ELSE 0 END ) as DAY_04
+                      , SUM(CASE WHEN CONN_DAY = '05'  THEN CONN_CNT ELSE 0 END ) as DAY_05
+                      , SUM(CASE WHEN CONN_DAY = '06'  THEN CONN_CNT ELSE 0 END ) as DAY_06
+                      , SUM(CASE WHEN CONN_DAY = '07'  THEN CONN_CNT ELSE 0 END ) as DAY_07
+                      , SUM(CASE WHEN CONN_DAY = '08'  THEN CONN_CNT ELSE 0 END ) as DAY_08
+                      , SUM(CASE WHEN CONN_DAY = '09'  THEN CONN_CNT ELSE 0 END ) as DAY_09
+                      , SUM(CASE WHEN CONN_DAY = '10'  THEN CONN_CNT ELSE 0 END ) as DAY_10
+                      , SUM(CASE WHEN CONN_DAY = '11'  THEN CONN_CNT ELSE 0 END ) as DAY_11
+                      , SUM(CASE WHEN CONN_DAY = '12'  THEN CONN_CNT ELSE 0 END ) as DAY_12
+                      , SUM(CASE WHEN CONN_DAY = '13'  THEN CONN_CNT ELSE 0 END ) as DAY_13
+                      , SUM(CASE WHEN CONN_DAY = '14'  THEN CONN_CNT ELSE 0 END ) as DAY_14
+                      , SUM(CASE WHEN CONN_DAY = '15'  THEN CONN_CNT ELSE 0 END ) as DAY_15
+                      , SUM(CASE WHEN CONN_DAY = '16'  THEN CONN_CNT ELSE 0 END ) as DAY_16
+                      , SUM(CASE WHEN CONN_DAY = '17'  THEN CONN_CNT ELSE 0 END ) as DAY_17
+                      , SUM(CASE WHEN CONN_DAY = '18'  THEN CONN_CNT ELSE 0 END ) as DAY_18
+                      , SUM(CASE WHEN CONN_DAY = '19'  THEN CONN_CNT ELSE 0 END ) as DAY_19
+                      , SUM(CASE WHEN CONN_DAY = '20'  THEN CONN_CNT ELSE 0 END ) as DAY_20
+                      , SUM(CASE WHEN CONN_DAY = '21'  THEN CONN_CNT ELSE 0 END ) as DAY_21
+                      , SUM(CASE WHEN CONN_DAY = '22'  THEN CONN_CNT ELSE 0 END ) as DAY_22
+                      , SUM(CASE WHEN CONN_DAY = '23'  THEN CONN_CNT ELSE 0 END ) as DAY_23
+                      , SUM(CASE WHEN CONN_DAY = '24'  THEN CONN_CNT ELSE 0 END ) as DAY_24
+                      , SUM(CASE WHEN CONN_DAY = '25'  THEN CONN_CNT ELSE 0 END ) as DAY_25
+                      , SUM(CASE WHEN CONN_DAY = '26'  THEN CONN_CNT ELSE 0 END ) as DAY_26
+                      , SUM(CASE WHEN CONN_DAY = '27'  THEN CONN_CNT ELSE 0 END ) as DAY_27
+                      , SUM(CASE WHEN CONN_DAY = '28'  THEN CONN_CNT ELSE 0 END ) as DAY_28
+                      , SUM(CASE WHEN CONN_DAY = '29'  THEN CONN_CNT ELSE 0 END ) as DAY_29
+                      , SUM(CASE WHEN CONN_DAY = '30'  THEN CONN_CNT ELSE 0 END ) as DAY_30
+                      , SUM(CASE WHEN CONN_DAY = '31'  THEN CONN_CNT ELSE 0 END ) as DAY_31
+                      , SUM(CASE WHEN CONN_DAY IS NULL THEN CONN_CNT ELSE 0 END ) as DAY_TT
+                   from ( select TO_CHAR(A.CONN_DATE, 'DD') as CONN_DAY, CONCAT(A.DSTRT_CD,'-',A.USER_ID) USER_INFO, COUNT(A.FCLT_ID) as CONN_CNT
+                            from UM_CCTV_VIEW_LOG A
+                            join CM_USER CU on A.USER_ID = CU.USER_ID and A.DSTRT_CD = CU.DSTRT_CD and CU.TEST_YN = 'N'
+                           where 1 = 1
+                           <!-- 
+                             <if test='searchUserNm != null and searchUserNm != ""'>
+                             and CU.USER_NM LIKE concat('%' , #{searchUserNm} , '%')
+                             </if>
+                            -->
+                             and A.CONN_DATE between TO_TIMESTAMP(#{searchYear} || #{searchMonth} || '01', 'YYYYMMDD')+'1 seconds'
+                                                 and TO_TIMESTAMP(#{searchYear} || #{searchMonth} || '01', 'YYYYMMDD')+'1 months -1 seconds'
+                        group by rollup(TO_CHAR(A.CONN_DATE, 'DD'), USER_INFO)
+                       union all
+                          select null as CONN_DAY                      , CONCAT(A.DSTRT_CD,'-',A.USER_ID) USER_INFO, COUNT(A.FCLT_ID) as CONN_CNT
+                            from UM_CCTV_VIEW_LOG A
+                            join CM_USER CU on A.USER_ID = CU.USER_ID and A.DSTRT_CD = CU.DSTRT_CD and CU.TEST_YN = 'N'
+                           where 1 = 1
+                           <!-- 
+                             <if test='searchUserNm != null and searchUserNm != ""'>
+                             and CU.USER_NM LIKE concat('%' , #{searchUserNm} , '%')
+                             </if>
+                            -->
+                             and A.CONN_DATE between TO_TIMESTAMP(#{searchYear} || #{searchMonth} || '01', 'YYYYMMDD')+'1 seconds'
+                                                 and TO_TIMESTAMP(#{searchYear} || #{searchMonth} || '01', 'YYYYMMDD')+'1 months -1 seconds'
+                        group by USER_INFO
+                        ) A
+               group by USER_INFO
+               ) A
+     left join VW_USER VU on concat(VU.dstrt_cd,'-',VU.USER_ID) = A.USER_INFO
+    </sql>
+
+    <select id="selectDayList" parameterType="map" resultType="egovMap">
+    /* selectDayList */
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingHeader"/>
+        <include refid="selectDaySql"/>
+        order by USER_INFO asc
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingBottom"/>
+    </select>
+
+    <select id="selectDayExcel" parameterType="map" resultType="egovMap">
+    /* selectDayExcel */
+        <include refid="selectDaySql"/>
+        order by USER_INFO asc
+    </select>
+    
+</mapper>

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ucp.mntr.mng.service.impl.MngIconMapper">
+	<select id="selectIconList" parameterType="map" resultType="egovMap">
+		<choose>
+			<when test="iconGbn eq 'ETC'">
+			select 'ETC'    as ICON_GBN
+			     , LAYER_ID as ICON_ID
+			     , LAYER_NM as ICON_NM
+			     , 'ETC'    as ICON_GRP_ID
+			     , '기타'   as ICON_GRP_NM
+			from   UM_LAYER_CONFIG
+			</when>
+			<when test="iconGbn eq 'CCTV'">
+			select 'CCTV'                                  as ICON_GBN
+			     , FCLT_USED_TY_CD                         as ICON_ID
+			     , FCLT_USED_TY_NM                         as ICON_NM
+			     , FCLT_KND_CD                             as ICON_GRP_ID
+			     , FN_GET_TC_CODE('FCLT_KND', FCLT_KND_CD) as ICON_GRP_NM
+			from   CM_TC_FCLT_USED
+			where  USE_TY_CD   = 'Y'
+			and    FCLT_KND_CD = 'CTV'
+			</when>
+		</choose>
+			order by ICON_GBN
+			       , ICON_GRP_NM
+			       , ICON_NM
+	</select>
+</mapper>

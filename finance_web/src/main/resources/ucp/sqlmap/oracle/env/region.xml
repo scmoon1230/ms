@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ucp.env.service.RegionMapper">
+
+    <select id="selectRegion" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectRegion */
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingHeader"/>
+        select P.REGION_CODE       , P.REGION_NAME
+          from TB_REGION P
+         where 1 = 1
+           <if test="regionName != null and regionName != '' "> and REGION_NAME LIKE #{regionName} || '%' </if>
+      order by ${sidx} ${sord}
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingBottom"/>
+    </select>
+
+    <insert id="insertRegion" parameterType="java.util.HashMap">
+    /* insertRegion */
+        insert into TB_REGION
+             ( REGION_CODE      , REGION_NAME      )
+        values
+             ( #{regionCode}    , #{regionName}    )
+    </insert>
+    
+    <update id="updateRegion" parameterType="java.util.HashMap">
+    /* updateRegion */
+        update TB_REGION
+           set REGION_CODE = #{regionCode}
+             , REGION_NAME = #{regionName}
+         where REGION_CODE = #{regionCode}
+    </update>
+
+    <delete id="deleteRegion" parameterType="java.util.HashMap">
+    /* deleteRegion */
+        delete from TB_REGION
+         where REGION_CODE = #{regionCode}
+    </delete>
+    
+</mapper>

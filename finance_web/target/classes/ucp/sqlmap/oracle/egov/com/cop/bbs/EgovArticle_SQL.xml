@@ -1,0 +1,455 @@
+<?xml version="1.0" encoding="UTF-8"?><!--
+    수정일                 수정자                          수정내용
+  =========     =======    =================================================
+  2011.09.21    서준식              NTT_ID를 IDGENT서비스를 사용해서 생성하므로 selectMaxNttId문은 실제 사용하지 않음
+-->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="BBSArticle">
+
+    <resultMap id="boardList" type="kr.co.ucp.egov.com.cop.bbs.service.BoardVO">
+        <result property="bbsId"             column="BBS_ID"/>
+        <result property="nttId"             column="NTT_ID"/>
+        <result property="nttSj"             column="NTT_SJ"/>
+        <result property="frstRegisterId"    column="FRST_REGISTER_ID"/>
+        <result property="frstRegisterNm"    column="FRST_REGISTER_NM"/>
+        <result property="frstRegisterPnttm" column="FRST_REGIST_PNTTM"/>
+        <result property="inqireCo"          column="RDCNT"/>
+        <result property="parnts"            column="PARNTSCTT_NO"/>
+        <result property="replyAt"           column="ANSWER_AT"/>
+        <result property="replyLc"           column="ANSWER_LC"/>
+        <result property="useAt"             column="USE_AT"/>
+        <result property="atchFileId"        column="ATCH_FILE_ID"/>
+        <result property="ntceBgnde"         column="NTCE_BGNDE"/>
+        <result property="ntceEndde"         column="NTCE_ENDDE"/>
+        <result property="sjBoldAt"          column="SJ_BOLD_AT"/>
+        <result property="noticeAt"          column="NOTICE_AT"/>
+        <result property="secretAt"          column="SECRET_AT"/>
+        <result property="commentCo"         column="COMMENT_CO"/>
+    </resultMap>
+
+    <resultMap id="boardDetail" type="kr.co.ucp.egov.com.cop.bbs.service.BoardVO">
+        <result property="bbsId"               column="BBS_ID"/>
+        <result property="nttId"               column="NTT_ID"/>
+        <result property="nttSj"               column="NTT_SJ"/>
+        <result property="ntcrId"              column="NTCR_ID"/>
+        <result property="ntcrNm"              column="NTCR_NM"/>
+        <result property="nttNo"               column="NTT_NO"/>
+        <result property="nttCn"               column="NTT_CN"/>
+        <result property="password"            column="PASSWORD"/>
+        <result property="frstRegisterId"      column="FRST_REGISTER_ID"/>
+        <result property="frstRegisterNm"      column="FRST_REGISTER_NM"/>
+        <result property="frstRegisterPnttm"   column="FRST_REGIST_PNTTM"/>
+        <result property="ntceBgnde"           column="NTCE_BGNDE"/>
+        <result property="ntceEndde"           column="NTCE_ENDDE"/>
+        <result property="inqireCo"            column="RDCNT"/>
+        <result property="useAt"               column="USE_AT"/>
+        <result property="atchFileId"          column="ATCH_FILE_ID"/>
+        <result property="parnts"              column="PARNTSCTT_NO"/>
+        <result property="replyAt"             column="ANSWER_AT"/>
+        <result property="replyLc"             column="ANSWER_LC"/>
+        <result property="sortOrdr"            column="SORT_ORDR"/>
+        <result property="bbsTyCode"           column="BBS_TY_CODE"/>
+        <result property="replyPosblAt"        column="REPLY_POSBL_AT"/>
+        <result property="fileAtchPosblAt"     column="FILE_ATCH_POSBL_AT"/>
+        <result property="posblAtchFileNumber" column="ATCH_POSBL_FILE_NUMBER"/>
+        <result property="bbsNm"               column="BBS_NM"/>
+        <result property="sjBoldAt"            column="SJ_BOLD_AT"/>
+        <result property="noticeAt"            column="NOTICE_AT"/>
+        <result property="secretAt"            column="SECRET_AT"/>
+    </resultMap>
+
+    <resultMap id="sortList" type="kr.co.ucp.egov.com.cop.bbs.service.BoardVO">
+        <result property="bbsId"    column="BBS_ID"/>
+        <result property="nttId"    column="NTT_ID"/>
+        <result property="sortOrdr" column="SORT_ORDR"/>
+        <result property="parnts"   column="PARNTSCTT_NO"/>
+        <result property="nttNo"    column="NTT_NO"/>
+        <result property="replyLc"  column="ANSWER_LC"/>
+    </resultMap>
+
+    <resultMap id="guestList" type="kr.co.ucp.egov.com.cop.bbs.service.BoardVO">
+        <result property="bbsId"             column="BBS_ID"/>
+        <result property="nttId"             column="NTT_ID"/>
+        <result property="nttSj"             column="NTT_SJ"/>
+        <result property="frstRegisterPnttm" column="FRST_REGIST_PNTTM"/>
+        <result property="nttCn"             column="NTT_CN"/>
+        <result property="useAt"             column="USE_AT"/>
+        <result property="frstRegisterNm"    column="FRST_REGISTER_NM"/>
+        <result property="frstRegisterId"    column="FRST_REGISTER_ID"/>
+    </resultMap>
+
+    <resultMap id="detailCn" type="kr.co.ucp.egov.com.cop.bbs.service.BoardVO">
+        <result property="bbsId"               column="BBS_ID"/>
+        <result property="nttId"               column="NTT_ID"/>
+        <result property="nttSj"               column="NTT_SJ"/>
+        <result property="ntcrId"              column="NTCR_ID"/>
+        <result property="ntcrNm"              column="NTCR_NM"/>
+        <result property="nttNo"               column="NTT_NO"/>
+        <result property="nttCn"               column="NTT_CN"/>
+        <result property="password"            column="PASSWORD"/>
+        <result property="frstRegisterId"      column="FRST_REGISTER_ID"/>
+        <result property="frstRegisterNm"      column="FRST_REGISTER_NM"/>
+        <result property="frstRegisterPnttm"   column="FRST_REGIST_PNTTM"/>
+        <result property="ntceBgnde"           column="NTCE_BGNDE"/>
+        <result property="ntceEndde"           column="NTCE_ENDDE"/>
+        <result property="inqireCo"            column="RDCNT"/>
+        <result property="useAt"               column="USE_AT"/>
+        <result property="atchFileId"          column="ATCH_FILE_ID"/>
+        <result property="parnts"              column="PARNTSCTT_NO"/>
+        <result property="replyAt"             column="ANSWER_AT"/>
+        <result property="replyLc"             column="ANSWER_LC"/>
+        <result property="sortOrdr"            column="SORT_ORDR"/>
+        <result property="bbsTyCode"           column="BBS_TY_CODE"/>
+        <result property="replyPosblAt"        column="REPLY_POSBL_AT"/>
+        <result property="fileAtchPosblAt"     column="FILE_ATCH_POSBL_AT"/>
+        <result property="posblAtchFileNumber" column="ATCH_POSBL_FILE_NUMBER"/>
+        <result property="bbsNm"               column="BBS_NM"/>
+        <result property="sjBoldAt"            column="SJ_BOLD_AT"/>
+        <result property="noticeAt"            column="NOTICE_AT"/>
+        <result property="secretAt"            column="SECRET_AT"/>
+        <result property="commentCo"           column="COMMENT_CO"/>
+    </resultMap>
+
+    <resultMap id="boardCnOne" type="kr.co.ucp.egov.com.cop.bbs.service.BoardVO">
+        <result property="nttCn" column="NTT_CN"/>
+    </resultMap>
+
+    <resultMap id="boardMasterList" type="kr.co.ucp.egov.com.cop.bbs.service.BoardMasterVO">
+        <result property="bbsId" column="BBS_ID"/>
+        <result property="bbsNm" column="BBS_NM"/>
+    </resultMap>
+
+    <resultMap id="boardBlogManager" type="kr.co.ucp.egov.com.cop.bbs.service.BoardMasterVO">
+        <result property="bbsId"             column="BBS_ID"/>
+        <result property="bbsNm"             column="BBS_NM"/>
+        <result property="useAt"             column="USE_AT"/>
+        <result property="frstRegisterNm"    column="FRST_REGISTER_NM"/>
+        <result property="frstRegisterPnttm" column="FRST_REGIST_PNTTM"/>
+    </resultMap>
+
+    <resultMap id="boardSubJectList" type="kr.co.ucp.egov.com.cop.bbs.service.BoardVO">
+        <result property="bbsId"             column="BBS_ID"/>
+        <result property="nttId"             column="NTT_ID"/>
+        <result property="nttSj"             column="NTT_SJ"/>
+        <result property="frstRegisterId"    column="FRST_REGISTER_ID"/>
+        <result property="frstRegisterNm"    column="FRST_REGISTER_NM"/>
+        <result property="frstRegisterPnttm" column="FRST_REGIST_PNTTM"/>
+        <result property="inqireCo"          column="RDCNT"/>
+        <result property="parnts"            column="PARNTSCTT_NO"/>
+        <result property="replyAt"           column="ANSWER_AT"/>
+        <result property="replyLc"           column="ANSWER_LC"/>
+        <result property="useAt"             column="USE_AT"/>
+        <result property="atchFileId"        column="ATCH_FILE_ID"/>
+        <result property="ntceBgnde"         column="NTCE_BGNDE"/>
+        <result property="ntceEndde"         column="NTCE_ENDDE"/>
+        <result property="sjBoldAt"          column="SJ_BOLD_AT"/>
+        <result property="noticeAt"          column="NOTICE_AT"/>
+        <result property="secretAt"          column="SECRET_AT"/>
+        <result property="commentCo"         column="COMMENT_CO"/>
+        <result property="replyPosblAt"      column="REPLY_POSBL_AT"/>
+        <result property="blogId"            column="BLOG_ID"/>
+    </resultMap>
+
+     <select id="selectMaxNttId" resultType="java.lang.Long">
+        select COALESCE(MAX(NTT_ID),0)+1 as NTT_ID  from COMTNBBS
+     </select>
+
+    <insert id="insertArticle" parameterType="kr.co.ucp.egov.com.cop.bbs.service.BoardVO">
+        <selectKey keyProperty="nttNo" resultType="java.lang.Long" order="BEFORE">
+            select COALESCE(MAX(SORT_ORDR),0)+1 as NTT_NO  from COMTNBBS
+             where BBS_ID = #{bbsId}
+        </selectKey>
+
+        insert into COMTNBBS
+             ( NTT_ID             , BBS_ID       , NTT_SJ              , NTT_CN     , SORT_ORDR
+             , NTCR_ID            , NTCR_NM      , PASSWORD            , RDCNT
+             , NTCE_BGNDE         , NTCE_ENDDE   , ANSWER_AT
+             , PARNTSCTT_NO       , NTT_NO       , ANSWER_LC           , ATCH_FILE_ID
+             , FRST_REGISTER_ID   , FRST_REGIST_PNTTM                  , USE_AT
+             , SJ_BOLD_AT         , NOTICE_AT    , SECRET_AT           , BLOG_ID      )
+        values
+             ( #{nttId}           , #{bbsId}     , #{nttSj}            , #{nttCn}   , #{nttId}
+             , #{ntcrId}          , #{ntcrNm}    , #{password}         , #{inqireCo}
+             , #{ntceBgnde}       , #{ntceEndde} , #{replyAt}
+             , #{parnts}::numeric , 1            , #{replyLc}::numeric , #{atchFileId}
+             , #{frstRegisterId}  , NOW()                              , 'Y'
+             , #{sjBoldAt}        , #{noticeAt}  , #{secretAt}         , #{blogId}    )
+    </insert>
+
+    <insert id="replyArticle" parameterType="kr.co.ucp.egov.com.cop.bbs.service.BoardVO">
+        <selectKey keyProperty="nttNo" resultType="java.lang.Long" order="BEFORE">
+            select COALESCE(MAX(NTT_NO),0)+1 as NTT_NO  from COMTNBBS
+             where BBS_ID = #{bbsId} and SORT_ORDR = #{sortOrdr}
+        </selectKey>
+
+        insert into COMTNBBS
+             ( NTT_ID             , BBS_ID       , NTT_SJ              , NTT_CN     , SORT_ORDR
+             , NTCR_ID            , NTCR_NM      , PASSWORD            , RDCNT
+             , NTCE_BGNDE         , NTCE_ENDDE   , ANSWER_AT
+             , PARNTSCTT_NO       , NTT_NO       , ANSWER_LC           , ATCH_FILE_ID
+             , FRST_REGISTER_ID   , FRST_REGIST_PNTTM                  , USE_AT
+             , SJ_BOLD_AT         , NOTICE_AT    , SECRET_AT )
+        values
+             ( #{nttId}           , #{bbsId}     , #{nttSj}            , #{nttCn}   , #{sortOrdr}
+             , #{ntcrId}          , #{ntcrNm}    , #{password}         , #{inqireCo}
+             , #{ntceBgnde}       , #{ntceEndde} , #{replyAt}
+             , #{parnts}::numeric , #{nttNo}     , #{replyLc}::numeric , #{atchFileId}
+             , #{frstRegisterId}  , NOW()        , 'Y'
+             , #{sjBoldAt}        , #{noticeAt}  , #{secretAt} )
+    </insert>
+
+    <select id="selectArticleList" parameterType="kr.co.ucp.egov.com.cop.bbs.service.BoardVO" resultMap="boardList">
+    /* selectArticleList */
+        select a.NTT_ID, a.NTT_SJ, a.NTT_CN, a.FRST_REGISTER_ID
+           <if test="saltText == null ">
+             , COALESCE(FN_USER_NM(a.FRST_REGISTER_ID), a.NTCR_NM) as FRST_REGISTER_NM
+           </if>
+           <if test="saltText != null ">
+             , COALESCE(FN_USER_NM_DEC(a.FRST_REGISTER_ID, #{saltText}::bytea), a.NTCR_NM) as FRST_REGISTER_NM
+           </if>
+             , TO_CHAR(a.FRST_REGIST_PNTTM, 'YYYY-MM-DD') as FRST_REGIST_PNTTM
+             , a.RDCNT  , a.PARNTSCTT_NO , a.ANSWER_AT  , a.ANSWER_LC  , a.USE_AT    , a.ATCH_FILE_ID
+             , a.BBS_ID , a.NTCE_BGNDE   , a.NTCE_ENDDE , a.SJ_BOLD_AT , a.NOTICE_AT , a.SECRET_AT , c.COMMENT_CO
+          from COMTNBBS a
+          <!-- LEFT OUTER join vw_user b ON a.FRST_REGISTER_ID = b.USER_ID -->
+          LEFT OUTER join
+               ( select NTT_ID, BBS_ID, COUNT(1) as COMMENT_CO
+                   from COMTNCOMMENT where USE_AT = 'Y' group by NTT_ID, BBS_ID
+               ) c ON a.NTT_ID = c.NTT_ID and a.BBS_ID = c.BBS_ID
+         where a.BBS_ID = #{bbsId}
+           and a.USE_AT = 'Y'
+           <if test="searchCnd == 0"> and a.NTT_SJ LIKE CONCAT ('%', #{searchWrd},'%') </if>
+           <if test="searchCnd == 1"> and a.NTT_CN LIKE CONCAT ('%', #{searchWrd},'%') </if>
+           <if test="searchCnd == 2"> and b.USER_NM LIKE CONCAT ('%', #{searchWrd},'%') </if>
+      order by a.SORT_ORDR DESC, NTT_NO asc
+        offset #{firstIndex} limit #{recordCountPerPage}
+    </select>
+
+    <select id="selectArticleListCnt" parameterType="kr.co.ucp.egov.com.cop.bbs.service.BoardVO" resultType="java.lang.Integer">
+        select COUNT(a.NTT_ID)
+          from COMTNBBS a
+          <!-- LEFT OUTER join vw_user b ON a.FRST_REGISTER_ID = b.USER_ID -->
+         where a.BBS_ID = #{bbsId} and a.USE_AT = 'Y'
+           <if test="searchCnd == 0"> and a.NTT_SJ LIKE CONCAT ('%', #{searchWrd},'%') </if>
+           <if test="searchCnd == 1"> and a.NTT_CN LIKE CONCAT ('%', #{searchWrd},'%') </if>
+           <if test="searchCnd == 2"> and b.USER_NM LIKE CONCAT ('%', #{searchWrd},'%') </if>
+    </select>
+
+    <select id="selectArticleDetail" parameterType="kr.co.ucp.egov.com.cop.bbs.service.BoardVO" resultMap="boardDetail">
+        select a.NTT_SJ, a.NTCR_ID, a.NTCR_NM, a.NTT_NO, a.NTT_CN
+             , a.PASSWORD, a.FRST_REGISTER_ID
+           <if test="saltText == null ">
+             , COALESCE(FN_USER_NM(a.FRST_REGISTER_ID), a.NTCR_NM) as FRST_REGISTER_NM
+           </if>
+           <if test="saltText != null ">
+             , COALESCE(FN_USER_NM_DEC(a.FRST_REGISTER_ID, #{saltText}::bytea), a.NTCR_NM) as FRST_REGISTER_NM
+           </if>
+             , TO_CHAR(a.FRST_REGIST_PNTTM, 'YYYY-MM-DD') AS FRST_REGIST_PNTTM
+             , a.NTCE_BGNDE        , a.NTCE_ENDDE       , a.RDCNT
+             , a.USE_AT            , a.ATCH_FILE_ID     , a.BBS_ID, a.NTT_ID
+             , a.SJ_BOLD_AT        , a.NOTICE_AT        , a.SECRET_AT
+             , a.PARNTSCTT_NO      , a.ANSWER_AT        , a.ANSWER_LC, a.SORT_ORDR
+             , c.BBS_TY_CODE       , c.REPLY_POSBL_AT
+             , c.FILE_ATCH_POSBL_AT, c.ATCH_POSBL_FILE_NUMBER, c.BBS_NM
+          from COMTNBBS a
+          <!-- LEFT OUTER join vw_user b ON a.FRST_REGISTER_ID = b.USER_ID -->
+          LEFT OUTER join COMTNBBSMASTER  c ON a.BBS_ID = c.BBS_ID
+         where a.BBS_ID = #{bbsId}
+           and a.NTT_ID = #{nttId}
+           and a.USE_AT = 'Y'
+    </select>
+
+    <select id="selectArticleDetailCn" parameterType="kr.co.ucp.egov.com.cop.bbs.service.BoardVO" resultMap="detailCn">
+        select a.NTT_SJ, a.NTCR_ID, a.NTCR_NM, a.NTT_NO, a.NTT_CN
+             , a.PASSWORD, a.FRST_REGISTER_ID
+             , COALESCE(b.USER_NM, a.NTCR_NM) as FRST_REGISTER_NM
+             , TO_CHAR(a.FRST_REGIST_PNTTM, 'YYYY-MM-DD') AS FRST_REGIST_PNTTM
+             , a.NTCE_BGNDE, a.NTCE_ENDDE, a.RDCNT
+             , a.USE_AT, a.ATCH_FILE_ID, a.BBS_ID, a.NTT_ID
+             , a.SJ_BOLD_AT, a.NOTICE_AT, a.SECRET_AT
+             , a.PARNTSCTT_NO, a.ANSWER_AT, a.ANSWER_LC, a.SORT_ORDR
+             , c.BBS_TY_CODE, c.REPLY_POSBL_AT
+             , c.FILE_ATCH_POSBL_AT, c.ATCH_POSBL_FILE_NUMBER, c.BBS_NM
+          from COMTNBBS a
+          LEFT OUTER join vw_user b ON a.FRST_REGISTER_ID = b.USER_ID
+          LEFT OUTER join COMTNBBSMASTER  c ON a.BBS_ID = c.BBS_ID
+         where a.BBS_ID = #{bbsId}
+           and a.NTT_ID = #{nttId}
+           and a.USE_AT = 'Y'
+    </select>
+
+     <update id="updateArticle" parameterType="kr.co.ucp.egov.com.cop.bbs.service.BoardVO">
+        update COMTNBBS
+           set NTT_SJ          = #{nttSj}
+             , NTT_CN          = #{nttCn}
+             , NTCE_BGNDE      = #{ntceBgnde}
+             , NTCE_ENDDE      = #{ntceEndde}
+             , LAST_UPDUSR_ID  = #{lastUpdusrId}
+             , ATCH_FILE_ID    = #{atchFileId}
+             , LAST_UPDT_PNTTM = NOW()
+             , SJ_BOLD_AT      = #{sjBoldAt}
+             , NOTICE_AT       = #{noticeAt}
+             , SECRET_AT       = #{secretAt}
+         where BBS_ID = #{bbsId}
+           and NTT_ID = #{nttId}
+     </update>
+
+     <update id="deleteArticle" parameterType="kr.co.ucp.egov.com.cop.bbs.service.BoardVO">
+        update COMTNBBS
+           set NTT_SJ = #{nttSj}
+             , USE_AT = 'N'
+             , LAST_UPDUSR_ID = #{lastUpdusrId}
+             , LAST_UPDT_PNTTM = NOW()
+         where BBS_ID = #{bbsId}
+           and NTT_ID = #{nttId}
+     </update>
+
+     <select id="selectMaxInqireCo" parameterType="kr.co.ucp.egov.com.cop.bbs.service.BoardVO" resultType="java.lang.Integer">
+        select COALESCE(MAX(RDCNT),0)+1 as RDCNT from COMTNBBS
+         where BBS_ID = #{bbsId}
+           and NTT_ID = #{nttId}
+     </select>
+
+     <update id="updateInqireCo" parameterType="kr.co.ucp.egov.com.cop.bbs.service.BoardVO">
+        update COMTNBBS
+           set RDCNT = #{inqireCo}
+             , LAST_UPDUSR_ID = #{lastUpdusrId}
+             , LAST_UPDT_PNTTM = NOW()
+         where BBS_ID = #{bbsId}
+           and NTT_ID = #{nttId}
+     </update>
+
+     <select id="selectNoticeArticleList" parameterType="kr.co.ucp.egov.com.cop.bbs.service.BoardVO" resultMap="boardList">
+        select a.NTT_ID, a.NTT_SJ     , a.NTT_CN    , a.FRST_REGISTER_ID
+        
+             , COALESCE(b.USER_NM, a.NTCR_NM) as FRST_REGISTER_NM
+             
+             , TO_CHAR(a.FRST_REGIST_PNTTM, 'YYYY-MM-DD') AS FRST_REGIST_PNTTM
+             , a.RDCNT  , a.PARNTSCTT_NO , a.ANSWER_AT  , a.ANSWER_LC  , a.USE_AT    , a.ATCH_FILE_ID
+             , a.BBS_ID , a.NTCE_BGNDE   , a.NTCE_ENDDE , a.SJ_BOLD_AT , a.NOTICE_AT , a.SECRET_AT , c.COMMENT_CO
+          from COMTNBBS a
+          
+          LEFT OUTER join vw_user b ON a.FRST_REGISTER_ID = b.USER_ID
+          
+          LEFT OUTER join
+               ( select NTT_ID, BBS_ID, COUNT(1) as COMMENT_CO from COMTNCOMMENT
+                 where USE_AT = 'Y' group by NTT_ID, BBS_ID
+               ) c ON a.NTT_ID = c.NTT_ID and a.BBS_ID = c.BBS_ID
+         where a.BBS_ID = #{bbsId}
+           and a.NOTICE_AT = 'Y'
+           and a.USE_AT = 'Y'
+      order by a.SORT_ORDR DESC, NTT_NO asc
+         limit 5
+    </select>
+
+    <select id="selectGuestArticleList" parameterType="kr.co.ucp.egov.com.cop.bbs.service.BoardVO" resultMap="guestList">
+        select a.NTT_ID, a.NTT_SJ
+             , TO_CHAR(a.FRST_REGIST_PNTTM, 'YYYY-MM-DD HH:MI:SS') AS FRST_REGIST_PNTTM
+             , a.NTT_CN, a.USE_AT, a.BBS_ID, b.USER_NM as FRST_REGISTER_NM, a.FRST_REGISTER_ID
+          from COMTNBBS a, vw_user b
+         where a.BBS_ID = #{bbsId}
+           and a.FRST_REGISTER_ID = b.USER_ID
+           and a.USE_AT = 'Y'
+      order by a.SORT_ORDR DESC, a.NTT_NO asc
+        offset #{firstIndex} limit #{recordCountPerPage}
+    </select>
+
+    <select id="selectGuestArticleListCnt" parameterType="kr.co.ucp.egov.com.cop.bbs.service.BoardVO" resultType="java.lang.Integer">
+        select COUNT(NTT_ID)
+          from COMTNBBS
+         where BBS_ID = #{bbsId}
+           and USE_AT = 'Y'
+    </select>
+
+    <select id="selectLoginUser" parameterType="kr.co.ucp.egov.com.cop.bbs.service.BoardVO" resultType="java.lang.Integer">
+        select COUNT(FRST_REGISTER_ID)
+          from COMTNBLOG
+         where FRST_REGISTER_ID = #{frstRegisterId}
+           and BLOG_ID = #{blogId}
+    </select>
+
+    <select id="selectBlogListManager" parameterType="kr.co.ucp.egov.com.cop.bbs.service.BoardVO" resultMap="boardBlogManager">
+        select A.BBS_ID, A.BLOG_ID, A.BBS_NM, C.USER_NM as FRST_REGISTER_NM
+             , TO_CHAR(A.FRST_REGIST_PNTTM, 'YYYY-MM-DD') AS FRST_REGIST_PNTTM
+             , A.USE_AT
+          from COMTNBBSMASTER A
+          LEFT OUTER join COMTNBLOG B ON A.BLOG_ID = B.BLOG_ID
+          LEFT OUTER join
+               ( select USER_ID, USER_NM from vw_user
+               ) C ON A.FRST_REGISTER_ID = C.USER_ID
+         where A.BLOG_ID = #{blogId}
+           <if test="searchCnd == 0"> and A.BBS_NM LIKE CONCAT ('%', #{searchWrd},'%') </if>
+           <if test="searchCnd == 1"> and A.BBS_INTRCN LIKE CONCAT ('%', #{searchWrd},'%') </if>
+      order by A.FRST_REGIST_PNTTM DESC
+    </select>
+
+    <select id="selectBlogListManagerCnt" parameterType="kr.co.ucp.egov.com.cop.bbs.service.BoardVO" resultType="java.lang.Integer">
+        select COUNT(1)
+          from COMTNBBSMASTER A, COMTNBLOG B
+         where A.BLOG_ID = B.BLOG_ID
+           and B.BLOG_ID = #{blogId}
+           <if test="searchCnd == 0"> and A.BBS_NM LIKE CONCAT ('%', #{searchWrd},'%') </if>
+           <if test="searchCnd == 1"> and A.BBS_INTRCN LIKE CONCAT ('%', #{searchWrd},'%') </if>
+      order by A.FRST_REGIST_PNTTM DESC
+    </select>
+
+    <select id="selectArticleCnOne" parameterType="kr.co.ucp.egov.com.cop.bbs.service.BoardVO" resultMap="boardCnOne">
+        select a.NTT_CN
+          from COMTNBBS a
+          LEFT OUTER join vw_user b ON a.FRST_REGISTER_ID = b.USER_ID
+          LEFT OUTER join COMTNBBSMASTER  c ON a.BBS_ID = c.BBS_ID
+         where a.BBS_ID = #{bbsId}
+           and a.USE_AT = 'Y'
+      order by a.SORT_ORDR DESC
+         limit 1
+    </select>
+
+    <select id="selectBlogNmList" parameterType="kr.co.ucp.egov.com.cop.bbs.service.BoardVO" resultMap="boardMasterList">
+        select A.BBS_ID, A.BLOG_ID, A.BBS_NM
+          from COMTNBBSMASTER A, COMTNBLOG B
+         where A.BLOG_ID = B.BLOG_ID
+           and B.BLOG_ID = #{blogId}
+      order by A.FRST_REGIST_PNTTM DESC
+        offset 0 limit 7
+    </select>
+
+    <select id="selectArticleDetailDefault" parameterType="kr.co.ucp.egov.com.cop.bbs.service.BoardVO" resultMap="boardSubJectList">
+        select a.NTT_ID, a.NTT_SJ, a.NTT_CN, a.FRST_REGISTER_ID
+             , COALESCE(b.USER_NM, a.NTCR_NM) as FRST_REGISTER_NM
+             , TO_CHAR(a.FRST_REGIST_PNTTM, 'YYYY-MM-DD') AS FRST_REGIST_PNTTM
+             , a.RDCNT, a.PARNTSCTT_NO, a.ANSWER_AT, a.ANSWER_LC, a.USE_AT, a.ATCH_FILE_ID
+             , a.BBS_ID, a.NTCE_BGNDE, a.NTCE_ENDDE, a.SJ_BOLD_AT, a.NOTICE_AT, a.SECRET_AT, c.COMMENT_CO
+             , a.NTCR_ID, d.BLOG_ID, d.REPLY_POSBL_AT
+          from COMTNBBS a
+          LEFT OUTER join vw_user b ON a.FRST_REGISTER_ID = b.USER_ID
+          LEFT OUTER join
+               ( select NTT_ID, BBS_ID, COUNT(1) as COMMENT_CO from COMTNCOMMENT
+                  where USE_AT = 'Y' group by NTT_ID, BBS_ID
+               ) c ON a.NTT_ID = c.NTT_ID
+          LEFT OUTER join COMTNBBSMASTER d ON a.BBS_ID = d.BBS_ID
+         where a.BBS_ID = #{bbsId}
+           and a.USE_AT = 'Y'
+      order by a.SORT_ORDR DESC, NTT_NO asc
+           <if test="searchCnd == 5"> limit 5 </if>
+           <if test="searchCnd == 10"> limit 10 </if>
+           <if test="searchCnd == 15"> limit 15 </if>
+           <if test="searchCnd == 20"> limit 20 </if>
+           <if test="searchCnd == 30"> limit 30 </if>
+    </select>
+
+    <select id="selectArticleDetailDefaultCnt" parameterType="kr.co.ucp.egov.com.cop.bbs.service.BoardVO" resultType="java.lang.Integer">
+        select COUNT(*)
+          from COMTNBBS a
+          LEFT OUTER join vw_user b ON a.FRST_REGISTER_ID = b.USER_ID
+          LEFT OUTER join
+               ( select NTT_ID, BBS_ID, COUNT(1) as COMMENT_CO from COMTNCOMMENT
+                  where USE_AT = 'Y' group by NTT_ID, BBS_ID
+               ) c ON a.NTT_ID = c.NTT_ID
+          LEFT OUTER join COMTNBBSMASTER d ON a.BBS_ID = d.BBS_ID
+         where a.BBS_ID = #{bbsId}
+           and a.USE_AT = 'Y'
+      order by a.SORT_ORDR DESC, NTT_NO asc
+    </select>
+
+</mapper>

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ucp.yearend.service.YearendhometaxMapper">
+
+    <select id="stanYyList" parameterType="java.util.HashMap" resultType="egovMap">
+    /* stanYyList */
+        select ROWNUM AS RK
+             , tb.*
+          from ( select DISTINCT STAN_YY
+                   from TB_ACCTCODE
+               order by STAN_YY desc
+               ) tb
+    </select>
+
+    <select id="selectMoney" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectMoney */
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingHeader"/>
+    SELECT TAX.JUMIN_NO, TAX.MEMBER_NAME, MONEY.MONEY_AMT
+       <if test="day1     != null and day1     != '' "> , #{day1} DAY1 </if>
+       <if test="day2     != null and day2     != '' "> , #{day2} DAY2 </if>
+         , #{type} TYPE     , #{org} ORG         , '' REQ_AMT
+      FROM ( SELECT MEMBER_ID , SUM(MONEY_AMT) MONEY_AMT 
+               FROM TB_MAST_MONEY
+              WHERE STAN_YMD LIKE #{stanYy} || '%'
+                AND MEMBER_ID IN ( SELECT MEMBER_ID FROM TB_MEMBER_HOMETAX WHERE AGREE_YN = 'Y' )
+           GROUP BY MEMBER_ID
+           ) MONEY
+   LEFT JOIN TB_MEMBER_HOMETAX TAX ON MONEY.MEMBER_ID = TAX.MEMBER_ID  
+  order by ${sidx} ${sord}
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingBottom"/>
+    </select>
+
+</mapper>

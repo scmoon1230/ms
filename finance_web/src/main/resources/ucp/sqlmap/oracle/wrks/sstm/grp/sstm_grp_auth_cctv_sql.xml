@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.co.ucp.wrks.sstm.grp.service.GrpAuthCctvMapper">
+
+    <!-- 지구명 -->
+    <select id="list_cm_dstrt_cd_mng" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+    /* list_cm_dstrt_cd_mng */
+        select DSTRT_CD
+             , DSTRT_NM
+          from CM_DSTRT_CD_MNG
+         where USE_TY_CD = 'Y'
+      order by DSTRT_NM
+    </select>
+
+    <!-- 그룹 리스트 -->
+    <select id="list_cm_group" parameterType="java.util.HashMap" resultType="egovMap">
+    /* list_cm_group */
+        select *
+          from ( select A.GRP_ID,
+                        A.GRP_NM_KO,
+                        B.AUTH_LVL,
+                        B.AUTH_LVL_NM
+                        <!-- , C.DSTRT_CD, C.DSTRT_NM -->
+                   from CM_GROUP A,
+                        CM_GRP_AUTH_LVL B
+                        <!-- , CM_DSTRT_CD_MNG C -->
+                  where A.GRP_ID = B.GRP_ID
+                    and A.USE_TY_CD = 'Y'
+                    <!-- and A.DSTRT_CD = C.DSTRT_CD -->
+                    <if test="DSTRT_CD != null and DSTRT_CD != '' "> and C.DSTRT_CD = #{DSTRT_CD} </if>
+                    <if test="GRP_NM   != null and GRP_NM   != '' "> and A.GRP_NM_KO LIKE CONCAT('%', #{GRP_NM}, '%') </if>
+               ) A
+      order by A.${sidx} ${sord}
+    </select>
+
+    <!-- 그룹별 사용자 -->
+    <select id="list_cm_grp_user" parameterType="java.util.HashMap" resultType="egovMap">
+    /* list_cm_grp_user */
+        select *
+          from ( select A.GRP_ID,
+                        A.USER_ID,
+                      <if test="saltText == null ">
+                        FN_USER_NM(A.USER_ID) as USER_NM_KO
+                      </if>
+                      <if test="saltText != null ">
+                        FN_USER_NM_DEC(A.USER_ID, #{saltText}::bytea) as USER_NM_KO
+                      </if>
+                   from CM_GRP_USER A
+                      <!-- , CM_USER B -->
+                  where A.USE_TY_CD = 'Y'
+                    <!-- and A.USER_ID = B.USER_ID -->
+                    and A.GRP_ID = #{GRP_ID}
+                    and A.AUTH_LVL = #{AUTH_LVL}::numeric
+               ) A
+      order by A.${sidx} ${sord}
+    </select>
+
+    <!-- 그룹별 사용유형 -->
+    <select id="list_cm_cctv_used" parameterType="java.util.HashMap" resultType="egovMap">
+    /* list_cm_cctv_used */
+        select *
+          from ( select GRP_ID,
+                        AUTH_LVL,
+                        FCLT_USED_TY_CD,
+                        ( select FCLT_USED_TY_NM from CM_TC_FCLT_USED where FCLT_USED_TY_CD = A.FCLT_USED_TY_CD) as FCLT_USED_TY_NM
+                   from CM_CCTV_CTL_USED_TY A
+                  where GRP_ID   = #{GRP_ID}
+                    and AUTH_LVL = #{AUTH_LVL}::numeric
+            ) A
+            order by A.${sidx} ${sord}
+    </select>
+
+    <!-- 시설물용도 팝업 -->
+    <select id="list_fclt_use" parameterType="java.util.HashMap" resultType="egovMap">
+    /* list_fclt_use */
+        select AA.*
+             , ( select COUNT(*)
+                   from CM_TC_FCLT_USED
+                  where USE_TY_CD = 'Y'
+                    and FCLT_USED_TY_CD NOT IN ( select FCLT_USED_TY_CD
+                                                   from CM_CCTV_CTL_USED_TY
+                                                  where GRP_ID   = #{GRP_ID}
+                                                    and AUTH_LVL = #{AUTH_LVL}::numeric
+                                               )
+               ) ROWCNT
+          from ( select ROW_NUMBER() OVER(order by ${sidx} ${sord}) RK
+                      , A.*
+                   from ( select FCLT_USED_TY_CD
+                               , FCLT_USED_TY_NM
+                               , FCLT_KND_CD
+                               , C.CD_NM_KO FCLT_KND_NM
+                               , USE_TY_CD
+                               , B.CD_NM_KO USE_TY_NM
+                               , RGS_USER_ID
+                               , TO_CHAR(RGS_DATE, 'YYYY-MM-DD') RGS_DATE
+                               , UPD_USER_ID
+                               , TO_CHAR(UPD_DATE, 'YYYY-MM-DD') UPD_DATE
+                            from CM_TC_FCLT_USED A
+                       left join ( select CD_ID, CD_NM_KO from CM_TC_CODE where CD_GRP_ID = 'USE_TY' and CD_TY = 'C'
+                                 ) B ON A.USE_TY_CD = B.CD_ID
+                       left join ( select CD_ID, CD_NM_KO from CM_TC_CODE where CD_GRP_ID = 'FCLT_KND' and CD_TY = 'C'
+                                 ) C ON A.FCLT_KND_CD = C.CD_ID
+                   where USE_TY_CD = 'Y'
+                     and A.FCLT_USED_TY_CD NOT IN ( select  FCLT_USED_TY_CD
+                                                      from     CM_CCTV_CTL_USED_TY
+                                                     where     GRP_ID  = #{GRP_ID}
+                                                       and     AUTH_LVL = #{AUTH_LVL}::numeric
+                                                  )
+                        ) A
+               ) AA
+    </select>
+
+    <insert id="insert_cctv_used" parameterType="java.util.HashMap">
+    /* insert_cctv_used */
+        insert into CM_CCTV_CTL_USED_TY
+             ( GRP_ID,         AUTH_LVL,              FCLT_USED_TY_CD,
+               RGS_USER_ID,    RGS_DATE,              UPD_USER_ID,         UPD_DATE )
+      values ( #{GRP_ID},      #{AUTH_LVL}::numeric,  #{FCLT_USED_TY_CD},
+               #{RGS_USER_ID}, NOW(),                 #{UPD_USER_ID},      NOW()    )
+    </insert>
+
+    <delete id="delete_cctv_used" parameterType="java.util.HashMap">
+    /* delete_cctv_used */
+        delete from CM_CCTV_CTL_USED_TY
+         where GRP_ID = #{GRP_ID}
+           and AUTH_LVL = #{AUTH_LVL}::numeric
+           and FCLT_USED_TY_CD = #{FCLT_USED_TY_CD}
+    </delete>
+
+    <!-- 그룹별 사용유형 -->
+    <select id="list_cm_cctv_auth" parameterType="java.util.HashMap" resultType="egovMap">
+    /* list_cm_cctv_auth */
+        select *
+          from ( select GRP_ID,
+                        ( select GRP_NM_KO from CM_GROUP where GRP_ID = A.GRP_ID) as GRP_NM_KO,
+                        AUTH_LVL,
+                        ( select AUTH_LVL_NM from CM_GRP_AUTH_LVL where GRP_ID = A.GRP_ID and AUTH_LVL = A.AUTH_LVL) as AUTH_LVL_NM,
+                        PTZ_CNTR_TY,
+                        CCTV_ACCESS_YN,
+                        CCTV_SEARCH_YN
+                   from CM_CCTV_CTL_PTZ_TY A
+                  where GRP_ID  = #{GRP_ID}
+                    and AUTH_LVL = #{AUTH_LVL}::numeric
+               ) A
+      order by A.${sidx} ${sord}
+    </select>
+
+    <insert id="insert_cctv_auth" parameterType="java.util.HashMap">
+    /* insert_cctv_auth */
+        insert into CM_CCTV_CTL_PTZ_TY
+             ( GRP_ID         , AUTH_LVL             , PTZ_CNTR_TY    , CCTV_ACCESS_YN    , CCTV_SEARCH_YN
+             , RGS_USER_ID    , RGS_DATE             , UPD_USER_ID    , UPD_DATE          )
+        values
+             ( #{GRP_ID}      , #{AUTH_LVL}::numeric , #{PTZ_CNTR_TY} , #{CCTV_ACCESS_YN} , #{CCTV_SEARCH_YN}
+             , #{RGS_USER_ID} , NOW()                , #{UPD_USER_ID} , NOW()             )
+   ON CONFLICT (GRP_ID, AUTH_LVL)
+     DO UPDATE
+           set PTZ_CNTR_TY    = #{PTZ_CNTR_TY}
+             , CCTV_ACCESS_YN = #{CCTV_ACCESS_YN}
+             , CCTV_SEARCH_YN = #{CCTV_SEARCH_YN}
+             , UPD_USER_ID    = #{UPD_USER_ID}
+             , UPD_DATE       = NOW()
+    </insert>
+
+    <delete id="delete_cctv_auth" parameterType="java.util.HashMap">
+    /* delete_cctv_auth */
+        delete from CM_CCTV_CTL_PTZ_TY
+         where GRP_ID = #{GRP_ID}
+           and AUTH_LVL = #{AUTH_LVL}::numeric
+           and PTZ_CNTR_TY = #{PTZ_CNTR_TY}
+    </delete>
+
+</mapper>

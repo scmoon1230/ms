@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ucp.money.service.MoneyamntMapper">
+
+    <select id="selectMoney" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectMoney */
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingHeader"/>
+        select TO_CHAR(TO_DATE(STAN_YMD, 'YYYYMMDD'), 'YYYY-MM-DD') STAN_YMD
+             , ACCT_GB      , ACCT_GB_NAME 
+             , MONEY_CODE  , MONEY_NAME   , WORSHIP_CODE   , WORSHIP_NAME
+             , USER_ID     , USER_NAME    , sum(MONEY_AMT) MONEY_AMT
+          from ( select mm.STAN_YMD    , m.ACCT_GB     , AG.ACCT_GB_NAME 
+                      , mm.MONEY_CODE  , m.MONEY_NAME  , mm.WORSHIP_CODE  , w.WORSHIP_NAME
+                      , mm.USER_ID     , u.USER_NAME   , mm.MONEY_AMT
+                   from TB_MAST_MONEY mm
+              left join TB_MONEY   m  ON m.MONEY_CODE   = mm.MONEY_CODE
+              left join TB_ACCT_GB AG ON AG.ACCT_GB     = M.ACCT_GB 
+              left join TB_WORSHIP w  ON w.WORSHIP_CODE = mm.WORSHIP_CODE
+              left join TB_USER    u  ON u.USER_ID      = mm.USER_ID
+                  where MM.STAN_YMD       = #{stanYmd}
+                    <if test="acctGb       != null and acctGb       != '' "> and M.ACCT_GB       = #{acctGb}       </if>
+                    <if test="moneyCode    != null and moneyCode    != '' "> and MM.MONEY_CODE   = #{moneyCode}    </if>
+                    <if test="worshipCode  != null and worshipCode  != '' "> and MM.WORSHIP_CODE = #{worshipCode}  </if>
+                    <if test="userId       != null and userId       != '' "> and MM.USER_ID      = #{userId}       </if>
+               ) TB
+      group by STAN_YMD, ACCT_GB, ACCT_GB_NAME , MONEY_CODE, MONEY_NAME
+             , WORSHIP_CODE, WORSHIP_NAME, USER_ID, USER_NAME
+      order by ${sidx} ${sord}
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingBottom"/>
+    </select>
+
+    <select id="selectTotalAmnt" parameterType="java.util.HashMap" resultType="String">
+    /* selectTotalAmnt */
+        select nvl(sum(MONEY_AMT),'0') MONEY_AMT
+          from ( select mm.STAN_YMD    , m.ACCT_GB     , AG.ACCT_GB_NAME 
+                      , mm.MONEY_CODE  , m.MONEY_NAME  , mm.WORSHIP_CODE  , w.WORSHIP_NAME
+                      , mm.USER_ID     , u.USER_NAME   , mm.MONEY_AMT
+                   from TB_MAST_MONEY mm
+              left join TB_MONEY   m  ON m.MONEY_CODE   = mm.MONEY_CODE
+              left join TB_ACCT_GB AG ON AG.ACCT_GB     = M.ACCT_GB 
+              left join TB_WORSHIP w  ON w.WORSHIP_CODE = mm.WORSHIP_CODE
+              left join TB_USER    u  ON u.USER_ID      = mm.USER_ID
+                  where MM.STAN_YMD       = #{stanYmd}
+                    <if test="acctGb       != null and acctGb       != '' "> and M.ACCT_GB       = #{acctGb}       </if>
+                    <if test="moneyCode    != null and moneyCode    != '' "> and MM.MONEY_CODE   = #{moneyCode}    </if>
+                    <if test="worshipCode  != null and worshipCode  != '' "> and MM.WORSHIP_CODE = #{worshipCode}  </if>
+                    <if test="userId       != null and userId       != '' "> and MM.USER_ID      = #{userId}       </if>
+               ) TB
+    </select>
+
+    <insert id="insertMoney" parameterType="java.util.HashMap">
+    /* insertMoney */
+        insert into TB_MEMBER
+             ( MEMBER_ID       , MEMBER_NO       , MEMBER_NAME
+             , SEX_TYPE        , TEL_NO          , HPHONE_NO 
+             , POSITION_CODE   , DEPT_CODE       , REGION_CODE
+             , ADDR            , FAMILY_REMARK   , USE_YN        , REG_TIME )
+        values
+             ( #{memberId}     , #{memberNo}     , #{memberName}  
+             , #{sexType}      , #{telNo}        , #{hphoneNo}  
+             , #{positionCode} , #{deptCode}     , #{regionCode}
+             , #{addr}         , #{familyRemark} , #{useYn}      , SYSDATE  )
+    </insert>
+    
+    <update id="updateMoney" parameterType="java.util.HashMap">
+    /* updateMoney */
+        update TB_MEMBER
+           set MEMBER_ID     = #{memberId}
+             , MEMBER_NO     = #{memberNo}
+             , MEMBER_NAME   = #{memberName}
+             , SEX_TYPE      = #{sexType}
+             , TEL_NO        = #{telNo}
+             , HPHONE_NO     = #{hphoneNo}
+             , POSITION_CODE = #{positionCode}
+             , DEPT_CODE     = #{deptCode}
+             , REGION_CODE   = #{regionCode}
+             , ADDR          = #{addr}
+             , FAMILY_REMARK = #{familyRemark}
+             , USE_YN        = #{useYn}
+         where MEMBER_ID = #{memberId}
+    </update>
+
+    <delete id="deleteMoney" parameterType="java.util.HashMap">
+    /* deleteMoney */
+        delete from TB_MEMBER
+         where MEMBER_ID = #{memberId}
+           and MEMBER_NO = #{memberNo}
+    </delete>
+    
+</mapper>

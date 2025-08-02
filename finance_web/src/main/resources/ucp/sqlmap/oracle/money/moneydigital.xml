@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ucp.money.service.MoneydigitalMapper">
+
+    <select id="selectMastUpload" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectMastUpload */
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingHeader"/>
+        select TO_CHAR(TO_DATE(MU.STAN_YMD, 'YYYYMMDD'), 'YYYY-MM-DD') STAN_YMD
+             , MU.STAN_GB      , MU.SEQ_NO
+             , MU.MONEY_TIME   , MU.MEMBER_ID    , MU.MEMBER_NAME  , MU.BIRTH_DAY
+             , MU.MEM_NUM_TYPE , MU.MONEY_NAME_1 , MU.MONEY_NAME_2
+             , MU.MONEY_AMT    , MU.MONEY_TYPE
+             , M.ACCT_GB       , AG.ACCT_GB_NAME , MU.MONEY_CODE   , M.MONEY_NAME
+             , MU.HP_NO        , MU.PRAY_TITLE   , MU.ETC_REMARK   , MU.CLOSE_YN , MU.DET_SEQ
+          from TB_MAST_UPLOAD MU
+     left JOIN TB_MONEY   M  ON MU.MONEY_CODE = M.MONEY_CODE
+       <!--<if test="acctGb     != null and acctGb     != '' "> and M.ACCT_GB         = #{acctGb}       </if>-->
+     left join TB_ACCT_GB AG ON M.ACCT_GB     = AG.ACCT_GB
+         where MU.STAN_YMD = #{stanYmd}
+           <if test="stanGb     != null and stanGb     != '' "> and MU.STAN_GB        = #{stanGb}       </if>
+           <if test="closeYn    != null and closeYn    != '' "> and MU.CLOSE_YN       = #{closeYn}      </if>
+           <if test="birthDay   != null and birthDay   != '' "> and REPLACE(MU.BIRTH_DAY,'.','') LIKE '%' || REPLACE(#{birthDay},'.','') || '%' </if>
+           <if test="memberName != null and memberName != '' "> and MU.MEMBER_NAME LIKE '%' || #{memberName} || '%' </if>
+           <!-- <if test='closeYn    != null and closeYn    == "N" '> and MU.CLOSE_YN     != 'Y'       </if> -->
+      order by ${sidx} ${sord}
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingBottom"/>
+    </select>
+
+    <select id="selectTotalAmnt" parameterType="java.util.HashMap" resultType="String">
+    /* selectTotalAmnt */
+        select nvl(sum(MONEY_AMT),'0') MONEY_AMT
+          from (  select MU.MONEY_AMT
+                 from TB_MAST_UPLOAD MU
+            left JOIN TB_MONEY   M  ON MU.MONEY_CODE = M.MONEY_CODE
+              <!--<if test="acctGb     != null and acctGb     != '' "> and M.ACCT_GB         = #{acctGb}       </if>-->
+                where MU.STAN_YMD = #{stanYmd}
+                  <if test="stanGb     != null and stanGb     != '' "> and MU.STAN_GB        = #{stanGb}       </if>
+                  <if test="closeYn    != null and closeYn    != '' "> and MU.CLOSE_YN       = #{closeYn}      </if>
+                  <if test="birthDay   != null and birthDay   != '' "> and REPLACE(MU.BIRTH_DAY,'.','') LIKE '%' || REPLACE(#{birthDay},'.','') || '%' </if>
+                  <if test="memberName != null and memberName != '' "> and MU.MEMBER_NAME LIKE '%' || #{memberName} || '%' </if>
+                  <!-- <if test='closeYn    != null and closeYn    == "N" '> and MU.CLOSE_YN     != 'Y'       </if> -->
+               ) TB
+    </select>
+
+    <select id="selectMastUploadOne" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectMastUploadOne */
+        select TO_CHAR(TO_DATE(MU.STAN_YMD, 'YYYYMMDD'), 'YYYY-MM-DD') STAN_YMD
+             , MU.STAN_GB      , MU.SEQ_NO
+             , MU.MONEY_TIME   , MU.MEMBER_ID    , MU.MEMBER_NAME  , MU.BIRTH_DAY
+             , MU.MEM_NUM_TYPE , MU.MONEY_NAME_1 , MU.MONEY_NAME_2
+             , MU.MONEY_AMT    , MU.MONEY_TYPE
+             , M.ACCT_GB       , AG.ACCT_GB_NAME , MU.MONEY_CODE   , M.MONEY_NAME
+             , MU.HP_NO        , MU.PRAY_TITLE   , MU.ETC_REMARK   , MU.CLOSE_YN  , MU.DET_SEQ
+          from TB_MAST_UPLOAD MU
+     left JOIN TB_MONEY   M  ON MU.MONEY_CODE = M.MONEY_CODE
+       <!--<if test="acctGb     != null and acctGb     != '' "> and M.ACCT_GB         = #{acctGb}       </if>-->
+     left join TB_ACCT_GB AG ON M.ACCT_GB     = AG.ACCT_GB
+         where MU.STAN_YMD = #{stanYmd}
+           and MU.STAN_GB  = #{stanGb}
+           and MU.SEQ_NO   = #{seqNo}
+    </select>
+
+    <insert id="insertMastUpload" parameterType="java.util.HashMap">
+    /* insertMastUpload */
+        insert into TB_MAST_UPLOAD
+             ( STAN_YMD      , STAN_GB       , SEQ_NO
+             , MONEY_TIME    , MEMBER_ID     , MEMBER_NAME   , BIRTH_DAY
+             , MONEY_NAME_1  , MONEY_NAME_2  , MONEY_AMT
+             , PRAY_TITLE    , ETC_REMARK    , HP_NO         , MONEY_TYPE
+             , TR_NO         , MEMBER_NUM    , TERM_GB       , SETTLE_GB
+             , MONEY_CODE    , DET_SEQ       , CLOSE_YN      , USER_ID     , MEM_NUM_TYPE )
+        values
+             ( #{stanYmd}    , #{stanGb}     , #{seqNo}
+             , #{moneyTime}  , #{memberId}   , #{memberName} , #{birthDay}
+             , #{moneyName1} , #{moneyName2} , #{moneyAmt}
+             , #{prayTitle}  , #{etcRemark}  , #{hpNo}       , #{moneyType}
+             , #{trNo}       , #{memberNum}  , #{termGb}     , #{settleGb}
+             , #{moneyCode}  , #{detSeq}     , #{closeYn}    , #{userId}   , #{memNumType} )
+    </insert>
+    
+    <update id="updateMastUpload" parameterType="java.util.HashMap">
+    /* updateMastUpload */
+        update TB_MAST_UPLOAD
+           set MEMBER_ID    = #{memberId}
+             , DET_SEQ      = #{detSeq}
+             , CLOSE_YN     = #{closeYn}
+         where STAN_YMD = #{stanYmd}
+           and STAN_GB  = #{stanGb}
+           and SEQ_NO   = #{seqNo}
+    </update>
+    
+    <delete id="deleteMastUpload" parameterType="java.util.HashMap">
+    /* deleteMastUpload */
+        delete from TB_MAST_UPLOAD
+         where STAN_YMD = #{stanYmd}
+           and STAN_GB  = #{stanGb}
+           and SEQ_NO   = #{seqNo}
+    </delete>
+    
+    
+    <select id="selectNewDetSeq" parameterType="java.util.HashMap" resultType="String">
+    /* selectNewDetSeq */
+        SELECT NVL(MAX(DET_SEQ),0)+1
+          from TB_MAST_MONEY
+         where STAN_YMD = #{stanYmd}
+           and MONEY_CODE = #{moneyCode}
+    </select>
+    
+    <insert id="insertMastMoney" parameterType="java.util.HashMap">
+    /* insertMastMoney */
+        insert into TB_MAST_MONEY
+             ( STAN_YMD
+             , DET_SEQ
+             , MONEY_CODE      , WORSHIP_CODE
+             , MEMBER_ID       , MEMBER_NAME
+             , MONEY_AMT       , USER_ID
+             , INPUT_TIME
+             , ID_EXIST        , CLOSE_YN        )
+        values
+             ( #{stanYmd}
+             , #{detSeq}
+             , #{moneyCode}    , #{worshipCode}
+             , #{memberId}     , (SELECT MEMBER_NAME from TB_MEMBER where MEMBER_ID = #{memberId})
+             , #{moneyAmt}     , #{userId}
+             , (SELECT TO_CHAR(SYSTIMESTAMP, 'YYYYMMDDHH24MISSFF2') || '-' || #{index} from DUAL)
+             , 'Y'             , 'N'             )
+    </insert>
+    
+</mapper>

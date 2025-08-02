@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ucp.report.service.RprtsumregionMapper">
+
+    <select id="selectDeptRegion" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectDeptRegion */
+        select DEPT_CODE, max(REGION_NUM) REGION_NUM
+          from TB_DEPT_REGION tdr
+         where 1 = 1
+           <if test="deptCode   != null and deptCode   != '' "> and DEPT_CODE   = #{deptCode}   </if>
+      group by DEPT_CODE 
+      order by DEPT_CODE 
+    </select>
+
+
+<!-- 
+    <select id="selectDurationYear" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectDurationYear */
+        select FROM_YMD STAN_YMD
+             , TO_CHAR(TO_DATE(FROM_YMD,'YYYYMMDD'),'YYYY-MM-DD')
+               || ' ~ ' ||
+               TO_CHAR(TO_DATE(END_YMD,'YYYYMMDD'),'YYYY-MM-DD') DURATION
+          from TB_ACCTYEAR ta
+         where ta.STAN_YY = #{stanYy}
+    </select>
+ -->
+
+    <select id="selectNextMonth" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectNextMonth */
+        select TO_CHAR(ADD_MONTHS(TRUNC(TO_DATE(#{stanYmd},'YYYYMMDD'),'MM'),1),'YYYYMMDD') STAN_YMD
+          from DUAL 
+    </select>
+
+
+
+    <select id="selectMoneyMonth" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectMoneyMonth */
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingHeader"/>
+        select M.ACCT_GB     , AG.ACCT_GB_NAME
+             , MM.MONEY_CODE , M.MONEY_NAME
+             , nvl(sum(MM.MONEY_AMT),0) MONEY_AMT
+          from TB_MAST_MONEY MM
+     left join TB_MONEY   M  ON M.MONEY_CODE = MM.MONEY_CODE
+     left join TB_ACCT_GB AG ON AG.ACCT_GB   = M.ACCT_GB
+         where MM.STAN_YMD BETWEEN TO_CHAR(TRUNC(TO_DATE(#{stanYmd},'YYYYMMDD'),'MM'),'YYYYMMDD')
+                               and TO_CHAR(LAST_DAY(TO_DATE(#{stanYmd},'YYYYMMDD')),'YYYYMMDD')
+           <if test="moneyCode != null and moneyCode != '' "> and M.MONEY_CODE = #{moneyCode} </if>
+           <if test="deptCode   != null and deptCode   != '' "> and MM.DEPT_CODE   = #{deptCode}   </if>
+           <if test="regionCode != null and regionCode != '' "> and MM.REGION_CODE = #{regionCode} </if>
+      group by MM.MONEY_CODE , M.MONEY_NAME   , M.ACCT_GB     , AG.ACCT_GB_NAME
+      order by ${sidx} ${sord}
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingBottom"/>
+    </select>
+
+    <select id="selectMoneyYear" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectMoneyYear */
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingHeader"/>
+        select M.ACCT_GB     , AG.ACCT_GB_NAME
+             , MM.MONEY_CODE , M.MONEY_NAME
+             , nvl(sum(MM.MONEY_AMT),0) MONEY_AMT
+          from TB_MAST_MONEY MM
+     left join TB_MONEY   M  ON M.MONEY_CODE = MM.MONEY_CODE
+     left join TB_ACCT_GB AG ON AG.ACCT_GB   = M.ACCT_GB
+         where 1=1
+           and MM.STAN_YMD BETWEEN #{startYmd} and #{endYmd}
+       <!--AND MM.STAN_YMD BETWEEN ( select AY.FROM_YMD from TB_ACCTYEAR AY where AY.STAN_YY = #{stanYy} )
+                               and ( select AY.END_YMD from TB_ACCTYEAR AY where AY.STAN_YY = #{stanYy} )-->
+           <if test="moneyCode  != null and moneyCode  != '' "> and M.MONEY_CODE   = #{moneyCode}  </if>
+           <if test="deptCode   != null and deptCode   != '' "> and MM.DEPT_CODE   = #{deptCode}   </if>
+           <if test="regionCode != null and regionCode != '' "> and MM.REGION_CODE = #{regionCode} </if>
+      group by MM.MONEY_CODE , M.MONEY_NAME   , M.ACCT_GB     , AG.ACCT_GB_NAME
+      order by ${sidx} ${sord}
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingBottom"/>
+    </select>
+
+
+
+    <select id="selectMonthAmnt" parameterType="java.util.HashMap" resultType="String">
+    /* selectMonthAmnt */
+        select nvl(sum(MM.MONEY_AMT),0) MONEY_AMT
+          from TB_MAST_MONEY MM
+     left join TB_MONEY   M  ON M.MONEY_CODE = MM.MONEY_CODE
+     left join TB_ACCT_GB AG ON AG.ACCT_GB   = M.ACCT_GB
+         where MM.STAN_YMD BETWEEN TO_CHAR(TRUNC(TO_DATE(#{stanYmd},'YYYYMMDD'),'MM'),'YYYYMMDD')
+                               and TO_CHAR(LAST_DAY(TO_DATE(#{stanYmd},'YYYYMMDD')),'YYYYMMDD')
+           <if test="moneyCode != null and moneyCode != '' "> and M.MONEY_CODE = #{moneyCode} </if>
+           <if test="deptCode   != null and deptCode   != '' "> and MM.DEPT_CODE   = #{deptCode}   </if>
+           <if test="regionCode != null and regionCode != '' "> and MM.REGION_CODE = #{regionCode} </if>
+    </select>
+
+    <select id="selectTotalAmnt" parameterType="java.util.HashMap" resultType="String">
+    /* selectTotalAmnt */
+        select nvl(sum(MM.MONEY_AMT),0) MONEY_AMT
+          from TB_MAST_MONEY MM
+     left join TB_MONEY   M  ON M.MONEY_CODE = MM.MONEY_CODE
+     left join TB_ACCT_GB AG ON AG.ACCT_GB   = M.ACCT_GB
+         where 1=1
+           and MM.STAN_YMD BETWEEN #{startYmd} and #{endYmd}
+       <!--AND MM.STAN_YMD BETWEEN ( select AY.FROM_YMD from TB_ACCTYEAR AY
+                                      where STAN_YY = TO_CHAR(TRUNC(TO_DATE(#{stanYmd},'YYYYMMDD'),'YY'),'YYYY')
+                                   )
+                               and TO_CHAR(LAST_DAY(TO_DATE(#{stanYmd},'YYYYMMDD')),'YYYYMMDD')-->
+           <if test="moneyCode != null and moneyCode != '' "> and M.MONEY_CODE = #{moneyCode} </if>
+           <if test="deptCode   != null and deptCode   != '' "> and MM.DEPT_CODE   = #{deptCode}   </if>
+           <if test="regionCode != null and regionCode != '' "> and MM.REGION_CODE = #{regionCode} </if>
+    </select>
+
+</mapper>

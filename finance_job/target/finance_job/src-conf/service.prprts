@@ -1,0 +1,57 @@
+#======================================================================
+## 마크애니 영상암호화 요청 및 result.xml 처리
+#======================================================================
+SERVICE_NAME=finance_job
+LOGFILE_PATH=D:/cubeapps/logs
+
+#=======================================================================
+fn.db.drv1=oracle.jdbc.driver.OracleDriver
+fn.db.url1=jdbc:oracle:thin:@127.0.0.1:1521:XE
+#db.db.url1=jdbc:oracle:thin:@192.168.1.98:1521:MS
+fn.db.usr1=MS
+fn.db.pwd1=ms
+
+fn.db.drv2=oracle.jdbc.driver.OracleDriver
+fn.db.url2=jdbc:oracle:thin:@127.0.0.1:1521:XE
+#db.db.url2=jdbc:oracle:thin:@192.168.1.98:1521:MS
+fn.db.usr2=MS2
+fn.db.pwd2=ms2
+
+
+
+
+
+
+
+
+
+
+
+
+db_type=postgresql
+
+# pve
+pve.db.drv=org.postgresql.Driver
+pve.db.url=jdbc:postgresql://127.0.0.1:53432/pve48120
+pve.db.usr=pve
+pve.db.pwd=smart12#$
+
+#=======================================================================
+# swip
+swip.db.drv=com.tmax.tibero.jdbc.TbDriver
+swip.db.url=jdbc:tibero:thin:@192.168.1.30:53629:SWIP
+swip.db.usr=SWIP_ADC
+swip.db.pwd=SWIP_ADC12#$
+
+#=======================================================================
+# gis
+gis.db.drv=org.postgresql.Driver
+gis.db.url=jdbc:postgresql://100.10.10.121:5432/xeus
+gis.db.usr=andong
+gis.db.pwd=andong12!
+
+#=======================================================================
+# 암호화모듈로 한번에 요청할 개수(2,4,6,8)
+#----------------------------------------------------------------------
+#ONETIME_ENC_RQST_CNT=4
+

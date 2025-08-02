@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ucp.fin.service.FinmngMapper">
+
+    <select id="selectFinance" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectFinance */
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingHeader"/>
+        select FI.ASSET_CODE       , FI.ASSET_NAME 
+             , FI.ASSET_GB 
+             , CASE WHEN FI.ASSET_GB = '1' THEN '정기예적금'
+                    WHEN FI.ASSET_GB = '2' THEN '일반예금'
+                    WHEN FI.ASSET_GB = '3' THEN '대여금'
+                    WHEN FI.ASSET_GB = '9' THEN '기타'
+                    ELSE '-'
+                END AS ASSET_GB_NAME
+             , FI.ACCT_GB          , AG.ACCT_GB_NAME         , FI.BANK_NAME        , FI.ACCOUNT_NO
+             , TO_CHAR(TO_DATE(FI.ISSUE_YMD, 'YYYYMMDD'), 'YYYY-MM-DD') ISSUE_YMD
+             , SUBSTR(FI.MTY_YMD,0,4) ||'-'|| SUBSTR(FI.MTY_YMD,5,2) ||'-'|| SUBSTR(FI.MTY_YMD,7,2) MTY_YMD
+             , FI.REMARK                                     , FI.USE_YN  
+          from TB_FINANCE_INFO FI
+     left join TB_ACCT_GB      AG ON AG.ACCT_GB = FI.ACCT_GB
+         where 1 = 1
+           <if test="assetGb    != null and assetGb    != '' "> and FI.ASSET_GB   = #{assetGb}     </if>
+           <if test="assetGbNot != null and assetGbNot != '' "> and FI.ASSET_GB   <![CDATA[<>]]> #{assetGbNot} </if>
+           <if test="acctGb     != null and acctGb     != '' "> and FI.ACCT_GB    = #{acctGb}      </if>
+           <if test="useYn      != null and useYn      != '' "> and FI.USE_YN     = #{useYn}       </if>
+           <if test="assetCode  != null and assetCode  != '' "> and FI.ASSET_CODE LIKE #{assetCode} || '%' </if>
+           <if test="assetName  != null and assetName  != '' "> and FI.ASSET_NAME LIKE #{assetName} || '%' </if>
+           <if test="accountNo  != null and accountNo  != '' "> and FI.ACCOUNT_NO LIKE #{accountNo} || '%' </if>
+      order by ${sidx} ${sord}
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingBottom"/>
+    </select>
+	<!-- 
+    <select id="selectFinanceOne" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectFinanceOne */
+        select FI.ASSET_CODE       , FI.ASSET_NAME 
+             , FI.ASSET_GB 
+             , CASE WHEN FI.ASSET_GB = '1' THEN '정기예적금'
+                    WHEN FI.ASSET_GB = '2' THEN '일반예금'
+                    WHEN FI.ASSET_GB = '3' THEN '대여금'
+                    WHEN FI.ASSET_GB = '9' THEN '기타'
+                    ELSE '-'
+                END AS ASSET_GB_NAME
+             , FI.ACCT_GB          , AG.ACCT_GB_NAME         , FI.BANK_NAME        , FI.ACCOUNT_NO
+             , TO_CHAR(TO_DATE(FI.ISSUE_YMD, 'YYYYMMDD'), 'YYYY-MM-DD') ISSUE_YMD
+             , SUBSTR(FI.MTY_YMD,0,4) ||'-'|| SUBSTR(FI.MTY_YMD,5,2) ||'-'|| SUBSTR(FI.MTY_YMD,7,2) MTY_YMD
+             , FI.REMARK                                     , FI.USE_YN  
+          from TB_FINANCE_INFO FI
+     left join TB_ACCT_GB      AG ON AG.ACCT_GB = FI.ACCT_GB
+         where 1 = 1
+           <if test="assetName != null and assetName != '' "> and FI.ASSET_NAME LIKE '%' || #{assetName} || '%' </if>
+           <if test="accountNo != null and accountNo != '' "> and FI.ACCOUNT_NO LIKE '%' || #{accountNo} || '%' </if>
+           <if test="assetCode != null and assetCode != '' "> and FI.ASSET_CODE = #{assetCode} </if>
+           <if test="assetGb   != null and assetGb   != '' "> and FI.ASSET_GB   = #{assetGb}   </if>
+           <if test="acctGb    != null and acctGb    != '' "> and FI.ACCT_GB    = #{acctGb}    </if>
+           <if test="useYn     != null and useYn     != '' "> and FI.USE_YN     = #{useYn}     </if>
+    </select>
+	 -->
+    <insert id="insertFinance" parameterType="java.util.HashMap">
+    /* insertFinance */
+        insert into TB_FINANCE_INFO
+             ( ASSET_CODE   , ASSET_NAME   , ACCT_GB     , ASSET_GB
+             , BANK_NAME    , ACCOUNT_NO   , ISSUE_YMD   , MTY_YMD
+             , REMARK       , USE_YN        )
+        values
+             ( #{assetCode} , #{assetName} , #{acctGb}   , #{assetGb}
+             , #{bankName}  , #{accountNo} , #{issueYmd} , #{mtyYmd}
+             , #{remark}    , #{useYn}      )
+    </insert>
+    
+    <update id="updateFinance" parameterType="java.util.HashMap">
+    /* updateFinance */
+        update TB_FINANCE_INFO
+           set ASSET_NAME  = #{assetName}
+             , ACCT_GB     = #{acctGb}
+             , ASSET_GB    = #{assetGb}
+             , BANK_NAME   = #{bankName}
+             , ACCOUNT_NO  = #{accountNo}
+             , ISSUE_YMD   = #{issueYmd}
+             , MTY_YMD     = #{mtyYmd}
+             , REMARK      = #{remark}
+             , USE_YN      = #{useYn}
+         where ASSET_CODE = #{assetCode}
+    </update>
+
+    <delete id="deleteFinance" parameterType="java.util.HashMap">
+    /* deleteFinance */
+        delete from TB_FINANCE_INFO
+         where ASSET_CODE = #{assetCode}
+    </delete>
+    
+</mapper>

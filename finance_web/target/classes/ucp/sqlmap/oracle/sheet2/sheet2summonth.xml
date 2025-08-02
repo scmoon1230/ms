@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ucp.sheet2.service.Sheet2summonthMapper">
+
+    <sql id="sheetSummonthSql">
+        select MAS.STAN_YM    , MAS.ACCT_GB
+             , (SELECT ACCT_GB_NAME from TB_ACCT_GB AG where AG.ACCT_GB = MAS.ACCT_GB) ACCT_GB_NAME
+             , MAS.ACCT_CODE  , B.ACCT_NAME  , B.PRINT_NAME, B.INOUT_GB, B.ACCT_LEVEL
+             , CASE WHEN B.INOUT_GB='수입' THEN MAS.MONEY_AMT ELSE 0 END IN_AMT
+             , CASE WHEN B.INOUT_GB='지출' THEN MAS.MONEY_AMT ELSE 0 END OUT_AMT
+          from TB_MAST_ACCTSUM MAS
+             , ( select X.ACCT_GB
+                      , X.STAN_YY, SUBSTR(Z.FROM_YMD,0,6) FROM_YMD, SUBSTR(Z.END_YMD,0,6) END_YMD
+                      , X.ACCT_CODE  , X.ACCT_NAME , X.PRINT_NAME , X.INOUT_GB, X.ACCT_LEVEL
+                      , Y.ACCT_NAME  AS UP_NAME    , Y.PRINT_NAME AS UP_PNAME
+                   from TB_ACCTCODE X
+                      , TB_ACCTCODE Y
+                      , TB_ACCTYEAR Z
+                  where X.ACCT_GB = Y.ACCT_GB
+                    and X.STAN_YY = Y.STAN_YY
+                    and X.ACCT_UP = Y.ACCT_CODE
+                    and X.STAN_YY = Z.STAN_YY
+                    and X.STAN_YY = SUBSTR(#{stanYm},0,4)
+               ) B
+         where MAS.ACCT_GB   = B.ACCT_GB
+           and MAS.ACCT_CODE = B.ACCT_CODE
+           and MAS.STAN_YM BETWEEN B.FROM_YMD and B.END_YMD
+           <if test="stanYm   != null and stanYm   != '' "> and MAS.STAN_YM  = #{stanYm}   </if>
+           <if test="acctGb   != null and acctGb   != '' "> and MAS.ACCT_GB  = #{acctGb}   </if>
+    </sql>
+
+    <select id="selectSheet2Summonth" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectSheet2Summonth */
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingHeader"/>
+    <include refid="sheetSummonthSql"/>
+      order by ${sidx} ${sord}
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingBottom"/>
+    </select>
+
+    <select id="selectTotalAmnt" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectTotalAmnt */
+        select INOUT_GB, SUM(IN_AMT) IN_TOTAL_AMNT, SUM(OUT_AMT) OUT_TOTAL_AMNT
+          from (
+    <include refid="sheetSummonthSql"/>
+               ) TB
+      group by INOUT_GB
+    </select>
+
+    <insert id="insertSheet" parameterType="java.util.HashMap">
+    /* insertSheet */
+        insert into TB_MEMBER
+             ( MEMBER_ID       , MEMBER_NO       , MEMBER_NAME
+             , SEX_TYPE        , TEL_NO          , HPHONE_NO 
+             , POSITION_CODE   , DEPT_CODE       , REGION_CODE
+             , ADDR            , FAMILY_REMARK   , USE_YN        , REG_TIME )
+        values
+             ( #{memberId}     , #{memberNo}     , #{memberName}  
+             , #{sexType}      , #{telNo}        , #{hphoneNo}  
+             , #{positionCode} , #{deptCode}     , #{regionCode}
+             , #{addr}         , #{familyRemark} , #{useYn}      , SYSDATE  )
+    </insert>
+    
+    <update id="updateSheet" parameterType="java.util.HashMap">
+    /* updateSheet */
+        update TB_MEMBER
+           set MEMBER_ID     = #{memberId}
+             , MEMBER_NO     = #{memberNo}
+             , MEMBER_NAME   = #{memberName}
+             , SEX_TYPE      = #{sexType}
+             , TEL_NO        = #{telNo}
+             , HPHONE_NO     = #{hphoneNo}
+             , POSITION_CODE = #{positionCode}
+             , DEPT_CODE     = #{deptCode}
+             , REGION_CODE   = #{regionCode}
+             , ADDR          = #{addr}
+             , FAMILY_REMARK = #{familyRemark}
+             , USE_YN        = #{useYn}
+         where MEMBER_ID = #{memberId}
+    </update>
+
+    <delete id="deleteSheet" parameterType="java.util.HashMap">
+    /* deleteSheet */
+        delete from TB_MEMBER
+         where MEMBER_ID = #{memberId}
+           and MEMBER_NO = #{memberNo}
+    </delete>
+    
+</mapper>

@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ucp.mntr.vms.service.VmsMapper">
+
+    <select id="selectMngMemberList" parameterType="map" resultType="egovMap">
+    /* selectMngMemberList */
+        select CF.FCLT_ID             , CF.FCLT_LBL_NM
+             , CF.FCLT_KND_CD         , FN_GET_TC_CODE('FCLT_KND', CF.FCLT_KND_CD) as FCLT_KND_NM
+             , CF.FCLT_KND_DTL_CD     , FN_GET_TC_CODE(CF.FCLT_KND_CD, CF.FCLT_KND_DTL_CD) as FCLT_KND_DTL_NM
+             , CF.FCLT_USED_TY_CD     , ( select CU.FCLT_USED_TY_NM from CM_TC_FCLT_USED CU where   CF.FCLT_USED_TY_CD = CU.FCLT_USED_TY_CD ) as FCLT_USED_TY_NM
+             , CF.DSTRT_CD            , (select DSTRT_NM from CM_DSTRT_CD_MNG where USE_TY_CD = 'Y' and DSTRT_CD  = CF.DSTRT_CD ) as DSTRT_NM
+             , CF.ROAD_ADRES_NM       , CF.LOTNO_ADRES_NM
+             , CF.POINT_X             , CF.POINT_Y
+             , CF.CCTV_OSVT_X         , CF.CCTV_OSVT_Y
+             , ( ATAN2( ( CF.CCTV_OSVT_X - CF.POINT_X ), ( CF.CCTV_OSVT_Y - CF.POINT_Y ) ) * 180 / 3.141592653589 ) as CCTV_OSVT_AG
+             , CF.FCLT_STTUS
+             , FN_GET_TC_CODE('FCLT_STTUS', COALESCE(CF.FCLT_STTUS, '2')) as FCLT_STTUS_NM
+             , CF.FCLT_GDSDT_TY
+             , CSC.VIEWER_TY_CD
+             , CF.FCLT_UID
+             , CF.LINK_VMS_UID
+             , CF.LINK_VMS_UID as GW_VMS_UID
+             , COALESCE(NULLIF(W.NETWORK_MP_IP, ''), CDCM.VRS_WEBRTC_ADDR) as VRS_WEBRTC_ADDR
+             , COALESCE(NULLIF(R.NETWORK_MP_IP, ''), CDCM.VRS_RTSP_ADDR)   as VRS_RTSP_ADDR
+          from CM_FACILITY CF
+          join ( select POINT_X, POINT_Y from CM_FACILITY where FCLT_ID = #{fcltId}
+               ) FCLT ON CF.POINT_X = FCLT.POINT_X and CF.POINT_Y = FCLT.POINT_Y
+     left join CM_SYS_CODE CSC on CF.SYS_CD = CSC.SYS_CD and CSC.VIEWER_TY_CD = 'VMS'
+     left join CM_DSTRT_CD_MNG CDCM on CF.DSTRT_CD = CDCM.DSTRT_CD
+     left join ( select A.NETWORK_MP_IP, A.DSTRT_CD from CM_MP_NETWORK_IP A, CM_MP_CONN_IP B
+                  where '${networkIp}' LIKE REPLACE(B.CONN_IP, 'X', '%') and A.NETWORK_ID = B.NETWORK_ID and A.NETWORK_TY = 'VRS_WEBRTC'
+               ) W on CF.DSTRT_CD = W.DSTRT_CD
+     left join ( select DISTINCT NETWORK_MP_IP, A.DSTRT_CD from CM_MP_NETWORK_IP A, CM_MP_CONN_IP B
+                  where '${networkIp}' LIKE REPLACE(B.CONN_IP, 'X', '%') and A.NETWORK_ID = B.NETWORK_ID and A.NETWORK_TY = 'VRS_RTSP'
+               ) R on CF.DSTRT_CD = R.DSTRT_CD
+         where CF.USE_TY_CD = 'Y'
+           and CF.FCLT_KND_CD = 'CTV'
+           and CF.FCLT_STTUS = '0'
+      order by CASE WHEN FCLT_ID = #{fcltId} THEN 0 ELSE 1 END asc
+               , FCLT_GDSDT_TY
+               , FCLT_ID
+               , FCLT_KND_DTL_CD DESC
+        limit 9
+    </select>
+
+    <select id="selectSameLocationList" parameterType="map" resultType="egovMap">
+    /* selectSameLocationList */
+        select *
+          from ( select CF.FCLT_ID
+                      , CF.FCLT_LBL_NM
+                      , CF.LINK_VMS_UID
+                      , CF.FCLT_UID
+                      , CF.LINK_VMS_UID as GW_VMS_UID
+                      , COALESCE(W.NETWORK_MP_IP, CDCM.VRS_WEBRTC_ADDR) as VRS_WEBRTC_ADDR
+                      , COALESCE(R.NETWORK_MP_IP, CDCM.VRS_RTSP_ADDR)   as VRS_RTSP_ADDR
+                      , CF.CCTV_CHANNEL
+                      , CF.GATE_WAY
+                      , CF.SVR_CONN_IP
+                      , CF.SVR_CONN_ID
+                      , CF.SVR_CONN_PW
+                      , CF.SVR_CONN_PORT
+                      , CF.FCLT_KND_CD
+                      , CF.FCLT_KND_DTL_CD
+                      , CF.MNG_SN
+                      , CF.SYS_CD
+                      , CF.FCLT_STTUS
+                      , CF.FCLT_USED_TY_CD
+                      , CF.FCLT_GDSDT_TY
+                      , CF.LOTNO_ADRES_NM
+                      , CF.ROAD_ADRES_NM
+                      , CF.POINT_X
+                      , CF.POINT_Y
+                      , CF.USE_TY_CD
+                   from CM_FACILITY CF
+              left join CM_SYS_CODE CSC on CF.SYS_CD = CSC.SYS_CD
+              left join CM_DSTRT_CD_MNG CDCM on CF.DSTRT_CD = CDCM.DSTRT_CD
+              left join ( select A.NETWORK_MP_IP, A.DSTRT_CD from CM_MP_NETWORK_IP A, CM_MP_CONN_IP B
+                           where '${networkIp}' LIKE REPLACE(B.CONN_IP, 'X', '%') and A.NETWORK_ID = B.NETWORK_ID and A.NETWORK_TY = 'VRS_WEBRTC'
+                        ) W on CF.DSTRT_CD = W.DSTRT_CD
+              left join ( select DISTINCT NETWORK_MP_IP, A.DSTRT_CD from CM_MP_NETWORK_IP A, CM_MP_CONN_IP B
+                           where '${networkIp}' LIKE REPLACE(B.CONN_IP, 'X', '%') and A.NETWORK_ID = B.NETWORK_ID and A.NETWORK_TY = 'VRS_RTSP'
+                        ) R on CF.DSTRT_CD = R.DSTRT_CD
+                   join ( select FCLT_ID
+                               , MNG_SN
+                               , POINT_X
+                               , POINT_Y
+                            from CM_FACILITY
+                           where FCLT_ID = #{fcltId}
+                        ) A on CF.POINT_X = A.POINT_X and CF.POINT_Y = A.POINT_Y
+                  where 1 = 1
+                    and CF.USE_TY_CD        = 'Y'
+                    and CF.FCLT_STTUS       = '0'
+                    and CF.FCLT_KND_CD      = 'CTV'
+                    and CSC.VIEWER_TY_CD    = 'VMS'
+               order by FCLT_GDSDT_TY
+                      , FCLT_LBL_NM
+               ) FLCT
+         limit 5
+    </select>
+
+    <insert id="insertPtzLog" parameterType="vmsLog" keyProperty="seqNo">
+    /* insertPtzLog */
+        insert into UM_CCTV_PTZ_LOG
+             ( SEQ_NO
+             , VIEW_RQST_NO
+             , FCLT_ID                            , USER_ID
+             , PTZ_CMD                            , PTZ_DATE
+             , EVT_OCR_NO
+             )
+        select #{seqNo} as SEQ_NO
+             , #{viewRqstNo} as VIEW_RQST_NO
+             , CF.FCLT_ID                         , #{userId}     as USER_ID
+             , #{ptzCmd}     as PTZ_CMD           , NOW()         as PTZ_DATE
+             , #{evtOcrNo}   as EVT_OCR_NO
+          from CM_FACILITY CF
+         where CF.FCLT_ID = #{fcltId}
+    </insert>
+    
+    <insert id="insertViewLog" parameterType="vmsLog" keyProperty="seqNo">
+    /* insertViewLog */
+        insert into UM_CCTV_VIEW_LOG
+             ( SEQ_NO
+             , DSTRT_CD                           , VIEW_RQST_NO
+             , FCLT_ID                            , USER_ID
+             , CONN_DATE                          , CONN_TIME
+             , END_DATE
+             , VDO_SEA_YMDHMS_FR                  , VDO_SEA_YMDHMS_TO
+             , EVT_OCR_NO
+             )
+        select #{seqNo}      as SEQ_NO
+             , #{dstrtCd}    as DSTRT_CD          , #{viewRqstNo} as VIEW_RQST_NO
+             , CF.FCLT_ID    as FCLT_ID           , #{userId}     as USER_ID
+             , NOW()         as CONN_DATE         , ''            as CONN_TIME
+             , NOW()         as END_DATE
+             , #{videoSeaYmdHmsFr}                , #{videoSeaYmdHmsTo}
+             , #{evtOcrNo}   as EVT_OCR_NO
+          from CM_FACILITY CF
+         where CF.FCLT_ID  = #{fcltId}
+    </insert>
+    
+</mapper>

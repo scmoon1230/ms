@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.co.ucp.link.cmmn.service.LinkCmmnMapper">
+
+    <select id="selectListDstrtInfo" parameterType="map"  resultType="cmlMap2">
+    /* selectListDstrtInfo */
+        select A.DSTRT_CD
+             , A.DSTRT_NM
+             , A.LINK_URL
+             , B.AUTH_KEY
+             , B.ALIVE_CHK_RSPNS_CD
+          from CM_DSTRT_CD_MNG        A
+     left join CM_AUTH_KEY B ON A.DSTRT_CD = B.DSTRT_CD
+         where A.USE_TY_CD = 'Y'
+           <if test='dstrtCd != null and dstrtCd != "" and dstrtCd != "ALL"'>
+           and ( A.DSTRT_CD = #{dstrtCd} OR A.LG_DONG_CD_BASE LIKE '%' || #{dstrtCd} || '%' )
+           </if>
+           and A.DSTRT_CD != #{wDstrtCd}
+    </select>
+
+    <select id="selectDstrtLinkAddrList" resultType="cmlMap2" parameterType="map">
+    /* selectDstrtLinkAddrList */
+        select S.*
+            ,  S.LINK_URL || S.LINK_URI AS LINK_ADDR
+          from ( select A.DSTRT_CD            , A.DSTRT_NM
+                      , A.LINK_URL
+                 <!-- , C.AUTH_KEY         , C.ALIVE_CHK_RSPNS_CD -->
+                      , COALESCE(NULLIF(B.LINK_YMD_HMS_LAST,''), '00001231121515') AS FR_YMD_HMS
+                 <!-- , ( select LINK_URI from WD_LINK_INFO where LINK_ID = #{linkId}
+                        ) AS LINK_URI -->
+                      , #{linkUri} AS LINK_URI
+                   from CM_DSTRT_CD_MNG A
+              left join WD_LINK_WORK B ON A.DSTRT_CD = B.DSTRT_CD
+                                      <!-- and B.LINK_ID = #{linkId} -->
+                                      and B.LINK_ID = #{linkUri}
+              <!-- left join CM_AUTH_KEY  C ON A.DSTRT_CD = C.DSTRT_CD -->
+                  where A.USE_TY_CD     = 'Y'
+                    <if test='dstrtCd != null and dstrtCd != "" and dstrtCd != "ALL"'>
+                    and A.DSTRT_CD = #{dstrtCd}
+                    </if>
+                    and A.DSTRT_CD != #{wDstrtCd}
+               ) S
+    </select>
+
+    <update id="updateWdLinkWork" parameterType="hMap">
+    /* updateWdLinkWork */
+        insert into WD_LINK_WORK
+             ( DSTRT_CD          , LINK_ID
+             , RESPONSE_CD       , RESPONSE_MSG
+             , UPD_DATE          , LINK_YMD_HMS_LAST    )
+        values
+             ( #{dstrtCd}        , #{linkUri}
+             , #{responseCd}     , #{responseMsg}
+             , NOW()             , #{linkYmdHmsLast}    )
+  ON CONFLICT ( DSTRT_CD, LINK_ID ) DO UPDATE
+          SET RESPONSE_CD       = #{responseCd}
+            , RESPONSE_MSG      = #{responseMsg}
+            , UPD_DATE          = NOW()
+            , LINK_YMD_HMS_LAST = #{linkYmdHmsLast}
+    </update>
+
+    <insert id="insertWdLinkLog"  parameterType="map">
+    /* insertWdLinkLog */
+        insert into WD_LINK_LOG
+             ( LINK_ID           , LINK_YMD_HMS          , DSTRT_CD
+             , RESPONSE_CD       , RESPONSE_MSG          , RGS_DATE
+           <if test='linkCnt != null and linkCnt != ""'> , LINK_CNT   </if>
+           <if test='regCnt  != null and regCnt  != ""'> , REG_CNT    </if>
+           <if test='updCnt  != null and updCnt  != ""'> , UPD_CNT    </if>
+           <if test='delCnt  != null and delCnt  != ""'> , DEL_CNT    </if>
+             )
+        values
+             ( #{linkUri}        , #{responseYmdhms}     , #{dstrtCd}
+             , #{responseCd}     , #{responseMsg}        , NOW()
+           <if test='linkCnt != null and linkCnt != ""'> , #{linkCnt} </if>
+           <if test='regCnt  != null and regCnt  != ""'> , #{regCnt}  </if>
+           <if test='updCnt  != null and updCnt  != ""'> , #{updCnt}  </if>
+           <if test='delCnt  != null and delCnt  != ""'> , #{delCnt}  </if>
+             )
+   ON CONFLICT ( LINK_ID, LINK_YMD_HMS, DSTRT_CD ) DO NOTHING
+    </insert>
+
+    <select id="selectLinkInfo" parameterType="map" resultType="cmlMap2">
+    /* selectLinkInfo */
+        select LG_DONG_SGG_CD
+             , LG_DONG_SGG_NM
+             , ADDR_112_RTSP
+             , ADDR_112_FTP
+             , WASS_FTP_POLICE
+          from CM_TC_LG_DONG_SGG
+         where LG_DONG_SGG_CD = #{dstrtCd}
+    </select>
+
+</mapper>

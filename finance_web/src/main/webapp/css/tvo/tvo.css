@@ -1,0 +1,85 @@
+/*
+	override /css/mntr/mntr.css
+*/
+section#body {
+	position: inherit;
+	left: 0;
+	right: 0;
+	bottom: 0;
+}
+
+section#body article {
+	overflow-y: hidden;
+}
+
+th.bg-info {
+	background-color: #eeeeee;
+}
+
+
+
+/* datetimepicker */
+.bootstrap-datetimepicker-widget table thead tr:first-child th {
+    line-height: 12px;
+}
+
+.bootstrap-datetimepicker-widget table tbody tr td {
+    white-space: normal;
+}
+
+.bootstrap-datetimepicker-widget.dropdown-menu .row {
+    margin: 0;
+}
+
+.bootstrap-datetimepicker-widget.dropdown-menu .col-md-6 {
+    padding-left: 5px;
+    padding-right: 5px;
+}
+
+.bootstrap-datetimepicker-widget.dropdown-menu .datepicker-days,
+.bootstrap-datetimepicker-widget.dropdown-menu .datepicker-months,
+.bootstrap-datetimepicker-widget.dropdown-menu .datepicker-years,
+.bootstrap-datetimepicker-widget.dropdown-menu .timepicker-picker,
+.bootstrap-datetimepicker-widget.dropdown-menu .timepicker-hours,
+.bootstrap-datetimepicker-widget.dropdown-menu .timepicker-minutes {
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
+
+.bootstrap-datetimepicker-widget.dropdown-menu th.prev.disabled span,
+.bootstrap-datetimepicker-widget.dropdown-menu th.next.disabled span {
+    color: #fff
+}
+
+
+.bootstrap-datetimepicker-widget.dropdown-menu .datepicker-days th.dow {
+    background-color: #eee;
+    border-radius: 0;
+}
+
+.bootstrap-datetimepicker-widget.dropdown-menu .datepicker-days th.dow:nth-child(1) {
+    color: #d9534f;
+}
+
+.bootstrap-datetimepicker-widget.dropdown-menu .datepicker-days th.dow:nth-child(7) {
+    color: #337ab7;
+}
+
+.bootstrap-datetimepicker-widget table td span.disabled,
+.bootstrap-datetimepicker-widget table td span.disabled:hover,
+.bootstrap-datetimepicker-widget table td.disabled,
+.bootstrap-datetimepicker-widget table td.disabled:hover {
+    text-decoration: line-through;
+}
+
+span.datetimepicker-today:after {
+    content: '[ 현재 ]';
+}
+
+span.datetimepicker-clear:after {
+    content: '[비우기]';
+}
+
+span.datetimepicker-close:after {
+    content: '[ 닫기 ]';
+}

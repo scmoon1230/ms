@@ -1,0 +1,148 @@
+/*
+	override map.css
+*/
+.olPopupContent, .olFramedCloudPopupContent {
+	background: #fff;
+	border: solid 1px #ccc;
+	padding: 0px;
+}
+
+.olPopupCloseBox {
+	background: #fff;
+	cursor: pointer;
+	border: solid 1px #ccc;
+	border-left: none;
+	border-radius: 0px;
+	padding: 0px 0px 0px 3px;
+	border-radius: 0px;
+}
+
+#tbFcltInfo th {
+	text-align: center;
+	min-width: 60px;
+}
+
+/*
+	override bootstarp
+*/
+article .breadcrumb {
+	margin-bottom: 5px;
+}
+
+article .well {
+	margin-bottom: 0px;
+}
+
+.well-xs {
+	padding: 4px;
+	border-radius: 3px;
+}
+
+.well-xs.search {
+	margin-bottom: 3px;
+}
+
+.well-xs .form-inline {
+	margin-bottom: 3px;
+}
+
+article .panel-footer {
+	padding: 5px;
+}
+
+article .table>thead>tr>th, article .table>tbody>tr>th, article .table>tfoot>tr>th,
+	article .table>thead>tr>td, article .table>tbody>tr>td, article .table>tfoot>tr>td
+	{
+	vertical-align: middle;
+}
+
+.input-xs {
+	height: 22px;
+	padding: 2px 5px;
+	font-size: 12px;
+	line-height: 1.5;
+	/* If Placeholder of the input is moved up, rem/modify this. */
+	border-radius: 3px;
+}
+
+.input-group-xs>.form-control, .input-group-xs>.input-group-addon,
+	.input-group-xs>.input-group-btn>.btn {
+	height: 22px;
+	padding: 1px 5px;
+	font-size: 12px;
+	line-height: 1.5;
+}
+
+.input-group-addon-xs {
+	padding: 2px 5px;
+}
+
+.table.table-xs>thead>tr>th, .table.table-xs>tbody>tr>th, .table.table-xs>tfoot>tr>th {
+	padding: 4px;
+    text-align: center;
+}
+
+.table.table-xs>thead>tr>td, .table.table-xs>tbody>tr>td, .table.table-xs>tfoot>tr>td {
+	padding: 4px;
+}
+
+aside#left {
+	padding: 0px;
+	width: 450px;
+}
+
+#toggleLeft {
+	left: 450px;
+}
+
+#toggleRight {
+	right: 450px;
+}
+
+section#body {
+	left: 460px;
+	right: 0;
+}
+
+aside#left #article-left {
+	padding: 5px;
+}
+
+aside#left .panel-body {
+	overflow: visible !important;
+	padding: 2px;
+}
+
+.input-lonlat {
+	width: 110px !important;
+}
+
+input.datetimepicker-ymd {
+	width: 95px !important;
+}
+
+input.datetimepicker-ymdhms {
+	width: 165px !important;
+}
+
+td.text-ellipsis {
+	max-width: 100px;
+	overflow: hidden !important;
+	text-overflow: ellipsis;
+	white-space: nowrap !important;
+	cursor: pointer;
+}
+
+.col-xs-tvo {
+	line-height: 22px;
+}
+
+span.input-group-addon-xs>i.far, span.input-group-addon-xs>i.fas, button.btn-xs>i.fas,
+	button.btn-xs>i.far {
+	margin-top: -1px;
+}
+
+.alert-xs {
+	margin-bottom: 0px;
+	padding: 5px;
+}

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.co.ucp.geo.mapper.GeoMapper">
+
+    <select id="selectCctvInfoList"  resultType="cmlMap">
+    /* selectCctvInfoList */
+    select VMS_ID  as FCLT_UID           /* VMS시설물고유식별번호 */
+         , NM      as FCLT_LBL_NM        /* 시설물라벨명칭 */
+         , TYPE_NM as FCLT_USED_TY_NM    /* 용도명 */
+         , LNG     as POINT_X            /* 좌표X */
+         , LAT     as POINT_Y            /* 좌표Y */
+         , ''      as ANGLE              /* 감시각 */
+         , ''      as FCLT_KND_DTL_CD    /* 고정회전 */
+         , LOC     as LOTNO_ADRES_NM     /* 지번주소 */
+         , ''      as ROAD_ADRES_NM      /* 도로명주소 */
+         , CAM_NO 
+         , SIDO 
+         , GU 
+         , DONG 
+      from VW_MARKANY_CCTV_LIST
+    </select>
+
+</mapper>

@@ -1,0 +1,338 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.co.ucp.mntr.api.service.impl.ApiMapper">
+
+    <!-- 좌표 > 주소 변환 API SQL
+                  ※ 입력 좌표에서 가장 가까운 건물의 정보를 가져오는 것이라서 오차가 발생 할 수 있음. -->
+    <select id="selectCoordToAddrList" parameterType="apiSrchVO" resultType="egovMap">
+    /**/
+        <![CDATA[
+        select *
+        from   ( select DISTINCT ENTRC.ADRES_MNG_SN
+                      , ENTRC.ROAD_CD
+                      , ENTRC.SIDO_NM
+                      , ENTRC.SIGUNGU_NM
+                      , ENTRC.ROAD_NM
+                      , ENTRC.BULD_MAIN_NO
+                      , ENTRC.BULD_SUB_NO
+                      , ENTRC.BULD_NM
+                      , ENTRC.BULD_USED_TY
+                      , ENTRC.LG_EMD_NM
+                      , JIBUN.LG_LI_NM
+                      , JIBUN.JIBUN_MAIN_NO
+                      , JIBUN.JIBUN_SUB_NO
+                      , JIBUN.SRL_NO
+                      , JIBUN.RPRSTV_GIBUN_YN
+                      , JIBUN.PNU
+                      , ENTRC.POINT_X
+                      , ENTRC.POINT_Y
+                      , ( 6371 * ACOS( TRUNCATE( COS( ( ASIN(1) * 2 ) / 180 * #{pointY} ) * COS( ( ASIN(1) * 2 ) / 180 * ( ENTRC.POINT_Y ) ) * COS( ( ( ASIN(1) * 2 ) / 180 * #{pointX} ) - ( ( ASIN(1) * 2 ) / 180 * ENTRC.POINT_X ) ) + SIN( ( ASIN(1) * 2 ) / 180 * #{pointY} ) * SIN( ( ASIN(1) * 2 ) / 180 * ( ENTRC.POINT_Y ) ) ,16) ) ) as DISTANCE
+                      , CONCAT(ENTRC.ROAD_NM
+                                  , ' '
+                                  , ENTRC.BULD_MAIN_NO
+                                  , CASE
+                                      WHEN ENTRC.BULD_SUB_NO = '0' THEN ''
+                                      WHEN ENTRC.BULD_SUB_NO IS NULL THEN ''
+                                      ELSE CONCAT('-', ENTRC.BULD_SUB_NO)
+                                    END
+                                  , '('
+                                  , ENTRC.LG_EMD_NM
+                                  , CASE
+                                      WHEN JIBUN.LG_LI_NM IS NULL THEN ' '
+                                      ELSE CONCAT(JIBUN.LG_LI_NM, ' ')
+                                    END
+                                  , JIBUN.JIBUN_MAIN_NO
+                                  , CASE
+                                      WHEN JIBUN.JIBUN_SUB_NO = '0' THEN ''
+                                      WHEN JIBUN.JIBUN_SUB_NO IS NULL THEN ''
+                                      ELSE CONCAT('-', JIBUN.JIBUN_SUB_NO)
+                                    END
+                                  , ')') as FULL_ADDR
+               from     UM_GIS_ENTRC ENTRC
+                        INNER join UM_GIS_JIBUN JIBUN
+                        on       ENTRC.ADRES_MNG_SN = JIBUN.ADRES_MNG_SN
+               where    1 = 1
+               and      ENTRC.POINT_X        > 0
+               and      ENTRC.POINT_Y        > 0
+               order by DISTANCE
+               ) ADDR
+        where  1        =1
+        and    DISTANCE < 0.05
+        limit  1
+        ]]>
+    </select>
+
+    <!-- 주소 > 좌표 변환 API SQL -->
+    <select id="selectAddrToCoordList" parameterType="apiSrchVO" resultType="egovMap">
+        select DISTINCT ENTRC.ADRES_MNG_SN
+               , ENTRC.ROAD_CD
+               , ENTRC.SIDO_NM
+               , ENTRC.SIGUNGU_NM
+               , ENTRC.ROAD_NM
+               , ENTRC.BULD_MAIN_NO
+               , ENTRC.BULD_SUB_NO
+               , ENTRC.BULD_NM
+               , ENTRC.BULD_USED_TY
+               , ENTRC.LG_EMD_NM
+               , JIBUN.LG_LI_NM
+               , JIBUN.JIBUN_MAIN_NO
+               , JIBUN.JIBUN_SUB_NO
+               , JIBUN.SRL_NO
+               , JIBUN.RPRSTV_GIBUN_YN
+               , JIBUN.PNU
+               , ENTRC.POINT_X
+               , ENTRC.POINT_Y
+               , CONCAT(ENTRC.ROAD_NM
+                           , ' '
+                        , ENTRC.BULD_MAIN_NO
+                        , CASE
+                            WHEN ENTRC.BULD_SUB_NO = '0' THEN ''
+                            WHEN ENTRC.BULD_SUB_NO IS NULL THEN  ''
+                            ELSE CONCAT('-', ENTRC.BULD_SUB_NO)
+                          END
+                        , '('
+                        , ENTRC.LG_EMD_NM
+                        , CASE
+                            WHEN JIBUN.LG_LI_NM IS NULL THEN  ' '
+                            ELSE CONCAT(JIBUN.LG_LI_NM, ' ')
+                          END
+                        , JIBUN.JIBUN_MAIN_NO
+                        , CASE
+                            WHEN JIBUN.JIBUN_SUB_NO = '0' THEN ''
+                            WHEN JIBUN.JIBUN_SUB_NO IS NULL THEN ''
+                            ELSE CONCAT('-', JIBUN.JIBUN_SUB_NO)
+                          END
+                        , ')') as FULL_ADDR
+        from     UM_GIS_ENTRC ENTRC
+                 INNER join UM_GIS_JIBUN JIBUN
+                 on       ENTRC.ADRES_MNG_SN = JIBUN.ADRES_MNG_SN
+        where    1 = 1
+        <![CDATA[
+        and      ENTRC.POINT_X        > 0
+        and      ENTRC.POINT_Y        > 0
+        ]]>
+        <choose>
+            <when test="lgLiNm != null and lgLiNm != ''">
+                and JIBUN.LG_LI_NM = #{lgLiNm}
+                <if test="mainNo != null and mainNo != ''">
+                and JIBUN.JIBUN_MAIN_NO = #{mainNo}
+                </if>
+                <if test="subNo != null and subNo != ''">
+                and JIBUN.JIBUN_SUB_NO = #{subNo}
+                </if>
+            </when>
+            <when test="lgEmdNm != null and lgEmdNm != ''">
+                and ENTRC.LG_EMD_NM = #{lgEmdNm}
+                <if test="mainNo != null and mainNo != ''">
+                and JIBUN.JIBUN_MAIN_NO = #{mainNo}
+                </if>
+                <if test="subNo != null and subNo != ''">
+                and JIBUN.JIBUN_SUB_NO = #{subNo}
+                </if>
+            </when>
+            <when test="roadNm != null and roadNm != ''">
+                and ENTRC.ROAD_NM = #{roadNm}
+                <if test="mainNo != null and mainNo != ''">
+                and ENTRC.BULD_MAIN_NO = #{mainNo}
+                </if>
+                <if test="subNo != null and subNo != ''">
+                and ENTRC.BULD_SUB_NO = #{subNo}
+                </if>
+            </when>
+            <when test="buldNm.size() != 0">
+                and (
+                <foreach collection="buldNm" item="nm" separator="and">
+                    ENTRC.BULD_NM LIKE CONCAT('%', #{nm}, '%')
+                </foreach>
+                )
+            </when>
+            <otherwise>
+                and 1 = 2
+            </otherwise>
+        </choose>
+        order by ENTRC.ROAD_NM
+               , ENTRC.BULD_MAIN_NO
+               , ENTRC.BULD_SUB_NO
+               , CAST(JIBUN.SRL_NO as UNSIGNED)
+    </select>
+
+    <!-- 키워드 > 좌표 검색 API SQL -->
+    <select id="selectKeywordToCoordList" parameterType="apiSrchVO" resultType="egovMap">
+    /* selectKeywordToCoordList */
+        select   *
+        from    ( select FN_GET_TC_CODE('FCLT_KND', FCLT_KND_CD)         AS GUBN
+                      , ROAD_ADRES_NM                                    AS ROAD_ADDR
+                      , LOTNO_ADRES_NM                                   AS JIBUN_ADDR
+                      , CONCAT(ROAD_ADRES_NM, '(', LOTNO_ADRES_NM, ')')  AS FULL_ADDR
+                      , FCLT_LBL_NM                                      AS POI
+                      , POINT_X                                          AS POINT_X
+                      , POINT_Y                                          AS POINT_Y
+                from    CM_FACILITY CF
+                where   1 = 1
+                and     USE_TY_CD = 'Y'
+                and    EXISTS
+                       ( select FCLT_USED_TY_CD
+                       from    CM_CCTV_CTL_USED_TY
+                       where   GRP_ID          = #{grpId}
+                       and     AUTH_LVL        = #{authLvl}::numeric
+                       and     FCLT_USED_TY_CD = CF.FCLT_USED_TY_CD
+                       )
+                and     (
+                        ROAD_ADRES_NM LIKE CONCAT('%', #{keyword}, '%')
+                        or LOTNO_ADRES_NM LIKE CONCAT('%', #{keyword}, '%')
+                        or FCLT_LBL_NM LIKE CONCAT('%', #{keyword}, '%')
+                )
+                union all
+
+                select DISTINCT '일반주소' as GUBN
+                      , CONCAT(ENTRC.ROAD_NM
+                                 , ' '
+                                 , ENTRC.BULD_MAIN_NO
+                                 , CASE WHEN ENTRC.BULD_SUB_NO = '0' THEN ''
+                                      WHEN ENTRC.BULD_SUB_NO IS NULL THEN ''
+                                      ELSE CONCAT('-', ENTRC.BULD_SUB_NO)
+                                   END
+                         ) as ROAD_ADDR
+                      , CONCAT(ENTRC.LG_EMD_NM
+                                , CASE WHEN JIBUN.LG_LI_NM IS NULL THEN ' '
+                                    ELSE CONCAT(JIBUN.LG_LI_NM, ' ')
+                                  END
+                                  , JIBUN.JIBUN_MAIN_NO
+                                  , CASE WHEN JIBUN.JIBUN_SUB_NO = '0' THEN ''
+                                      WHEN JIBUN.JIBUN_SUB_NO IS NULL THEN ''
+                                      ELSE CONCAT('-', JIBUN.JIBUN_SUB_NO)
+                                    END
+                        ) as JIBUN_ADDR
+                      , CONCAT(ENTRC.ROAD_NM
+                                  , ' '
+                                  , ENTRC.BULD_MAIN_NO
+                                  , CASE WHEN ENTRC.BULD_SUB_NO = '0' THEN ''
+                                    WHEN ENTRC.BULD_SUB_NO IS NULL THEN ''
+                                    ELSE CONCAT('-', ENTRC.BULD_SUB_NO)
+                                  END
+                                   , '('
+                                   , ENTRC.LG_EMD_NM
+                                   , CASE WHEN JIBUN.LG_LI_NM IS NULL THEN ' '
+                                       ELSE CONCAT(JIBUN.LG_LI_NM, ' ')
+                                     END
+                                   , JIBUN.JIBUN_MAIN_NO
+                                   , CASE WHEN JIBUN.JIBUN_SUB_NO = '0' THEN ''
+                                       WHEN JIBUN.JIBUN_SUB_NO IS NULL THEN ''
+                                       ELSE CONCAT('-', JIBUN.JIBUN_SUB_NO)
+                                     END
+                                   , ')'
+                       ) as FULL_ADDR
+                     , COALESCE(ENTRC.BULD_NM, '')                    as POI
+                     , ENTRC.POINT_X                                  as POINT_X
+                     , ENTRC.POINT_Y                                  as POINT_Y
+                from   UM_GIS_ENTRC ENTRC
+                       INNER join UM_GIS_JIBUN JIBUN
+                       on     ENTRC.ADRES_MNG_SN = JIBUN.ADRES_MNG_SN
+                where 1 = 1
+                <![CDATA[
+                and      ENTRC.POINT_X        > 0
+                and      ENTRC.POINT_Y        > 0
+                ]]>
+            <choose>
+                <when test="lgLiNm != null and lgLiNm != ''">
+                and JIBUN.LG_LI_NM = #{lgLiNm}
+                    <if test="mainNo != null and mainNo != ''">
+                and JIBUN.JIBUN_MAIN_NO = #{mainNo}::numeric
+                    </if>
+                    <if test="subNo != null and subNo != ''">
+                and JIBUN.JIBUN_SUB_NO = #{subNo}::numeric
+                    </if>
+                </when>
+                <when test="lgEmdNm != null and lgEmdNm != ''">
+                and ENTRC.LG_EMD_NM = #{lgEmdNm}
+                    <if test="mainNo != null and mainNo != ''">
+                and JIBUN.JIBUN_MAIN_NO = #{mainNo}::numeric
+                    </if>
+                    <if test="subNo != null and subNo != ''">
+                and JIBUN.JIBUN_SUB_NO = #{subNo}::numeric
+                    </if>
+                </when>
+                <when test="roadNm != null and roadNm != ''">
+                and ENTRC.ROAD_NM = #{roadNm}
+                    <if test="mainNo != null and mainNo != ''">
+                and ENTRC.BULD_MAIN_NO = #{mainNo}::numeric
+                    </if>
+                    <if test="subNo != null and subNo != ''">
+                and ENTRC.BULD_SUB_NO = #{subNo}::numeric
+                    </if>
+                </when>
+                <when test="buldNm.size() != 0">
+                and (
+                    <foreach collection="buldNm" item="nm" separator="and">
+                    ENTRC.BULD_NM LIKE CONCAT('%', #{nm}, '%')
+                        </foreach>
+                )
+                </when>
+                <otherwise>
+                and 1 = 2
+                </otherwise>
+            </choose>
+                 ) ADDR
+        where    1 = 1
+        order by ROAD_ADDR
+               , POI
+    </select>
+
+    <!-- PNU > 지번, 도로명 주소 목록 API SQL -->
+    <select id="selectAddrListByPnu" parameterType="apiSrchVO" resultType="egovMap">
+    /* selectAddrListByPnu */
+        select J.PNU              , left(J.PNU,5) as DSTRT_CD
+             , J.LG_DONG_CD       , J.SIGUNGU_NM         , J.LG_EMD_NM
+             , J.LG_LI_NM         , J.IS_MNTN            , J.JIBUN_MAIN_NO
+             , J.JIBUN_SUB_NO     , J.LG_EMD_NM
+             , E.ADRES_MNG_SN     , E.ROAD_CD            , E.ROAD_NM
+             , E.IS_UNDGRND       , E.BULD_MAIN_NO       , E.BULD_SUB_NO
+             , E.BULD_NM          , E.JUSTN_ADM_DONG     , E.ZIP_CD
+             , E.POINT_X          , E.POINT_Y            , J.JIBUN_ADDR
+             , E.ROAD_ADDR
+             , E.ROAD_ADDR || '(' || J.JIBUN_ADDR || ')' as FULL_ADDR
+          from UM_GIS_ENTRC E
+   RIGHT OUTER join ( select COALESCE(J1.LG_DONG_CD         , J2.LG_DONG_CD)    as LG_DONG_CD
+                           , COALESCE(J1.SIGUNGU_NM         , J2.SIGUNGU_NM)    as SIGUNGU_NM
+                           , COALESCE(J1.LG_EMD_NM          , J2.LG_EMD_NM)     as LG_EMD_NM
+                           , COALESCE(J1.LG_LI_NM           , J2.LG_LI_NM)      as LG_LI_NM
+                           , COALESCE(J1.IS_MNTN            , J2.IS_MNTN)       as IS_MNTN
+                           , COALESCE(J1.JIBUN_MAIN_NO::text, J2.JIBUN_MAIN_NO) as JIBUN_MAIN_NO
+                           , COALESCE(J1.JIBUN_SUB_NO::text , J2.JIBUN_SUB_NO)  as JIBUN_SUB_NO
+                           , COALESCE(J1.PNU                , J2.PNU)           as PNU
+                           , COALESCE(J1.ADRES_MNG_SN       , J2.ADRES_MNG_SN)  as ADRES_MNG_SN
+                           , COALESCE(J1.JIBUN_ADDR         , J2.JIBUN_ADDR)    as JIBUN_ADDR
+                        from UM_GIS_JIBUN J1
+                 RIGHT OUTER join ( select A.*
+                                         , A.LG_EMD_NM
+                                           || CASE WHEN A.LG_LI_NM IS NULL   THEN ''
+                                                   ELSE ' ' || A.LG_LI_NM    END
+                                           || CASE WHEN A.IS_MNTN = '1'      THEN ' 산 '
+                                                   ELSE ' '                  END
+                                           || A.JIBUN_MAIN_NO
+                                           || CASE WHEN A.JIBUN_SUB_NO = '0'   THEN ''
+                                                   WHEN A.JIBUN_SUB_NO  = ''   THEN ''
+                                                   WHEN A.JIBUN_SUB_NO IS NULL THEN ''
+                                                   ELSE '-' || A.JIBUN_SUB_NO  END
+                                           as JIBUN_ADDR
+                                      from ( select SIGUNGU_NM    , LG_EMD_NM      , LG_LI_NM
+                                                    , #{pnu}   as PNU
+                                                    , #{pnu}   as ADRES_MNG_SN
+                                                    , SUBSTR(#{pnu}, 1, 10) as LG_DONG_CD
+                                                    , CASE WHEN SUBSTR(#{pnu}, 11, 1) = '2'   THEN '1'
+                                                           ELSE '0'                            END as IS_MNTN
+                                                    , TRIM(LEADING '0' from SUBSTR(#{pnu}, 12, 4)) as JIBUN_MAIN_NO
+                                                    , TRIM(LEADING '0' from SUBSTR(#{pnu}, 16, 4)) as JIBUN_SUB_NO
+                                                 from CM_TC_LG_DONG
+                                                where LG_DONG_CD = SUBSTR(#{pnu}, 1, 10)
+                                           ) A
+                                  ) J2
+                              on J1.PNU = J2.PNU
+                      where 1 = 1
+                    ) J
+                   on E.ADRES_MNG_SN = J.ADRES_MNG_SN
+         where 1 = 1
+    </select>
+    
+</mapper>

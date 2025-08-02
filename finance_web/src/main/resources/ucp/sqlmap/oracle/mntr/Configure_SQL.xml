@@ -1,0 +1,443 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ucp.mntr.cmm.service.ConfigureMapper">
+
+    <resultMap id="configureVO" type="kr.co.ucp.mntr.cmm.service.ConfigureVO">
+        <result property="networkId" column="NETWORK_ID" />
+        <result property="networkNm" column="NETWORK_NM" />
+        <result property="networkTy" column="NETWORK_TY" />
+        <result property="networkIp" column="NETWORK_IP" />
+        <result property="networkMpIp" column="NETWORK_MP_IP" />
+    </resultMap>
+
+    <resultMap id="configinfoVO" type="kr.co.ucp.mntr.cmm.service.ConfigureVO">
+        <result property="dstrtCd"                 column="DSTRT_CD"/>
+        <result property="userId"                  column="USER_ID"/>
+        <result property="mntrTyId"                column="MNTR_TY_ID"/>
+        <result property="setTime"                 column="SET_TIME"/>
+        <result property="popRoute"                column="POP_ROUTE"/>
+        <result property="pointX"                  column="POINT_X"/>
+        <result property="pointY"                  column="POINT_Y"/>
+        <result property="pointZ"                  column="POINT_Z"/>
+        <result property="gisLevel"                column="GIS_LEVEL"/>
+        <result property="iconSize"                column="ICON_SIZE"/>
+        <result property="mapAltitud"              column="MAP_ALTITUD"/>
+        <result property="mapTilt"                 column="MAP_TILT"/>
+        <result property="mapDirect"               column="MAP_DIRECT"/>
+        <result property="divMoveSet"              column="DIV_MOVE_set"/>
+        <result property="evtLcMoveYn"             column="EVT_LC_MOVE_YN"/>
+        <result property="leftDivHdnYn"            column="LEFT_DIV_HDN_YN"/>
+        <result property="radsRoute"               column="RADS_ROUTE"/>
+        <result property="radsClmt"                column="RADS_CLMT"/>
+        <result property="mntrViewLeft"            column="MNTR_VIEW_LEFT"/>
+        <result property="mntrViewRight"           column="MNTR_VIEW_RIGHT"/>
+        <result property="mntrViewBottom"          column="MNTR_VIEW_BOTTOM"/>
+        <result property="popHeight"               column="POP_HEIGHT"/>
+        <result property="popWidth"                column="POP_WIDTH"/>
+        <result property="gisTy"                   column="GIS_TY"/>
+        <result property="autoEndTime"             column="AUTO_END_TIME"/>
+        <result property="cctvViewRads"            column="CCTV_VIEW_RADS"/>
+        <result property="cnOsvtOpt"               column="CN_OSVT_OPT"/>
+        <result property="basePlaybacktime"        column="BASE_PLAYBACKTIME"/>
+        <result property="maxPlaybacktime"         column="MAX_PLAYBACKTIME"/>
+        <result property="maxAfPlaybacktime"       column="MAX_AF_PLAYBACKTIME"/>
+        <result property="maxBfPlaybacktime"       column="MAX_BF_PLAYBACKTIME"/>
+        <result property="maxBfPlaybacktimeNow"    column="MAX_BF_PLAYBACKTIME_NOW"/>
+        <result property="playTime"                column="PLAY_TIME"/>
+        <result property="fcltBaseItem"            column="FCLT_BASE_ITEM"/>
+        <result property="iconTy"                  column="ICON_TY"/>
+        <result property="headerTy"                column="HEADER_TY"/>
+        <result property="gisLabelViewScale"       column="GIS_LABEL_VIEW_SCALE"/>
+        <result property="gisFeatureViewScale"     column="GIS_FEATURE_VIEW_SCALE"/>
+        <result property="cnOsvtPlaytimeStopYn"    column="CN_OSVT_PLAYTIME_STOP_YN"/>
+        <result property="fullScreenCloseYn"       column="FULL_SCREEN_CLOSE_YN"/>
+    </resultMap>
+	<!-- 
+    <select id="selectUmConfigure" parameterType="configure" resultMap="configinfoVO">
+    /* selectUmConfigure */
+        select UCI.DSTRT_CD                , UCI.USER_ID
+             , UCI.MNTR_TY_ID              , UCI.SET_TIME             , UCI.POP_ROUTE
+             , UCI.POINT_X                 , UCI.POINT_Y              , UCI.POINT_Z
+             , UCI.GIS_LEVEL               , UCI.ICON_SIZE
+             , UCI.MAP_ALTITUD             , UCI.MAP_TILT             , UCI.MAP_DIRECT
+             , UCI.DIV_MOVE_SET            , UCI.EVT_LC_MOVE_YN       , UCI.LEFT_DIV_HDN_YN
+             , UCI.RADS_ROUTE              , UCI.RADS_CLMT
+             , UCI.MNTR_VIEW_LEFT          , UCI.MNTR_VIEW_RIGHT      , UCI.MNTR_VIEW_BOTTOM
+             , UCI.GIS_TY                  , UCI.CN_OSVT_OPT          , UCI.FCLT_BASE_ITEM
+             , UCI.ICON_TY                 , UCI.HEADER_TY            , UCI.GIS_LABEL_VIEW_SCALE
+             , UCI.GIS_FEATURE_VIEW_SCALE  , UCI.CN_OSVT_PLAYTIME_STOP_YN
+             , UCI.FULL_SCREEN_CLOSE_YN    , UCI_SYS.POP_HEIGHT
+             , UCI_SYS.POP_WIDTH           , UCI_SYS.AUTO_END_TIME    , UCI_SYS.CCTV_VIEW_RADS
+             , UCI_SYS.BASE_PLAYBACKTIME
+             , UCI_SYS.MAX_PLAYBACKTIME    , UCI_SYS.MAX_AF_PLAYBACKTIME
+             , UCI_SYS.MAX_BF_PLAYBACKTIME , UCI_SYS.MAX_BF_PLAYBACKTIME_NOW
+             , UCI_SYS.PLAY_TIME
+          from UM_CONFIG_INFO UCI
+          left join ( select *
+                        from UM_CONFIG_INFO
+                       where 1=1
+                         and USER_ID  = #{userId}
+                         and DSTRT_CD = #{dstrtCd}
+                    ) UCI_SYS
+               on     1 = 1
+        where 1=1
+          and UCI.USER_ID  = #{userId}
+          and UCI.DSTRT_CD = #{dstrtCd}
+    </select>
+	 
+    <select id="selectUmConfigInfo" parameterType="configure" resultType="egovMap">
+    /* selectUmConfigInfo */
+        select *
+          from UM_CONFIG_INFO
+         where USER_ID  = 'TVO'
+           and DSTRT_CD = #{dstrtCd}
+    </select>
+
+    <insert id="insertUmConfigure" parameterType="configure">
+    /* insertUmConfigure */
+        insert into UM_CONFIG_INFO
+             ( DSTRT_CD         , USER_ID
+             , RGS_USER_ID       , RGS_DATE        , UPD_USER_ID         , UPD_DATE
+            <if test="mntrTyId             != null and mntrTyId             != ''"> , MNTR_TY_ID               </if>
+            <if test="setTime              != null and setTime              != ''"> , SET_TIME                 </if>
+            <if test="popRoute             != null and popRoute             != ''"> , POP_ROUTE                </if>
+            <if test="pointX               != null and pointX               != ''"> , POINT_X                  </if>
+            <if test="pointY               != null and pointY               != ''"> , POINT_Y                  </if>
+            <if test="pointZ               != null and pointZ               != ''"> , POINT_Z                  </if>
+            <if test="gisLevel             != null and gisLevel             != ''"> , GIS_LEVEL                </if>
+            <if test="iconSize             != null and iconSize             != ''"> , ICON_SIZE                </if>
+            <if test="mapAltitud           != null and mapAltitud           != ''"> , MAP_ALTITUD              </if>
+            <if test="mapTilt              != null and mapTilt              != ''"> , MAP_TILT                 </if>
+            <if test="mapDirect            != null and mapDirect            != ''"> , MAP_DIRECT               </if>
+            <if test="divMoveSet           != null and divMoveSet           != ''"> , DIV_MOVE_set             </if>
+            <if test="evtLcMoveYn          != null and evtLcMoveYn          != ''"> , EVT_LC_MOVE_YN           </if>
+            <if test="leftDivHdnYn         != null and leftDivHdnYn         != ''"> , LEFT_DIV_HDN_YN          </if>
+            <if test="radsRoute            != null and radsRoute            != ''"> , RADS_ROUTE               </if>
+            <if test="radsClmt             != null and radsClmt             != ''"> , RADS_CLMT                </if>
+            <if test="mntrViewLeft         != null and mntrViewLeft         != ''"> , MNTR_VIEW_LEFT           </if>
+            <if test="mntrViewRight        != null and mntrViewRight        != ''"> , MNTR_VIEW_RIGHT          </if>
+            <if test="mntrViewBottom       != null and mntrViewBottom       != ''"> , MNTR_VIEW_BOTTOM         </if>
+            <if test="popHeight            != null and popHeight            != ''"> , POP_HEIGHT               </if>
+            <if test="popWidth             != null and popWidth             != ''"> , POP_WIDTH                </if>
+            <if test="gisTy                != null and gisTy                != ''"> , GIS_TY                   </if>
+            <if test="autoEndTime          != null and autoEndTime          != ''"> , AUTO_END_TIME            </if>
+            <if test="cctvViewRads         != null and cctvViewRads         != ''"> , CCTV_VIEW_RADS           </if>
+            <if test="cnOsvtOpt            != null and cnOsvtOpt            != ''"> , CN_OSVT_OPT              </if>
+            <if test="basePlaybacktime     != null and basePlaybacktime     != ''"> , BASE_PLAYBACKTIME        </if>
+            <if test="maxPlaybacktime      != null and maxPlaybacktime      != ''"> , MAX_PLAYBACKTIME         </if>
+            <if test="maxAfPlaybacktime    != null and maxAfPlaybacktime    != ''"> , MAX_AF_PLAYBACKTIME      </if>
+            <if test="maxBfPlaybacktime    != null and maxBfPlaybacktime    != ''"> , MAX_BF_PLAYBACKTIME      </if>
+            <if test="maxBfPlaybacktimeNow != null and maxBfPlaybacktimeNow != ''"> , MAX_BF_PLAYBACKTIME_NOW  </if>
+            <if test="playTime             != null and playTime             != ''"> , PLAY_TIME                </if>
+            <if test="fcltBaseItem         != null and fcltBaseItem         != ''"> , FCLT_BASE_ITEM           </if>
+            <if test="iconTy               != null and iconTy               != ''"> , ICON_TY                  </if>
+            <if test="headerTy             != null and headerTy             != ''"> , HEADER_TY                </if>
+            <if test="gisLabelViewScale    != null and gisLabelViewScale    != ''"> , GIS_LABEL_VIEW_SCALE     </if>
+            <if test="gisFeatureViewScale  != null and gisFeatureViewScale  != ''"> , GIS_FEATURE_VIEW_SCALE   </if>
+            <if test="cnOsvtPlaytimeStopYn != null and cnOsvtPlaytimeStopYn != ''"> , CN_OSVT_PLAYTIME_STOP_YN </if>
+            <if test="fullScreenCloseYn    != null and fullScreenCloseYn    != ''"> , FULL_SCREEN_CLOSE_YN     </if>
+             )
+        values
+             ( #{dstrtCd}         , #{userId}
+             , #{userId}          , NOW()          , #{userId}          , NOW()
+            <if test="mntrTyId             != null and mntrTyId             != ''"> , #{mntrTyId}             </if>
+            <if test="setTime              != null and setTime              != ''"> , #{setTime}              </if>
+            <if test="popRoute             != null and popRoute             != ''"> , #{popRoute}             </if>
+            <if test="pointX               != null and pointX               != ''"> , #{pointX}               </if>
+            <if test="pointY               != null and pointY               != ''"> , #{pointY}               </if>
+            <if test="pointZ               != null and pointZ               != ''"> , #{pointZ}               </if>
+            <if test="gisLevel             != null and gisLevel             != ''"> , #{gisLevel}             </if>
+            <if test="iconSize             != null and iconSize             != ''"> , #{iconSize}             </if>
+            <if test="mapAltitud           != null and mapAltitud           != ''"> , #{mapAltitud}           </if>
+            <if test="mapTilt              != null and mapTilt              != ''"> , #{mapTilt}              </if>
+            <if test="mapDirect            != null and mapDirect            != ''"> , #{mapDirect}            </if>
+            <if test="divMoveSet           != null and divMoveSet           != ''"> , #{divMoveSet}           </if>
+            <if test="evtLcMoveYn          != null and evtLcMoveYn          != ''"> , #{evtLcMoveYn}          </if>
+            <if test="leftDivHdnYn         != null and leftDivHdnYn         != ''"> , #{leftDivHdnYn}         </if>
+            <if test="radsRoute            != null and radsRoute            != ''"> , #{radsRoute}            </if>
+            <if test="radsClmt             != null and radsClmt             != ''"> , #{radsClmt}             </if>
+            <if test="mntrViewLeft         != null and mntrViewLeft         != ''"> , #{mntrViewLeft}         </if>
+            <if test="mntrViewRight        != null and mntrViewRight        != ''"> , #{mntrViewRight}        </if>
+            <if test="mntrViewBottom       != null and mntrViewBottom       != ''"> , #{mntrViewBottom}       </if>
+            <if test="popHeight            != null and popHeight            != ''"> , #{popHeight}            </if>
+            <if test="popWidth             != null and popWidth             != ''"> , #{popWidth}             </if>
+            <if test="gisTy                != null and gisTy                != ''"> , #{gisTy}                </if>
+            <if test="autoEndTime          != null and autoEndTime          != ''"> , #{autoEndTime}          </if>
+            <if test="cctvViewRads         != null and cctvViewRads         != ''"> , #{cctvViewRads}         </if>
+            <if test="cnOsvtOpt            != null and cnOsvtOpt            != ''"> , #{cnOsvtOpt}            </if>
+            <if test="basePlaybacktime     != null and basePlaybacktime     != ''"> , #{basePlaybacktime}     </if>
+            <if test="maxPlaybacktime      != null and maxPlaybacktime      != ''"> , #{maxPlaybacktime}      </if>
+            <if test="maxAfPlaybacktime    != null and maxAfPlaybacktime    != ''"> , #{maxAfPlaybacktime}    </if>
+            <if test="maxBfPlaybacktime    != null and maxBfPlaybacktime    != ''"> , #{maxBfPlaybacktime}    </if>
+            <if test="maxBfPlaybacktimeNow != null and maxBfPlaybacktimeNow != ''"> , #{maxBfPlaybacktimeNow} </if>
+            <if test="playTime             != null and playTime             != ''"> , #{playTime}             </if>
+            <if test="fcltBaseItem         != null and fcltBaseItem         != ''"> , #{fcltBaseItem}         </if>
+            <if test="iconTy               != null and iconTy               != ''"> , #{iconTy}               </if>
+            <if test="headerTy             != null and headerTy             != ''"> , #{headerTy}             </if>
+            <if test="gisLabelViewScale    != null and gisLabelViewScale    != ''"> , #{gisLabelViewScale}    </if>
+            <if test="gisFeatureViewScale  != null and gisFeatureViewScale  != ''"> , #{gisFeatureViewScale}  </if>
+            <if test="cnOsvtPlaytimeStopYn != null and cnOsvtPlaytimeStopYn != ''"> , #{cnOsvtPlaytimeStopYn} </if>
+            <if test="fullScreenCloseYn    != null and fullScreenCloseYn    != ''"> , #{fullScreenCloseYn}    </if>
+             )
+    </insert>
+	
+    <update id="updateUmConfigure" parameterType="configure">
+    /* updateUmConfigure */
+        update UM_CONFIG_INFO
+           set UPD_DATE = NOW()
+             , UPD_USER_ID = #{userId}
+            <if test="mntrTyId             != null and mntrTyId             != ''"> , MNTR_TY_ID               = #{mntrTyId}                </if>
+            <if test="setTime              != null and setTime              != ''"> , SET_TIME                 = #{setTime}::numeric        </if>
+            <if test="popRoute             != null and radius               != ''"> , POP_ROUTE                = #{popRoute}                </if>
+            <if test="pointX               != null and pointX               != ''"> , POINT_X                  = cast(#{pointX} as double precision) </if>
+            <if test="pointY               != null and pointY               != ''"> , POINT_Y                  = cast(#{pointY} as double precision) </if>
+            <if test="pointZ               != null and pointZ               != ''"> , POINT_Z                  = cast(#{pointZ} as double precision) </if>
+            <if test="gisLevel             != null and gisLevel             != ''"> , GIS_LEVEL                = #{gisLevel}                </if>
+            <if test="iconSize             != null and iconSize             != ''"> , ICON_SIZE                = #{iconSize}::integer       </if>
+            <if test="mapAltitud           != null and mapAltitud           != ''"> , MAP_ALTITUD              = #{mapAltitud}::integer     </if>
+            <if test="mapTilt              != null and mapTilt              != ''"> , MAP_TILT                 = #{mapTilt}::integer        </if>
+            <if test="mapDirect            != null and mapDirect            != ''"> , MAP_DIRECT               = #{mapDirect}::integer      </if>
+            <if test="divMoveSet           != null and divMoveSet           != ''"> , DIV_MOVE_set             = #{divMoveSet}              </if>
+            <if test="evtLcMoveYn          != null and evtLcMoveYn          != ''"> , EVT_LC_MOVE_YN           = #{evtLcMoveYn}             </if>
+            <if test="leftDivHdnYn         != null and leftDivHdnYn         != ''"> , LEFT_DIV_HDN_YN          = #{leftDivHdnYn}            </if>
+            <if test="radsRoute            != null and radsRoute            != ''"> , RADS_ROUTE               = #{radsRoute}::integer      </if>
+            <if test="radsClmt             != null and radsClmt             != ''"> , RADS_CLMT                = #{radsClmt}::integer       </if>
+            <if test="mntrViewLeft         != null and mntrViewLeft         != ''"> , MNTR_VIEW_LEFT           = #{mntrViewLeft}::integer   </if>
+            <if test="mntrViewRight        != null and mntrViewRight        != ''"> , MNTR_VIEW_RIGHT          = #{mntrViewRight}::integer  </if>
+            <if test="mntrViewBottom       != null and mntrViewBottom       != ''"> , MNTR_VIEW_BOTTOM         = #{mntrViewBottom}::integer </if>
+            <if test="popHeight            != null and popHeight            != ''"> , POP_HEIGHT               = #{popHeight}::integer      </if>
+            <if test="popWidth             != null and popWidth             != ''"> , POP_WIDTH                = #{popWidth}::integer       </if>
+            <if test="gisTy                != null and gisTy                != ''"> , GIS_TY                   = #{gisTy}                   </if>
+            <if test="autoEndTime          != null and autoEndTime          != ''"> , AUTO_END_TIME            = #{autoEndTime}::integer    </if>
+            <if test="cctvViewRads         != null and cctvViewRads         != ''"> , CCTV_VIEW_RADS           = #{cctvViewRads}::integer   </if>
+            <if test="cnOsvtOpt            != null and cnOsvtOpt            != ''"> , CN_OSVT_OPT              = #{cnOsvtOpt}               </if>
+            <if test="basePlaybacktime     != null and basePlaybacktime     != ''"> , BASE_PLAYBACKTIME        = #{basePlaybacktime}        </if>
+            <if test="maxPlaybacktime      != null and maxPlaybacktime      != ''"> , MAX_PLAYBACKTIME         = #{maxPlaybacktime}         </if>
+            <if test="maxAfPlaybacktime    != null and maxAfPlaybacktime    != ''"> , MAX_AF_PLAYBACKTIME      = #{maxAfPlaybacktime}       </if>
+            <if test="maxBfPlaybacktime    != null and maxBfPlaybacktime    != ''"> , MAX_BF_PLAYBACKTIME      = #{maxBfPlaybacktime}       </if>
+            <if test="maxBfPlaybacktimeNow != null and maxBfPlaybacktimeNow != ''"> , MAX_BF_PLAYBACKTIME_NOW  = #{maxBfPlaybacktimeNow}    </if>
+            <if test="playTime             != null and playTime             != ''"> , PLAY_TIME                = #{playTime}                </if>
+            <if test="fcltBaseItem         != null and fcltBaseItem         != ''"> , FCLT_BASE_ITEM           = #{fcltBaseItem}            </if>
+            <if test="iconTy               != null and iconTy               != ''"> , ICON_TY                  = #{iconTy}                  </if>
+            <if test="headerTy             != null and headerTy             != ''"> , HEADER_TY                = #{headerTy}                </if>
+            <if test="gisLabelViewScale    != null and gisLabelViewScale    != ''"> , GIS_LABEL_VIEW_SCALE     = #{gisLabelViewScale}::integer   </if>
+            <if test="gisFeatureViewScale  != null and gisFeatureViewScale  != ''"> , GIS_FEATURE_VIEW_SCALE   = #{gisFeatureViewScale}::integer </if>
+            <if test="cnOsvtPlaytimeStopYn != null and cnOsvtPlaytimeStopYn != ''"> , CN_OSVT_PLAYTIME_STOP_YN = #{cnOsvtPlaytimeStopYn}    </if>
+            <if test="fullScreenCloseYn    != null and fullScreenCloseYn    != ''"> , FULL_SCREEN_CLOSE_YN     = #{fullScreenCloseYn}       </if>
+        where    USER_ID = #{sysId}
+          and    DSTRT_CD = #{dstrtCd}
+    </update>
+	 -->
+    <select id="selectUmConfigList" parameterType="map" resultType="egovMap">
+    /* selectUmConfigList */
+        select PRPRTS_KEY
+             , COALESCE(NULLIF(PRPRTS_VAL, ''), DEFAULT_VAL) as PRPRTS_VAL
+             , DEFAULT_VAL
+          from CM_PRPRTS
+         where PRPRTS_TY='UM_CONFIG'
+           and PRPRTS_ID = #{dstrtCd}
+    </select>
+    
+    <select id="selectMappingIp" parameterType="map" resultMap="configureVO">
+    /* selectMappingIp */
+        select A.NETWORK_ID       , A.NETWORK_NM         , A.NETWORK_TY
+             , A.NETWORK_IP       , A.NETWORK_MP_IP      , B.CONN_IP
+          from CM_MP_NETWORK_IP A
+             , CM_MP_CONN_IP    B
+         where A.NETWORK_ID = B.NETWORK_ID
+           and '${networkIp}' LIKE REPLACE(B.CONN_IP, 'X', '%')
+    </select>
+
+    <select id="selectCctvCtlUsedTy" parameterType="lgn" resultType="egovMap">
+    /* selectCctvCtlUsedTy */
+        select *
+          from CM_CCTV_CTL_USED_TY
+         where GRP_ID = #{grpId}
+           and AUTH_LVL = CAST(#{authLvl} AS INTEGER)
+    </select>
+
+    <select id="selectCctvCtlPtzTy" parameterType="lgn" resultType="egovMap">
+    /* selectCctvCtlPtzTy */
+        select *
+          from CM_CCTV_CTL_PTZ_TY
+         where GRP_ID = #{grpId}
+           and AUTH_LVL = CAST(#{authLvl} AS INTEGER)
+    </select>
+
+    <select id="selectLayerMngList" parameterType="configure" resultType="egovMap">
+    /* selectLayerMngList */
+        select A.LAYER_ID
+             , A.LAYER_NM
+             , A.LAYER_GRP_ID
+             , A.LAYER_GRP_NM
+             , LM.CHECK_YN
+             , A.SORT_ORDR
+          from ( select FCLT_USED_TY_CD                                         as LAYER_ID
+                      , FCLT_USED_TY_NM                                         as LAYER_NM
+                      , FCLT_KND_CD                                             as LAYER_GRP_ID
+                      , COALESCE(FN_GET_TC_CODE('FCLT_KND', FCLT_KND_CD), '기타') as LAYER_GRP_NM
+                      , CASE WHEN FCLT_KND_CD = '' THEN '1' ELSE '0' END   as SORT_ORDR
+                   from CM_TC_FCLT_USED CTFU
+                  where USE_TY_CD = 'Y'
+                 <if test='etcYn != "N"'>
+                    and EXISTS
+                         ( select FCLT_USED_TY_CD
+                             from CM_CCTV_CTL_USED_TY
+                            where GRP_ID          = #{grpId}
+                              and AUTH_LVL        = CAST(#{authLvl} AS INTEGER)
+                              and FCLT_USED_TY_CD = CTFU.FCLT_USED_TY_CD
+                         )
+
+                 union all
+
+                 select LAYER_ID
+                      , LAYER_NM
+                      , 'ETC' as LAYER_GRP_ID
+                      , '기타'  as LAYER_GRP_NM
+                      , '1'   as SORT_ORDR
+                 from   UM_LAYER_CONFIG
+                 where  USE_YN = 'Y'
+                 </if>
+                 )
+                 A
+            left join UM_LAYER_MNG LM
+                 on       A.LAYER_ID  = LM.LAYER_ID
+                 and      LM.USER_ID  = #{userId}
+                 and      LM.DSTRT_CD = #{dstrtCd}
+        order by SORT_ORDR
+               , LAYER_GRP_NM
+               , LAYER_ID
+    </select>
+
+    <update id="updateLayerMng" parameterType="configure">
+    /* updateLayerMng */
+        insert into UM_LAYER_MNG
+             ( DSTRT_CD    , LAYER_ID    , USER_ID     , CHECK_YN
+             , RGS_DATE    , RGS_USER_ID , UPD_DATE    , UPD_USER_ID  )
+        values
+             ( #{dstrtCd}  , #{layerId}  , #{userId}   , #{checkYn}
+             , NOW()       , #{userId}   , NOW()       , #{userId}    )
+   ON CONFLICT (USER_ID, DSTRT_CD, LAYER_ID)
+     DO UPDATE
+           set UPD_USER_ID = #{userId}
+             , CHECK_YN    = #{checkYn}
+             , UPD_DATE    = NOW()
+    </update>
+
+    <update id="updateAllLayerMng" parameterType="configure">
+    /* updateAllLayerMng */
+        insert into UM_LAYER_MNG
+             ( DSTRT_CD      , USER_ID        , LAYER_ID      , CHECK_YN
+             , RGS_DATE      , RGS_USER_ID    , UPD_DATE      , UPD_USER_ID      )
+        select '${dstrtCd}'    as DSTRT_CD
+             , '${userId}'     as USER_ID
+             , FCLT_USED_TY_CD as LAYER_ID
+             , '${checkYn}'    as CHECK_YN
+             , NOW()           as RGS_DATE
+             , '${userId}'     as RGS_USER_ID
+             , NOW()           as UPD_DATE
+             , '${userId}'     as UPD_USER_ID
+          from CM_TC_FCLT_USED CTFU
+         where USE_TY_CD = 'Y'
+           and EXISTS
+               ( select FCLT_USED_TY_CD
+                   from CM_CCTV_CTL_USED_TY
+                  where GRP_ID          = #{grpId}
+                    and AUTH_LVL        = CAST(#{authLvl} AS INTEGER)
+                    and FCLT_USED_TY_CD = CTFU.FCLT_USED_TY_CD
+               )
+   ON CONFLICT ( DSTRT_CD, USER_ID, LAYER_ID )
+     DO UPDATE
+           SET UPD_DATE    = NOW()
+             , UPD_USER_ID = #{userId}
+             , CHECK_YN    = #{checkYn}
+    </update>
+	<!-- 
+    <select id="selectCmConfig" parameterType="map" resultType="egovMap">
+    /* selectCmConfig */
+        select CC.*
+             , COALESCE( (select REP_TEL_NO from CM_DSTRT_CD_MNG where DSTRT_CD = #{dstrtCd} ) , '')  as REP_TEL_NO
+             , CONCAT(SUBSTR(CTS.SIGUNGU_CD, 1, 4), '%') as SIGUNGU_CD
+        from   CM_CONFIG CC
+          join CM_TC_SIGUNGU CTS on CC.DSTRT_CD = CTS.DSTRT_CD
+        where  CC.DSTRT_CD = #{dstrtCd}
+        limit  1
+    </select>
+	 -->
+    <select id="selectDstrtInfo" parameterType="map" resultType="egovMap">
+    /* selectDstrtInfo */
+        select cdcm.DSTRT_CD              , cdcm.DSTRT_NM
+             , coalesce(REP_TEL_NO,'') REP_TEL_NO
+             , CONCAT(SUBSTR(CTS.SIGUNGU_CD, 1, 4), '%') as SIGUNGU_CD
+          from CM_DSTRT_CD_MNG CDCM
+     left join CM_TC_SIGUNGU CTS on cdcm.dstrt_cd = cts.dstrt_cd
+         where cdcm.DSTRT_CD = #{dstrtCd}
+    </select>
+    
+    <select id="selectCmConfigList" parameterType="map" resultType="egovMap">
+    /* selectCmConfigList */
+        select PRPRTS_KEY
+             , COALESCE(NULLIF(PRPRTS_VAL, ''), DEFAULT_VAL) as PRPRTS_VAL
+             , DEFAULT_VAL
+          from CM_PRPRTS
+         where PRPRTS_TY='CM_CONFIG'
+           and PRPRTS_ID = #{dstrtCd}
+    </select>
+	<!-- 
+    <select id="selectTvoConfig" parameterType="map" resultType="egovMap">
+    /* selectTvoConfig */
+        select DSTRT_CD
+             , VIEW_AUTO_APRV_YN           , VIEW_AUTO_APRV_START        , VIEW_AUTO_APRV_END
+             , VIEW_EXTN_AUTO_APRV_YN
+             , OUT_AUTO_APRV_YN            , OUT_AUTO_APRV_START         , OUT_AUTO_APRV_END
+             , OUT_DRM_AUTO_APRV_YN        , OUT_EXTN_AUTO_APRV_YN
+             , APPROVE_NOTIFY_TY           , APPROVE_NOTIFY_MUTE_YN
+             , ORG_VDO_AUTO_RGS_YN         , RECOMM_VDO_DURATION
+             , OUT_FILE_PLAY_PROD          , OUT_FILE_PLAY_PROD_THIRD    , OUT_FILE_PLAY_CNT
+             , FILE_KEEP_DAY               , DASHBOARD_REFRESH_INTERVAL
+        from   TVO_CONFIG
+        where  DSTRT_CD = #{dstrtCd}
+    </select>
+	 -->
+    <select id="selectTvoConfigList" parameterType="map" resultType="egovMap">
+    /* selectTvoConfigList */
+        select PRPRTS_KEY
+             , COALESCE(NULLIF(PRPRTS_VAL, ''), DEFAULT_VAL) as PRPRTS_VAL
+             , DEFAULT_VAL
+          from CM_PRPRTS
+         where PRPRTS_TY='TVO_CONFIG'
+           and PRPRTS_ID = #{dstrtCd}
+    </select>
+    <!-- 
+    <update id="updateConfig" parameterType="map">
+    /* updateConfig */
+        update TVO_CONFIG
+        set UPD_DATE = NOW()
+        <if test="viewAutoAprvYn         != null">    , VIEW_AUTO_APRV_YN           = #{viewAutoAprvYn}          </if>
+        <if test="viewAutoAprvStart      != null">    , VIEW_AUTO_APRV_START        = #{viewAutoAprvStart}       </if>
+        <if test="viewAutoAprvEnd        != null">    , VIEW_AUTO_APRV_END          = #{viewAutoAprvEnd}         </if>
+        <if test="viewExtnAutoAprvYn     != null">    , VIEW_EXTN_AUTO_APRV_YN      = #{viewExtnAutoAprvYn}      </if>
+        
+        <if test="outAutoAprvYn          != null">    , OUT_AUTO_APRV_YN            = #{outAutoAprvYn}           </if>
+        <if test="outAutoAprvStart       != null">    , OUT_AUTO_APRV_START         = #{outAutoAprvStart}        </if>
+        <if test="outAutoAprvEnd         != null">    , OUT_AUTO_APRV_END           = #{outAutoAprvEnd}          </if>
+        <if test="outDrmAutoAprvYn       != null">    , OUT_DRM_AUTO_APRV_YN        = #{outDrmAutoAprvYn}        </if>
+        <if test="outExtnAutoAprvYn      != null">    , OUT_EXTN_AUTO_APRV_YN       = #{outExtnAutoAprvYn}       </if>
+        
+        <if test="orgVdoAutoRgsYn        != null">    , ORG_VDO_AUTO_RGS_YN         = #{orgVdoAutoRgsYn}                  </if>
+        <if test="recommVdoDuration      != null">    , RECOMM_VDO_DURATION         = #{recommVdoDuration}::numeric       </if>
+        <if test="outFilePlayProd        != null">    , OUT_FILE_PLAY_PROD          = #{outFilePlayProd}::numeric         </if>
+        <if test="outFilePlayProdThird   != null">    , OUT_FILE_PLAY_PROD_THIRD    = #{outFilePlayProdThird}::numeric    </if>
+        <if test="outFilePlayCnt         != null">    , OUT_FILE_PLAY_CNT           = #{outFilePlayCnt}::numeric          </if>
+        <if test="fileKeepDuration       != null">    , FILE_KEEP_DURATION          = #{fileKeepDuration}::numeric        </if>
+
+        <if test="dashboardRefreshInterval != null">  , DASHBOARD_REFRESH_INTERVAL  = #{dashboardRefreshInterval}::numeric </if>
+
+        <if test="approveNotifyTy        != null">    , APPROVE_NOTIFY_TY           = #{approveNotifyTy}         </if>
+        <if test="approveNotifyMuteYn    != null">    , APPROVE_NOTIFY_MUTE_YN      = #{approveNotifyMuteYn}     </if>
+             
+        <if test="userId                 != null">    , UPD_USER_ID                 = #{userId}                  </if>
+        where DSTRT_CD = #{dstrtCd}
+    </update>
+     -->
+</mapper>

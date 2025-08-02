@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.co.ucp.mntr.cmm.service.CmmCodeMapper">
+
+    <select id="selectCodeList" parameterType="cmmCode" resultType="egovMap">
+    /* selectCodeList */
+        select CD_ID
+             , CD_NM_KO
+          from CM_TC_CODE
+         where CD_GRP_ID = #{gCodeId}
+           and CD_TY     = 'C'
+           and USE_TY_CD = 'Y'
+           <if test="codeId != null and codeId != ''">
+           and CD_ID = #{codeId}
+           </if>
+      order by SORT_ORDR
+    </select>
+
+    <select id="selectFcltKindCodeList" resultType="egovMap">
+    /* selectFcltKindCodeList */
+        select DISTINCT  CTC.CD_ID
+             , CTC.CD_NM_KO
+          from CM_TC_CODE CTC
+          join CM_TC_FCLT_USED CTFU
+            on CTC.CD_ID = CTFU.FCLT_KND_CD
+           and CTFU.USE_TY_CD = 'Y'
+         where CTC.CD_GRP_ID = 'FCLT_KND'
+           and CTC.CD_TY     = 'C'
+           and CTC.USE_TY_CD = 'Y'
+      order by CTC.CD_NM_KO
+    </select>
+
+    <select id="selectFcltUsedTyList" parameterType="cmmCode" resultType="egovMap">
+    /* selectFcltUsedTyList */
+        select FCLT_USED_TY_CD as CD_ID
+             , FCLT_USED_TY_NM as CD_NM_KO
+          from   CM_TC_FCLT_USED
+         where  USE_TY_CD   = 'Y'
+           and    FCLT_KND_CD = #{gCodeId}
+      order by FCLT_USED_TY_NM
+    </select>
+
+    <select id="selectDistrictList" resultType="egovMap">
+    /* selectDistrictList */
+        select DSTRT_CD as CD
+             , DSTRT_NM as NM
+          from CM_DSTRT_CD_MNG
+         where USE_TY_CD = 'Y'
+      order by DSTRT_NM
+    </select>
+
+    <select id="selectSigunguList" resultType="egovMap">
+    /* selectSigunguList */
+        select SIGUNGU_CD as CD
+             , SIGUNGU_NM as NM
+          from CM_TC_SIGUNGU
+      order by SIGUNGU_NM
+    </select>
+
+    <select id="selectSysList" resultType="egovMap">
+    /* selectSysList */
+        select AA.SYS_CD                         as CD
+             , CONCAT('[', TRIM(AA.CD_NM_KO), ']', AA.SYS_NM_KO) as NM
+             , AA.*
+          from ( select A.*
+                      , B.CD_NM_KO
+                   from ( select A.SYS_CD
+                               , A.SYS_NM_KO
+                               , A.SYS_NM_EN
+                               , A.DSCRT
+                               , A.USVC_GRP_CD
+                               , A.USE_TY_CD
+                               , A.RGS_USER_ID
+                               , A.RGS_DATE
+                               , A.UPD_USER_ID
+                               , A.UPD_DATE
+                               , B.CD_NM_KO as USE_NM
+                            from CM_SYS_CODE A
+                       left join ( select CD_ID
+                                        , CD_NM_KO
+                                     from    CM_TC_CODE
+                                    where   CD_GRP_ID = 'USE_TY'
+                                      and     CD_TY     = 'C'
+                                 ) B
+                              on A.USE_TY_CD = B.CD_ID
+                           where 1 = 1
+                        ) A
+              left join ( select CD_ID
+                               , CD_NM_KO
+                            from CM_TC_CODE
+                           where CD_TY     = 'C'
+                             and CD_GRP_ID = 'USVC_GRP'
+                        ) B
+                     on A.USVC_GRP_CD = B.CD_ID
+               ) AA
+         where 1 = 1
+           and USE_TY_CD = 'Y'
+      order by AA.CD_NM_KO , AA.SYS_NM_KO
+    </select>
+
+    <select id="selectFcltUsedTyAll" resultType="egovMap">
+    /* selectFcltUsedTyAll */
+        select CTFU.FCLT_USED_TY_CD
+             , CTFU.FCLT_USED_TY_NM
+             , DECODE(UDM.MNTR_TY_ID, NULL
+                    , 'N'
+                    , 'Y') as EXIST_DIV
+             , CTFU.FCLT_KND_CD
+             , FN_GET_TC_CODE('FCLT_KND', CTFU.FCLT_KND_CD) as FCLT_KND_NM
+        from   CM_TC_FCLT_USED CTFU
+             , ( select DISTINCT MNTR_TY_ID
+               from             UM_DIV_MNTR
+               )
+               UDM
+        where 1 = 1
+        and    CTFU.USE_TY_CD       = 'Y'
+        and    CTFU.FCLT_USED_TY_CD = UDM.MNTR_TY_ID(+)
+        and    EXISTS
+               ( select FCLT_USED_TY_CD
+               from    CM_CCTV_CTL_USED_TY
+               where   GRP_ID          = #{grpId}
+               and     AUTH_LVL        = #{authLvl}::numeric
+               and     FCLT_USED_TY_CD = CTFU.FCLT_USED_TY_CD
+               )
+    </select>
+
+    <select id="selectFcltUsedTy" resultType="egovMap">
+        select CTFU.FCLT_USED_TY_CD
+             , CTFU.FCLT_USED_TY_NM
+             , DECODE(UDM.MNTR_TY_ID, NULL
+                    , 'N'
+                    , 'Y') as EXIST_DIV
+             , CTFU.FCLT_KND_CD
+             , FN_GET_TC_CODE('FCLT_KND', CTFU.FCLT_KND_CD) as FCLT_KND_NM
+        from   CM_TC_FCLT_USED CTFU
+             , ( select DISTINCT MNTR_TY_ID
+               from             UM_DIV_MNTR
+               )
+               UDM
+        where 1 = 1
+        and    CTFU.USE_TY_CD       = 'Y'
+        and    CTFU.FCLT_USED_TY_CD = UDM.MNTR_TY_ID(+)
+        and    EXISTS
+               ( select FCLT_USED_TY_CD
+               from    CM_CCTV_CTL_USED_TY
+               where   GRP_ID          = #{grpId}
+               and     AUTH_LVL        = #{authLvl}::numeric
+               and     FCLT_USED_TY_CD = CTFU.FCLT_USED_TY_CD
+               )
+    </select>
+
+    <select id="selectPlcList" parameterType="cmmCode" resultType="egovMap">
+        select PLC_ID as CD_ID, PLC_NM as CD_NM_KO
+          from CM_TC_PLC
+         where USE_TY_CD = 'Y'
+    </select>
+
+    <insert id="insertCmMuneUsedLog" parameterType="java.util.Map" >
+    /* insertCmMuneUsedLog */
+        insert into ${dbName}.TB_USE_LOG
+             ( STAN_YMD
+             , USER_ID      , PROG_ID     , USE_TIME  )
+        values
+             ( TO_CHAR(SYSDATE, 'YYYYMMDD')
+             , #{userId}    , #{progId}  , SYSDATE    )
+    </insert>
+    
+    <select id="selectListDstrtInfo" parameterType="map"  resultType="egovMap">
+    /* selectListDstrtInfo */
+        select A.DSTRT_CD             , A.DSTRT_NM
+             , A.VRS_RTSP_ADDR        , A.VRS_WEBRTC_ADDR
+             , A.PTZ_API_ADDR         , A.PTZ_API_KEY
+             , A.PTZ_API_SYS_CD       , A.PTZ_AUTH_YN
+             , A.PLAYBACK_SPEED
+          from CM_DSTRT_CD_MNG        A
+         where A.USE_TY_CD = 'Y'
+           <if test='dstrtCd != null and dstrtCd != ""'> and A.DSTRT_CD = #{dstrtCd} </if>
+           <if test='dstrtTy != null and dstrtTy != ""'> and A.DSTRT_TY = #{dstrtTy} </if>
+    </select>
+    
+    <select id="selectUserList" parameterType="map" resultType="egovMap">
+        select  A.USER_NM_KO
+            , A.MOBL_NO
+            , A.USER_ID
+            , A.GRP_NM_KO
+            , A.AUTH_LVL_NM
+            , A.DSTRT_NM
+            , A.GRP_ID || '_' || A.AUTH_LVL as PRNT_GRP_ID
+            , A.USER_ID || '_' || A.GRP_ID || A.AUTH_LVL as GRP_ID
+            , A.USER_ID as GRP_ID_KEY
+            , A.AUTH_LVL
+            , A.DSTRT_CD
+         from  VW_USER A
+        where 1         = 1
+          and A.USE_TY_CD = 'Y'
+          and A.MOBL_NO     != '--'
+          and A.GRP_USE_TY_CD     = 'Y'
+          and A.GRPLVL_USE_TY_CD     = 'Y'
+          and A.GRP_ID is not null
+          and A.MOBL_NO is not null
+          and A.DSTRT_CD = (select prprts_val from cm_prprts where prprts_key = 'DSTRT_CD' and prprts_id = 'COM')
+        <if test='grpTy        != null and grpTy        == "todo"'> and A.GRP_ID   in ('MNTR','ADM')                              </if>
+        <if test='searchUserNm != null and searchUserNm != ""'    > and USER_NM_KO LIKE CONCAT('%', CONCAT(#{searchUserNm}, '%')) </if>
+        <if test='searchGrpNm  != null and searchGrpNm  != ""'    > and GRP_NM_KO  LIKE CONCAT('%', CONCAT(#{searchGrpNm}, '%'))  </if>
+        <choose>
+            <when test='sidx != null and sidx != ""'> order by ${sidx} ${sord} </when>
+            <otherwise> order by GRP_NM_KO, AUTH_LVL,USER_NM asc </otherwise>
+        </choose>
+    </select>
+    
+</mapper>

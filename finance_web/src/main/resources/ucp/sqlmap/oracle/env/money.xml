@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ucp.env.service.MoneyMapper">
+
+    <select id="selectMoney" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectMoney */
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingHeader"/>
+        select TB.STAN_YY
+             , M.MONEY_CODE       , M.MONEY_NAME
+             , M.ACCT_CODE        , TB.ACCT_NAME
+             , M.ACCT_GB
+             , (SELECT ACCT_GB_NAME from TB_ACCT_GB A where A.ACCT_GB = M.ACCT_GB) ACCT_GB_NAME
+          from TB_MONEY M
+     left join ( select AC.STAN_YY  , AC.ACCT_GB  , AC.ACCT_CODE , AC.ACCT_NAME 
+                      , AY.FROM_YMD , AY.END_YMD 
+                   from TB_ACCTCODE AC
+                      , TB_ACCTYEAR AY 
+                  where AC.STAN_YY   = AY.STAN_YY
+                    <if test="stanYy  != null and stanYy  != '' "> and AC.STAN_YY   = #{stanYy} </if>
+                    <if test="stanYmd != null and stanYmd != '' ">
+                    and AC.STAN_YY = ( select STAN_YY from TB_ACCTYEAR AY where #{stanYmd} BETWEEN AY.FROM_YMD and AY.END_YMD )
+                    </if>
+               ) TB ON M.ACCT_GB    =  TB.ACCT_GB and M.ACCT_CODE  =  TB.ACCT_CODE
+         where 1 = 1 
+           <if test="acctGb       != null and acctGb       != '' "> and M.ACCT_GB       = #{acctGb}       </if>
+           <if test="moneyName    != null and moneyName    != '' "> and M.MONEY_NAME LIKE #{moneyName} || '%' </if>
+      order by ${sidx} ${sord}
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingBottom"/>
+    </select>
+
+    <insert id="insertMoney" parameterType="java.util.HashMap">
+    /* insertMoney */
+        insert into TB_MONEY
+             ( MONEY_CODE         , MONEY_NAME
+             , ACCT_CODE          , ACCT_GB        )
+        values
+             ( #{moneyCode}       , #{moneyName}
+             , #{acctCode}        , #{acctGb}      )
+    </insert>
+    
+    <update id="updateMoney" parameterType="java.util.HashMap">
+    /* updateMoney */
+        update TB_MONEY
+           set MONEY_CODE    = #{moneyCode}
+             , MONEY_NAME    = #{moneyName}
+             , ACCT_CODE     = #{acctCode}
+             , ACCT_GB       = #{acctGb}
+         where MONEY_CODE = #{moneyCode}
+    </update>
+
+    <delete id="deleteMoney" parameterType="java.util.HashMap">
+    /* deleteMoney */
+        delete from TB_MONEY
+         where MONEY_CODE = #{moneyCode}
+    </delete>
+    
+</mapper>

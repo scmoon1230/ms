@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE tiles-definitions PUBLIC "-//Apache Software Foundation//DTD Tiles Configuration 3.0//EN" "http://tiles.apache.org/dtds/tiles-config_3_0.dtd">
+
+<tiles-definitions>
+
+	<!-- Map Layout -->
+	<definition name="mntr-layout" template="/WEB-INF/jsp/mntr/layout/layout.jsp">
+		<put-attribute name="title" expression="${common.title}" />
+		<put-attribute name="prefix"  value="/WEB-INF/jsp/mntr/cmm/commonDefinitions.jsp" />
+		<put-attribute name="header"  value="/WEB-INF/jsp/mntr/layout/header.jsp" />
+		<put-attribute name="left"    value="/WEB-INF/jsp/mntr/layout/left.jsp" />
+		<put-attribute name="right"   value="/WEB-INF/jsp/mntr/layout/right.jsp" />
+		<put-attribute name="bottom"  value="/WEB-INF/jsp/mntr/layout/bottom.jsp" />
+		<put-attribute name="footer"  value="/WEB-INF/jsp/mntr/layout/footer.jsp" />
+		<put-attribute name="map-ol5" value="/WEB-INF/jsp/tvo/layout/mapOl5.jsp" />
+		<put-attribute name="suffix"  value="/WEB-INF/jsp/mntr/cmm/commonDefinitionsSuffix.jsp" />
+	</definition>
+
+	<!-- Map -->
+	<definition name="mntr/**/*" extends="mntr-layout" >
+		<put-attribute name="left" value="/WEB-INF/jsp/mntr/{1}/{2}.jsp" />
+	</definition>
+
+	<definition name="tvoMap/**/*" extends="mntr-layout">
+		<put-attribute name="map-ol5" value="/WEB-INF/jsp/tvo/layout/mapOl5.jsp" />
+		<put-attribute name="left" value="/WEB-INF/jsp/tvo/{1}/{2}.jsp" />
+	</definition>
+
+    <definition name="tvoMapR/**/*" extends="mntr-layout">
+		<put-attribute name="map-ol5" value="/WEB-INF/jsp/tvo/layout/mapOl5.jsp" />
+		<put-attribute name="left" value="/WEB-INF/jsp/tvo/{1}/{2}.jsp" />
+        <put-attribute name="right" value="/WEB-INF/jsp/tvo/{1}/{2}Right.jsp"/>
+    </definition>
+
+
+	<!-- No Map Layout -->
+	<definition name="nomap-layout" template="/WEB-INF/jsp/mntr/layout/layoutNomap.jsp">
+		<put-attribute name="title" expression="${common.title}" />
+		<put-attribute name="prefix" value="/WEB-INF/jsp/mntr/cmm/commonDefinitions.jsp" />
+		<put-attribute name="header" value="/WEB-INF/jsp/mntr/layout/header.jsp" />
+		<put-attribute name="left" value="/WEB-INF/jsp/mntr/layout/left.jsp" />
+		<put-attribute name="bottom" value="/WEB-INF/jsp/mntr/layout/bottom.jsp" />
+		<put-attribute name="footer" value="/WEB-INF/jsp/mntr/layout/footer.jsp" />
+		<put-attribute name="socket" value="/WEB-INF/jsp/mntr/layout/socket.jsp" />
+		<put-attribute name="suffix" value="/WEB-INF/jsp/mntr/cmm/commonDefinitionsSuffix.jsp" />
+	</definition>
+
+	<!-- noMap -->
+	<definition name="nomap/**/*" extends="nomap-layout">
+		<put-attribute name="body" value="/WEB-INF/jsp/mntr/{1}/{2}.jsp" />
+	</definition>
+
+	<definition name="nomapL/**/*" extends="nomap-layout">
+		<put-attribute name="left" value="/WEB-INF/jsp/mntr/{1}/{2}Left.jsp" />
+		<put-attribute name="body" value="/WEB-INF/jsp/mntr/{1}/{2}.jsp" />
+	</definition>
+
+	<!-- Blank -->
+	<definition name="blank-layout" template="/WEB-INF/jsp/mntr/layout/blank.jsp">
+		<put-attribute name="title" expression="${common.title}" />
+	</definition>
+
+	<definition name="blank/**/*" extends="blank-layout">
+		<put-attribute name="body" value="/WEB-INF/jsp/mntr/{1}/{2}.jsp" />
+	</definition>
+
+	<definition name="tvoBlank/**/*" extends="blank-layout">
+		<put-attribute name="body" value="/WEB-INF/jsp/tvo/{1}/{2}.jsp" />
+	</definition>
+
+
+	<!-- tvo Layout -->
+	<definition name="tvo-layout" template="/WEB-INF/jsp/mntr/layout/layoutTvo.jsp">
+		<put-attribute name="title" expression="${common.title}" />
+		<put-attribute name="prefix" value="/WEB-INF/jsp/mntr/cmm/commonDefinitions.jsp" />
+		<put-attribute name="header" value="/WEB-INF/jsp/mntr/layout/header.jsp" />
+		<put-attribute name="footer" value="/WEB-INF/jsp/mntr/layout/footer.jsp" />
+		<put-attribute name="socket" value="/WEB-INF/jsp/mntr/layout/socket.jsp" />
+		<put-attribute name="suffix" value="/WEB-INF/jsp/mntr/cmm/commonDefinitionsSuffix.jsp" />
+	</definition>
+
+	<!-- tvo -->
+	<definition name="tvo/**/*" extends="tvo-layout">
+		<put-attribute name="body" value="/WEB-INF/jsp/tvo/{1}/{2}.jsp" />
+	</definition>
+
+	<!-- works 2019.9.5 추가 -->
+	<definition name="works/**/*" extends="tvo-layout">
+		<put-attribute name="body" value="/WEB-INF/jsp/wrks/{1}/{2}.jsp" />
+	</definition>
+
+
+	<!-- Excel -->
+	<definition name="excel-layout" template="/WEB-INF/jsp/mntr/layout/excel.jsp">
+	</definition>
+	<definition name="excel/**/*" extends="excel-layout">
+		<put-attribute name="body" value="/WEB-INF/jsp/mntr/{1}/{2}.jsp" />
+	</definition>
+
+</tiles-definitions>

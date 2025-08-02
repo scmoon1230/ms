@@ -1,0 +1,444 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.co.ucp.pve.mapper.PveMapper">
+
+
+
+    <select id="selectCmPrprts" parameterType="String" resultType="cmlMap">
+    /* selectDstrtCd */
+        SELECT PRPRTS_KEY
+             , PRPRTS_VAL
+          FROM CM_PRPRTS
+         WHERE PRPRTS_KEY = #{prprtsKey}
+    </select>
+
+
+    <select id="selectPrprtsList" parameterType="String" resultType="cmlMap">
+    /* selectPrprtsList */
+        select PRPRTS_KEY , COALESCE(PRPRTS_VAL,COALESCE(DEFAULT_VAL,'')) as PRPRTS_VAL , DEFAULT_VAL
+          from CM_PRPRTS
+         where USE_TY_CD = 'Y' and PRPRTS_ID IN ( 'COM', #{value} ) 
+         union all
+        select case when position (PRPRTS_ID in prprts_key ) = 0
+                    then PRPRTS_KEY
+                    else substring(prprts_key,0,position (PRPRTS_ID in prprts_key )-1)
+                    end  PRPRTS_KEY
+             , COALESCE(NULLIF(PRPRTS_VAL, ''), DEFAULT_VAL) as PRPRTS_VAL , DEFAULT_VAL
+          from CM_PRPRTS
+         where USE_TY_CD = 'Y'
+           and PRPRTS_ID = ( select PRPRTS_VAL from CM_PRPRTS where PRPRTS_KEY = 'GIS_ENGINE' and PRPRTS_ID = #{value} )
+         union all
+        SELECT 'HD_TIT' AS PRPRTS_KEY , SYS_NM  AS PRPRTS_VAL , SYS_NM  AS DEFAULT_VAL
+          FROM CM_TOP_MENU
+         WHERE SYS_ID = ( SELECT PRPRTS_VAL FROM CM_PRPRTS WHERE PRPRTS_KEY = 'G_SYS_ID' AND PRPRTS_ID = #{value} )
+      order by PRPRTS_KEY
+    </select>
+
+    <select id="selectPrprtsListStartWith" parameterType="String" resultType="cmlMap">
+    /* selectPrprtsListStartWith */
+        select PRPRTS_KEY , COALESCE(PRPRTS_VAL,COALESCE(DEFAULT_VAL,'')) as PRPRTS_VAL , DEFAULT_VAL
+          from CM_PRPRTS
+         where USE_TY_CD = 'Y'
+           and PRPRTS_KEY LIKE CONCAT(#{value}, '%')
+      order by PRPRTS_KEY
+    </select>
+
+
+
+
+
+    <select id="selectOutFileList" parameterType="hMap" resultType="cmlMap">
+    /* selectOutFileList */
+        select (TOF.OUT_FILE_SEQ+1) OUT_FILE_IND
+             , TOF.DSTRT_CD                , TOF.OUT_RQST_NO              , TOF.OUT_FILE_SEQ
+             , COALESCE(TOF.OUT_FILE_PRGRS_CD , '') as OUT_FILE_PRGRS_CD
+             , FN_GET_TC_CODE('OUT_FILE_PRGRS', COALESCE(TOF.OUT_FILE_PRGRS_CD, '')) as OUT_FILE_PRGRS_NM
+             , TOF.OUT_VDO_YMDHMS_FR
+             , CASE WHEN TOF.OUT_VDO_YMDHMS_FR IS NULL                                        THEN ''
+                    ELSE TO_CHAR(TO_TIMESTAMP(TOF.OUT_VDO_YMDHMS_FR, 'YYYYMMDDHH24MISS'), 'YYYY-MM-DD HH24:MI:SS')                          END as OUT_VDO_YMD_HMS_FR
+             , TOF.OUT_VDO_YMDHMS_TO
+             , CASE WHEN TOF.OUT_VDO_YMDHMS_TO IS NULL                                        THEN ''
+                    ELSE TO_CHAR(TO_TIMESTAMP(TOF.OUT_VDO_YMDHMS_TO, 'YYYYMMDDHH24MISS'), 'YYYY-MM-DD HH24:MI:SS')                          END as OUT_VDO_YMD_HMS_TO
+             , (select (extract (hour from (TO_TIMESTAMP(TOF.OUT_VDO_YMDHMS_TO, 'YYYYMMDDHH24MISS') - TO_TIMESTAMP(TOF.OUT_VDO_YMDHMS_FR, 'YYYYMMDDHH24MISS')))*60)
+                     + extract (minute from (TO_TIMESTAMP(TOF.OUT_VDO_YMDHMS_TO, 'YYYYMMDDHH24MISS') - TO_TIMESTAMP(TOF.OUT_VDO_YMDHMS_FR, 'YYYYMMDDHH24MISS')))
+               )::text as OUT_VDO_DURATION
+             , TOF.OUT_FILE_PATH
+             , COALESCE(TOF.CPTN_FILE_NM   , '') as CPTN_FILE_NM
+             , COALESCE(TOF.OUT_FILE_NM    , '') as OUT_FILE_NM           , COALESCE(TOF.OUT_FILE_NM_MP4, '') as OUT_FILE_NM_MP4
+             , COALESCE(TOF.OUT_FILE_NM_MSK, '') as OUT_FILE_NM_MSK       , COALESCE(TOF.OUT_FILE_NM_DRM, '') as OUT_FILE_NM_DRM
+             , TOF.OUT_FILE_SIZE
+             , TOF.DRM_PCNT                , TOF.DRM_HASH
+             , COALESCE(TOF.OUT_FILE_DEL_YMDHMS  , '') as OUT_FILE_DEL_YMDHMS
+             , TOR.OUT_FILE_DEL_YN
+             , TOR.TVO_PRGRS_CD            , TOR.OUT_CHK_STEP_CD          , COALESCE(TOR.OUT_CHK_STEP_DTL, '') as OUT_CHK_STEP_DTL
+             , TOR.VDO_ENC_URL
+             , TOR.MASKING_YN              , TOR.VDO_YMDHMS_FR            , TOR.VDO_YMDHMS_TO
+             , TOR.CCTV_ID
+             , CF.FCLT_UID                 , CF.LINK_VMS_UID             , CF.FCLT_LBL_NM
+             , CF.SYS_CD                                                                             as FCLT_SYS_CD
+             , (select SYS_NM_KO from cm_sys_code csc where VIEWER_TY_CD='VMS' and SYS_CD=CF.SYS_CD) as FCLT_SYS_NM
+             , COALESCE(CF.SVR_CONN_IP, '') as SVR_CONN_IP
+          from TVO_OUT_FILE TOF
+          join TVO_OUT_RQST TOR on TOF.DSTRT_CD    = TOR.DSTRT_CD
+                               and TOF.OUT_RQST_NO = TOR.OUT_RQST_NO
+          join CM_FACILITY  CF  on CF.FCLT_ID = TOR.CCTV_ID
+         where 1 = 1
+           <if test="dstrtCd        != null and dstrtCd        != ''"> and TOF.DSTRT_CD          = #{dstrtCd}        </if>
+           <if test="outRqstNo      != null and outRqstNo      != ''"> and TOF.OUT_RQST_NO       = #{outRqstNo}      </if>
+           <if test="outFilePrgrsCd != null and outFilePrgrsCd != ''"> and TOF.OUT_FILE_PRGRS_CD = #{outFilePrgrsCd} </if>
+           <if test="vdoEncUrl      != null and vdoEncUrl      != ''"> and TOR.VDO_ENC_URL       = #{vdoEncUrl}      </if>
+           <!-- 
+           <if test="outFilePrgrsCdList != null and outFilePrgrsCdList != ''">
+           and TOF.OUT_FILE_PRGRS_CD IN
+               <foreach collection="outFilePrgrsCdList" item="item" index="index" open="(" close=")" separator=",">
+                   #{item}
+               </foreach>
+           </if>
+            -->
+        order by TOF.DSTRT_CD, TOF.OUT_RQST_NO, TOF.OUT_FILE_SEQ
+        <!-- 
+        offset #{firstRecordIndex} limit #{recordCountPerPage}
+         -->
+    </select>
+
+    <select id="selectOutFileWaitingList" parameterType="hMap" resultType="cmlMap">
+    /* selectOutFileWaitingList */
+        select (TOF.OUT_FILE_SEQ+1) OUT_FILE_IND
+             , TOF.DSTRT_CD                , TOF.OUT_RQST_NO              , TOF.OUT_FILE_SEQ
+             , COALESCE(TOF.OUT_FILE_PRGRS_CD , '') as OUT_FILE_PRGRS_CD
+             , FN_GET_TC_CODE('OUT_FILE_PRGRS', COALESCE(TOF.OUT_FILE_PRGRS_CD, '')) as OUT_FILE_PRGRS_NM
+             , TOF.OUT_VDO_YMDHMS_FR
+             , CASE WHEN TOF.OUT_VDO_YMDHMS_FR IS NULL                                        THEN ''
+                    ELSE TO_CHAR(TO_TIMESTAMP(TOF.OUT_VDO_YMDHMS_FR, 'YYYYMMDDHH24MISS'), 'YYYY-MM-DD HH24:MI:SS')                          END as OUT_VDO_YMD_HMS_FR
+             , TOF.OUT_VDO_YMDHMS_TO
+             , CASE WHEN TOF.OUT_VDO_YMDHMS_TO IS NULL                                        THEN ''
+                    ELSE TO_CHAR(TO_TIMESTAMP(TOF.OUT_VDO_YMDHMS_TO, 'YYYYMMDDHH24MISS'), 'YYYY-MM-DD HH24:MI:SS')                          END as OUT_VDO_YMD_HMS_TO
+             , (select (extract (hour from (TO_TIMESTAMP(TOF.OUT_VDO_YMDHMS_TO, 'YYYYMMDDHH24MISS') - TO_TIMESTAMP(TOF.OUT_VDO_YMDHMS_FR, 'YYYYMMDDHH24MISS')))*60)
+                     + extract (minute from (TO_TIMESTAMP(TOF.OUT_VDO_YMDHMS_TO, 'YYYYMMDDHH24MISS') - TO_TIMESTAMP(TOF.OUT_VDO_YMDHMS_FR, 'YYYYMMDDHH24MISS')))
+               )::text as OUT_VDO_DURATION
+             , TOF.OUT_FILE_PATH
+             , COALESCE(TOF.CPTN_FILE_NM   , '') as CPTN_FILE_NM
+             , COALESCE(TOF.OUT_FILE_NM    , '') as OUT_FILE_NM         , COALESCE(TOF.OUT_FILE_NM_MP4, '') as OUT_FILE_NM_MP4
+             , COALESCE(TOF.OUT_FILE_NM_MSK, '') as OUT_FILE_NM_MSK     , COALESCE(TOF.OUT_FILE_NM_DRM, '') as OUT_FILE_NM_DRM
+             , TOF.OUT_FILE_SIZE
+             , TOF.DRM_PCNT                , TOF.DRM_HASH
+             , COALESCE(TOF.OUT_FILE_DEL_YMDHMS  , '') as OUT_FILE_DEL_YMDHMS
+             , TOR.OUT_FILE_DEL_YN
+             , TOR.TVO_PRGRS_CD            , TOR.OUT_CHK_STEP_CD        , COALESCE(TOR.OUT_CHK_STEP_DTL, '') as OUT_CHK_STEP_DTL
+             , TOR.MASKING_YN              , TOR.VDO_YMDHMS_FR          , TOR.VDO_YMDHMS_TO
+             , TOR.CCTV_ID
+             , CF.FCLT_UID                 , CF.LINK_VMS_UID            , COALESCE(CF.MNG_SN,'') MNG_SN        , CF.FCLT_LBL_NM
+             , CF.SYS_CD                                                                             as FCLT_SYS_CD
+             , (select SYS_NM_KO from cm_sys_code csc where VIEWER_TY_CD='VMS' and SYS_CD=CF.SYS_CD) as FCLT_SYS_NM
+             , COALESCE(CF.SVR_CONN_IP, '') as SVR_CONN_IP
+          from TVO_OUT_FILE TOF
+          join TVO_OUT_RQST TOR on TOF.DSTRT_CD    = TOR.DSTRT_CD
+                               and TOF.OUT_RQST_NO = TOR.OUT_RQST_NO
+          join CM_FACILITY  CF  on CF.FCLT_ID = TOR.CCTV_ID
+         where 1 = 1
+           <if test="dstrtCd        != null and dstrtCd        != ''"> and TOF.DSTRT_CD          = #{dstrtCd}        </if>
+           <if test="outRqstNo      != null and outRqstNo      != ''"> and TOF.OUT_RQST_NO       = #{outRqstNo}      </if>
+           <if test="outFilePrgrsCd != null and outFilePrgrsCd != ''"> and TOF.OUT_FILE_PRGRS_CD = #{outFilePrgrsCd} </if>
+           <if test="outFilePrgrsCdList != null and outFilePrgrsCdList != ''">
+           and TOF.OUT_FILE_PRGRS_CD IN
+               <foreach collection="outFilePrgrsCdList" item="item" index="index" open="(" close=")" separator=",">
+                   #{item}
+               </foreach>
+           </if>
+        order by TOF.DSTRT_CD, TOF.OUT_RQST_NO, TOF.OUT_FILE_SEQ
+        <!-- offset #{firstRecordIndex} limit #{recordCountPerPage} -->
+    </select>
+
+    <select id="selectOutFileSeq" parameterType="hMap" resultType="cmlMap">
+    /* selectOutFileSeq */
+        select TOF.dstrt_cd      , TOF.out_rqst_no   , TOF.out_file_seq
+             , TOF.cptn_file_nm  , TOF.out_file_nm 
+          from TVO_OUT_FILE TOF
+         where TOF.DSTRT_CD        = #{dstrtCd}
+           and TOF.OUT_RQST_NO     = #{outRqstNo}
+           and ( cptn_file_nm like concat(#{fileNm},'%')
+               or out_file_nm like concat(#{fileNm},'%')
+               )
+    </select>
+
+    <select id="selectOutFileSeqMax" parameterType="hMap" resultType="cmlMap">
+    /* selectOutFileSeqMax */
+        select max(TOF.out_file_seq) out_file_seq 
+          from TVO_OUT_FILE TOF
+         where TOF.DSTRT_CD        = #{dstrtCd}
+           and TOF.OUT_RQST_NO     = #{outRqstNo}
+    </select>
+        
+    <update id="mergeOutFile" parameterType="java.util.HashMap">
+    /* mergeOutFile */
+        insert into TVO_OUT_FILE
+             ( DSTRT_CD          , OUT_RQST_NO       , OUT_FILE_SEQ          , OUT_FILE_PRGRS_CD
+             , OUT_VDO_YMDHMS_FR , OUT_VDO_YMDHMS_TO , OUT_FILE_PATH         , CPTN_FILE_NM
+             , OUT_FILE_NM       , OUT_FILE_NM_MP4   , OUT_FILE_NM_MSK       , OUT_FILE_NM_DRM
+             , CPTN_FILE_SIZE    , OUT_FILE_SIZE )
+        values
+             ( #{dstrtCd}        , #{outRqstNo}      , #{outFileSeq}::numeric , #{outFilePrgrsCd}
+             , #{outVdoYmdhmsFr} , #{outVdoYmdhmsTo} , #{outFilePath}         , #{cptnFileNm}
+             , #{outFileNm}      , #{outFileNmMp4}   , #{outFileNmMsk}        , #{outFileNmDrm}
+             , #{cptnFileSize}   , #{outFileSize} )
+   on conflict ( DSTRT_CD, OUT_RQST_NO, OUT_FILE_SEQ ) do update
+           set DSTRT_CD     = #{dstrtCd}
+             , OUT_RQST_NO  = #{outRqstNo}
+           <if test="outFilePrgrsCd != null"> , OUT_FILE_PRGRS_CD = #{outFilePrgrsCd} </if>
+           <if test="outFileSeq     != null"> , OUT_FILE_SEQ      = #{outFileSeq}::numeric     </if>
+           <if test="outVdoYmdhmsFr != null"> , OUT_VDO_YMDHMS_FR = #{outVdoYmdhmsFr} </if>
+           <if test="outVdoYmdhmsTo != null"> , OUT_VDO_YMDHMS_TO = #{outVdoYmdhmsTo} </if>
+           <if test="outFilePath    != null"> , OUT_FILE_PATH     = #{outFilePath}    </if>
+           <if test="cptnFileNm     != null"> , CPTN_FILE_NM      = #{cptnFileNm}     </if>
+           <if test="outFileNm      != null"> , OUT_FILE_NM       = #{outFileNm}      </if>
+           <if test="outFileNmMp4   != null"> , OUT_FILE_NM_MP4   = #{outFileNmMp4}   </if>
+           <if test="outFileNmMsk   != null"> , OUT_FILE_NM_MSK   = #{outFileNmMsk}   </if>
+           <if test="outFileNmDrm   != null"> , OUT_FILE_NM_DRM   = #{outFileNmDrm}   </if>
+           <if test="cptnFileSize   != null"> , CPTN_FILE_SIZE    = #{cptnFileSize}   </if>
+           <if test="outFileSize    != null"> , OUT_FILE_SIZE     = #{outFileSize}    </if>
+    </update>
+
+    <update id="updateOutFile" parameterType="map">
+    /* updateOutFile */
+        update TVO_OUT_FILE
+           set DSTRT_CD     = #{dstrtCd}
+             , OUT_RQST_NO  = #{outRqstNo}
+           <if test="outFilePrgrsCd   != null"> , OUT_FILE_PRGRS_CD   = #{outFilePrgrsCd}   </if>
+           <if test="orderFilePath    != null"> , ORDER_FILE_PATH     = #{orderFilePath}    </if>
+           <if test="outFileStepDtl   != null"> , OUT_FILE_STEP_DTL   = #{outFileStepDtl}   </if>
+           <if test="outFilePath      != null"> , OUT_FILE_PATH       = #{outFilePath}      </if>
+           <if test="cptnFileNm       != null"> , CPTN_FILE_NM        = #{cptnFileNm}       </if>
+           <if test="outFileNm        != null"> , OUT_FILE_NM         = #{outFileNm}        </if>
+           <if test="outFileNmMp4     != null"> , OUT_FILE_NM_MP4     = #{outFileNmMp4}     </if>
+           <if test="outFileNmMsk     != null"> , OUT_FILE_NM_MSK     = #{outFileNmMsk}     </if>
+           <if test="outFileNmDrm     != null"> , OUT_FILE_NM_DRM     = #{outFileNmDrm}     </if>
+           <if test="drmPcnt          != null"> , DRM_PCNT            = #{drmPcnt}          </if>
+           <if test="drmHash          != null"> , DRM_HASH            = #{drmHash}          </if>
+           <if test="cptnFileSize     != null"> , CPTN_FILE_SIZE      = #{cptnFileSize}     </if>
+           <if test="outFileSize      != null"> , OUT_FILE_SIZE       = #{outFileSize}      </if>
+           <if test="outFileDelYmdhms != null"> , OUT_FILE_DEL_YMDHMS = #{outFileDelYmdhms} </if>
+         where DSTRT_CD     = #{dstrtCd}
+           and OUT_RQST_NO  = #{outRqstNo}
+           and OUT_FILE_SEQ = #{outFileSeq}::numeric
+    </update>
+
+
+
+
+
+
+    <select id="selectOutRqstDtl" parameterType="hMap" resultType="cmlMap">
+    /* selectOutRqstDtl */
+        select TVR.DSTRT_CD               , (select dstrt_nm from cm_dstrt_cd_mng cdcm where cdcm.dstrt_cd = tvr.dstrt_cd) dstrt_nm
+             , TVR.VIEW_RQST_NO           , TVR.VIEW_END_YMDHMS
+             , TVR.EVT_NO                 , TVR.EVT_NM
+             , TVR.RQST_RSN_TY_CD         , FN_GET_TC_CODE('RQST_RSN_TY', COALESCE(TVR.RQST_RSN_TY_CD, '')) as RQST_RSN_TY_NM
+             , TOR.OUT_RQST_NO            , TOR.OUT_RQST_YMDHMS
+             , TOR.CCTV_ID                , CF.FCLT_LBL_NM
+             , TOR.TVO_PRGRS_CD           , FN_GET_TC_CODE('OUT_PRGRS', COALESCE(TOR.TVO_PRGRS_CD, '')) as TVO_PRGRS_NM
+             , TOR.TVO_PRGRS_DTL          , TOR.TVO_PRGRS_YMDHMS
+             , TOR.OUT_CHK_STEP_CD        , FN_GET_TC_CODE('OUT_CHK_STEP', COALESCE(TOR.OUT_CHK_STEP_CD, '')) as OUT_CHK_STEP_NM
+             , TOR.OUT_CHK_STEP_DTL       , TOR.OUT_CHK_YMDHMS
+             , TOR.ORDER_FILE_PATH        , TOR.VDO_ENC_URL
+             , TOR.VDO_YMDHMS_FR          , TOR.VDO_YMDHMS_TO
+             , (select (extract (hour from (TO_TIMESTAMP(TOR.VDO_YMDHMS_TO, 'YYYYMMDDHH24MISS') - TO_TIMESTAMP(TOR.VDO_YMDHMS_FR, 'YYYYMMDDHH24MISS')))*60)
+                     + extract (minute from (TO_TIMESTAMP(TOR.VDO_YMDHMS_TO, 'YYYYMMDDHH24MISS') - TO_TIMESTAMP(TOR.VDO_YMDHMS_FR, 'YYYYMMDDHH24MISS')))
+               )::text as RQST_VDO_DURATION
+             , TOR.PLAY_START_YMDHMS      , TOR.PLAY_END_YMDHMS
+             , TOR.THIRD_PARTY_YN         , TOR.THIRD_PARTY_PW       , TOR.MASKING_YN
+             , TOR.PLAY_CNT               , TOR.OUT_FILE_DEL_YN
+             , TOR.OUT_RQST_USER_ID       , TOR.OUT_APRV_USER_ID
+             , CF.POINT_X                  , CF.POINT_Y
+             , CF.LOTNO_ADRES_NM           , CF.ROAD_ADRES_NM
+          from TVO_OUT_RQST TOR
+     left join CM_FACILITY  CF   on TOR.CCTV_ID = CF.FCLT_ID
+     left join TVO_VIEW_RQST TVR on TVR.DSTRT_CD     = TOR.DSTRT_CD
+                                and TVR.VIEW_RQST_NO = TOR.VIEW_RQST_NO
+         where 1 = 1
+           <if test="dstrtCd        != null and dstrtCd        != ''"> and TOR.DSTRT_CD          = #{dstrtCd}        </if>
+           <if test="outRqstNo      != null and outRqstNo      != ''"> and TOR.OUT_RQST_NO       = #{outRqstNo}      </if>
+    </select>
+    
+    <update id="updateOutRqst" parameterType="map">
+    /* updateOutRqst */
+        update TVO_OUT_RQST
+           set DSTRT_CD     = #{dstrtCd}
+             , OUT_RQST_NO  = #{outRqstNo}
+           <if test="outRqstYmdhms   != null"> , OUT_RQST_YMDHMS   = #{outRqstYmdhms}    </if>
+           <if test="vdoYmdhmsFr     != null"> , VDO_YMDHMS_FR     = #{vdoYmdhmsFr}      </if>
+           <if test="vdoYmdhmsTo     != null"> , VDO_YMDHMS_TO     = #{vdoYmdhmsTo}      </if>
+           <if test="tvoPrgrsCd      != null"> , TVO_PRGRS_CD      = #{tvoPrgrsCd}       </if>
+           <if test="tvoPrgrsDtl     != null"> , TVO_PRGRS_DTL     = #{tvoPrgrsDtl}      </if>
+           
+           <if test="tvoPrgrsYmdhms  != null"> , TVO_PRGRS_YMDHMS  = #{tvoPrgrsYmdhms}   </if>
+           <if test="tvoPrgrsYmdhms  == null"> , TVO_PRGRS_YMDHMS  = TO_CHAR(NOW(), 'YYYYMMDDHH24MISS')   </if>
+           
+           <if test="outChkStepCd    != null"> , OUT_CHK_STEP_CD   = #{outChkStepCd}     </if>
+           <if test="outChkStepDtl   != null"> , OUT_CHK_STEP_DTL  = #{outChkStepDtl}    </if>
+           <if test="outChkYmdhms    != null"> , OUT_CHK_YMDHMS    = #{outChkYmdhms}     </if>
+           
+           <if test="vdoEncUrl       != null"> , VDO_ENC_URL       = #{vdoEncUrl}        </if>
+           
+           <if test="maskingYn       != null"> , MASKING_YN        = #{maskingYn}        </if>
+           <if test="thirdPartyYn    != null"> , THIRD_PARTY_YN    = #{thirdPartyYn}     </if>
+           <if test="thirdPartyPw    != null"> , THIRD_PARTY_PW    = #{thirdPartyPw}     </if>
+           <if test="playStartYmdhms != null"> , PLAY_START_YMDHMS = #{playStartYmdhms}  </if>
+           <if test="playEndYmdhms   != null"> , PLAY_END_YMDHMS   = #{playEndYmdhms}    </if>
+           <if test="outAprvUserId   != null and outAprvUserId != ''"> , OUT_APRV_USER_ID = #{outAprvUserId} </if>
+           <if test="playCnt         != null"> , PLAY_CNT          = #{playCnt}::numeric </if>
+           <if test="outFileDelYn    != null"> , OUT_FILE_DEL_YN   = #{outFileDelYn}     </if>
+         where DSTRT_CD     = #{dstrtCd}
+           and OUT_RQST_NO  = #{outRqstNo}
+    </update>
+
+
+
+
+
+
+
+
+
+
+    <select id="selectUserInfo" parameterType="hMap" resultType="cmlMap">
+    /* selectUserInfo */
+        select USER_ID , PLAY_PWD
+          from CM_USER
+         where DSTRT_CD = #{dstrtCd}
+           and USER_ID  = #{userId}
+    </select>
+    
+
+
+
+
+    <select id="selectFcltUsedTyInfo" parameterType="hMap" resultType="cmlMap">
+    /* selectFcltUsedTyInfo */
+        SELECT FCLT_USED_TY_CD
+             , FCLT_USED_TY_NM
+          FROM CM_TC_FCLT_USED
+         WHERE FCLT_KND_CD = 'CTV'
+           <if test="fcltUsedTyNm != null and fcltUsedTyNm != ''"> AND FCLT_USED_TY_NM = #{fcltUsedTyNm} </if>
+    </select>
+
+    <insert id="insertCmTcFcltUsed" parameterType="hMap">
+    /* insertCmTcFcltUsed */
+        INSERT INTO CM_TC_FCLT_USED
+             ( FCLT_USED_TY_CD , FCLT_USED_TY_NM , FCLT_KND_CD  , USE_TY_CD  )
+        VALUES
+             ( #{fcltUsedTyCd} , #{fcltUsedTyNm} , #{fcltKndCd} , #{useTyCd} )
+    </insert>
+
+    <delete id="deleteCmTcFcltUsed" parameterType="hMap">
+    /* deleteCmTcFcltUsed */
+        DELETE FROM CM_TC_FCLT_USED
+         WHERE FCLT_KND_CD = 'CTV'
+    </delete>
+
+
+
+    <select id="selectCmFacility"  resultType="cmlMap">
+    /* selectCmFacility */
+        SELECT FCLT_UID || FCLT_USED_TY_CD || POINT_X || POINT_Y as COMPARE_ITEMS
+             , FCLT_ID
+             , FCLT_UID
+             , FCLT_USED_TY_CD                                 /* 용도 */
+             , COALESCE(FCLT_KND_DTL_CD,'') AS FCLT_KND_DTL_CD /* 고정회전 */
+             , POINT_X
+             , POINT_Y
+             , 'P' as STATUS
+          FROM CM_FACILITY
+         WHERE FCLT_KND_CD = 'CTV'
+           AND USE_TY_CD   = 'Y'
+    </select>
+
+    <insert id="insertCmFacility" parameterType="hMap">
+    /* insertCmFacility */
+        INSERT INTO CM_FACILITY
+             ( DSTRT_CD            , FCLT_ID            , FCLT_UID        , LINK_VMS_UID
+             , FCLT_LBL_NM         , LOTNO_ADRES_NM     , ROAD_ADRES_NM
+             , POINT_X                                  , POINT_Y
+             , FCLT_KND_CD         , FCLT_KND_DTL_CD    , SYS_CD          , FCLT_USED_TY_CD
+             , FCLT_STTUS          , USE_TY_CD          , RGS_DATE   )
+        VALUES
+             ( #{dstrtCd}          , #{fcltId}          , #{fcltUid}      , #{linkVmsUid}
+             , #{fcltLblNm}        , #{lotnoAdresNm}    , #{roadAdresNm}
+             , #{pointX}::double precision              , #{pointY}::double precision
+             , #{fcltKndCd}        , #{fcltKndDtlCd}    , #{sysCd}        , #{fcltUsedTyCd}
+             , #{fcltSttus}        , #{useTyCd}         , NOW()     )
+    </insert>
+
+    <delete id="deleteCmFacility" parameterType="hMap">
+    /* deleteCmFacility */
+        DELETE FROM CM_FACILITY
+    </delete>
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <insert id="insertCmFacilityGis" parameterType="hMap">
+    /* insertCmFacilityGis */
+        INSERT INTO CM_FACILITY_GIS
+             ( FCLT_UID                           , FCLT_LBL_NM
+             , POINT_X                            , POINT_Y
+             , FCLT_KND_DTL_CD, FCLT_USED_TY_CD   , FCLT_USED_TY_NM
+             , LOTNO_ADRES_NM , ROAD_ADRES_NM     , RGS_DATE   )
+        VALUES
+             ( #{fcltUid}                         , #{fcltLblNm}
+             , #{pointX}::double precision        , #{pointY}::double precision
+             , #{fcltKndDtlCd}, #{fcltUsedTyCd}   , #{fcltUsedTyNm}
+             , #{lotnoAdresNm}, #{roadAdresNm}    , NOW()     )
+    </insert>
+
+    <delete id="deleteCmFacilityGis" parameterType="hMap">
+    /* deleteCmFacilityGis */
+        DELETE FROM CM_FACILITY_GIS
+    </delete>
+
+
+
+
+
+    <update id="updatePointXY" parameterType="hMap">
+    /* updatePointXY */
+        UPDATE CM_FACILITY
+           SET POINT_X         = #{pointX}::double precision
+             , POINT_Y         = #{pointY}::double precision
+           <if test="fcltKndDtlCd != null and fcltKndDtlCd != ''"> , FCLT_KND_DTL_CD = #{fcltKndDtlCd} </if>
+           <if test="fcltUsedTyCd != null and fcltUsedTyCd != ''"> , FCLT_USED_TY_CD = #{fcltUsedTyCd} </if>
+           <if test="lotnoAdresNm != null and lotnoAdresNm != ''"> , LOTNO_ADRES_NM  = #{lotnoAdresNm} </if>
+           <if test="roadAdresNm  != null and roadAdresNm  != ''"> , ROAD_ADRES_NM   = #{roadAdresNm}  </if>
+             , UPD_USER_ID     = 'VMS_SYNC'
+             , UPD_DATE        = NOW()
+         WHERE FCLT_ID = #{fcltId}
+    </update>
+
+    <update id="updatePointAgXY" parameterType="hMap">
+    /* updatePointAgXY */
+        UPDATE CM_FACILITY
+           SET CCTV_OSVT_X  = #{cctvOsvtX}::double precision
+             , CCTV_OSVT_Y  = #{cctvOsvtY}::double precision
+             , CCTV_OSVT_AG = #{cctvOsvtAg}::numeric
+             , UPD_DATE     = NOW()
+         WHERE FCLT_ID = #{fcltId}
+      <!-- AND ( CCTV_OSVT_X  != #{cctvOsvtX}::double precision
+              or CCTV_OSVT_Y  != #{cctvOsvtY}::double precision
+              or CCTV_OSVT_AG != #{cctvOsvtAg}::numeric
+               ) -->
+    </update>
+
+
+
+
+
+</mapper>

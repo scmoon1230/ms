@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+
+<mapper namespace="kr.co.ucp.wrks.sstm.code.service.CodeSggcdMapper">
+
+    <select id="selectWorship" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectWorship */
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingHeader"/>
+        select W.WORSHIP_CODE      , W.WORSHIP_NAME    , W.WORSHIP_DAY
+          from TB_WORSHIP W
+         where 1 = 1
+           <if test="worshipName != null and worshipName != '' "> and WORSHIP_NAME LIKE '%' || #{worshipName} || '%' </if>
+      order by ${sidx} ${sord}
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingBottom"/>
+    </select>
+
+    <insert id="insertWorship" parameterType="java.util.HashMap">
+    /* insertWorship */
+        insert into TB_WORSHIP
+             ( WORSHIP_CODE      , WORSHIP_NAME    , WORSHIP_DAY     )
+        values
+             ( #{worshipCode}    , #{worshipName}  , #{worshipDay}   )
+    </insert>
+    
+    <update id="updateWorship" parameterType="java.util.HashMap">
+    /* updateWorship */
+        update TB_WORSHIP
+           set WORSHIP_CODE = #{worshipCode}
+             , WORSHIP_NAME = #{worshipName}
+             , WORSHIP_DAY  = #{worshipDay}
+         where WORSHIP_CODE= #{worshipCode}
+    </update>
+
+    <delete id="deleteWorship" parameterType="java.util.HashMap">
+    /* deleteWorship */
+        delete from TB_WORSHIP
+         where WORSHIP_CODE = #{worshipCode}
+    </delete>
+    
+<!-- 
+    <select id="sidoNm_SigunguList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+            select DISTINCT SIDO_NM
+            from CM_TC_SIGUNGU
+    </select>
+
+    <select id="sigunguCdList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+    /* sigunguCdList */
+        select W.WORSHIP_CODE      , W.WORSHIP_NAME    , W.WORSHIP_DAY
+          from TB_WORSHIP W
+         where 1 = 1
+           <if test="worshipName != null and worshipName != '' "> and WORSHIP_NAME LIKE CONCAT('%', #{worshipName}, '%') </if>
+    </select>
+    
+ -->
+ 
+ 
+</mapper>

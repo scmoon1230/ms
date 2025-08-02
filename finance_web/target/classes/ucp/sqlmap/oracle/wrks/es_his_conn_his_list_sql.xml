@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ucp.wrks.info.his.service.ConnHisMapper">
+
+    <sql id="connHisListSql">
+        select A.*
+          from (
+            select S.USER_ID
+                <if test="saltText == null ">
+                 , M.USER_NM_KO
+                </if>
+                <if test="saltText != null ">
+                  , convert_from(decrypt(decode(M.USER_NM_KO,'hex')::bytea,#{saltText}::bytea,'aes'),'utf8') as USER_NM_KO
+                </if>
+                 , M.GRP_NM          , M.AUTH_LVL_NM
+                 , M.INSTT_NM        , M.DEPT_NM
+                 , concat(M.INSTT_NM, ' ', M.DEPT_NM) INSTT_DEPT_NM 
+                 , M.DSTRT_NM
+                 , TO_CHAR(S.LOGIN_TIME, 'YYYY-MM-DD'        ) as CONNECT_YMD
+                 , TO_CHAR(S.LOGIN_TIME, 'YYYY-MM-DD HH24:MI') as LOGIN_TIME
+                 , TO_CHAR(S.LOGIN_TIME, 'HH24:MI:SS'        ) AS LOGIN_FIRST_TIME
+                 , TO_CHAR(S.LOGIN_LAST_TIME, 'HH24:MI:SS'   ) AS LOGIN_LAST_TIME
+              from CM_HIS_USER_CONNECT S
+                 , VW_USER M
+             where S.USER_ID != 'sys'
+               and s.dstrt_cd = m.dstrt_cd
+               and S.USER_ID  = M.USER_ID
+               and S.LOGIN_TIME between TO_TIMESTAMP(#{searchStartDate}, 'YYYYMMDDHH24MISS')
+                                    and TO_TIMESTAMP(#{searchEndDate}, 'YYYYMMDDHH24MISS')
+               and M.USER_ID IN ( select A.USER_ID from CM_GRP_USER A , CM_GROUP B where A.GRP_ID = B.GRP_ID and B.SYS_ID = #{sysId} )
+               <if test="seachTy == 'ID' ">
+                   <if test="seachTxt != null and seachTxt != ''"> and S.USER_ID LIKE '%' || #{seachTxt} || '%' </if>
+               </if>
+               ) A
+         where 1 = 1
+               <if test="seachTy == 'NM' ">
+                   <if test="seachTxt != null and seachTxt != ''"> and USER_NM_KO LIKE '%' || #{seachTxt} || '%' </if>
+               </if>
+    </sql>
+    
+    <!-- 접속이력 조회 -->
+    <select id="connHisListData" parameterType="java.util.HashMap" resultType="egovMap">
+    /* connHisListData */
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingHeader"/>
+        <include refid="connHisListSql"/>
+        order by ${sidx} ${sord}, CONNECT_YMD DESC, LOGIN_FIRST_TIME DESC
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingBottom"/>
+    </select>
+
+    <select id="connHisListExcel" parameterType="java.util.HashMap" resultType="egovMap">
+    /* connHisListExcel */
+        <include refid="connHisListSql"/>
+         order by LOGIN_TIME desc, USER_NM_KO asc
+    <!-- 
+        select A.*
+          from (
+            select S.USER_ID
+               <if test="saltText == null ">
+                 , M.USER_NM_KO
+               </if>
+               <if test="saltText != null ">
+                 , convert_from(decrypt(decode(M.USER_NM_KO,'hex')::bytea,#{saltText}::bytea,'aes'),'utf8') as USER_NM_KO
+               </if>
+                 , M.GRP_NM  , M.AUTH_LVL_NM
+                 , M.INSTT_NM   , M.DEPT_NM , M.INSTT_NM || ' ' || M.DEPT_NM INSTT_DEPT_NM
+                 , M.DSTRT_NM
+                 , TO_CHAR(S.LOGIN_TIME, 'YYYY-MM-DD') as CONNECT_YMD
+                 , TO_CHAR(S.LOGIN_TIME, 'YYYY-MM-DD HH24:MI') as LOGIN_TIME
+                 , TO_CHAR(S.LOGIN_TIME, 'HH24:MI:SS') AS LOGIN_FIRST_TIME
+                 , TO_CHAR(S.LOGIN_LAST_TIME, 'HH24:MI:SS') AS LOGIN_LAST_TIME
+              from CM_HIS_USER_CONNECT S
+                 , VW_USER M
+             where S.USER_ID = M.USER_ID
+               and S.LOGIN_TIME between TO_TIMESTAMP(#{searchStartDate}, 'YYYYMMDDHH24MISS')
+                                    and TO_TIMESTAMP(#{searchEndDate}, 'YYYYMMDDHH24MISS')
+               and M.USER_ID IN ( select A.USER_ID from CM_GRP_USER A , CM_GROUP B where A.GRP_ID = B.GRP_ID and B.SYS_ID = #{sysId} )
+               <if test="seachTy == 'ID' ">
+                   <if test="seachTxt != null and seachTxt != ''"> and S.USER_ID LIKE '%' || #{seachTxt} || '%' </if>
+               </if>
+               ) A
+         where 1 = 1
+               <if test="seachTy == 'NM' ">
+                   <if test="seachTxt != null and seachTxt != ''"> and USER_NM_KO LIKE '%' || #{seachTxt} || '%' </if>
+               </if>
+     -->
+    </select>
+    
+    
+    
+    
+    <sql id="menuUsedListSql">
+        select <!-- TO_CHAR(TO_TIMESTAMP(S.ACCESS_YMD, 'YYYYMMDDHH24MISSUS'), 'YYYY-MM-DD') AS CONNECT_YMD -->
+               TO_CHAR(TO_TIMESTAMP(S.ACCESS_YMD, 'YYYYMMDDHH24MISS'), 'YYYY-MM-DD') AS CONNECT_YMD
+           <if test="saltText == null ">
+             , VU.USER_NM AS USER_NM_KO
+           </if>
+           <if test="saltText != null ">
+             , COALESCE(FN_USER_NM_DEC(S.USER_ID, #{saltText}::bytea), S.USER_ID) as USER_NM_KO
+           </if>
+             , S.USER_ID             , VU.GRP_NM             , VU.AUTH_LVL_NM
+             , TO_CHAR(S.ACCESS_DATE_FIRST, 'HH24:MI:SS') AS FIRST_TIME
+             , TO_CHAR(S.ACCESS_DATE_LAST, 'HH24:MI:SS')  AS LAST_TIME
+             , S.USED_CNT
+             , PM.PGM_MENU_NM_KO AS MENU_NM
+             , VU.INSTT_NM           , VU.DEPT_NM
+          from CM_MENU_USED_LOG S
+          JOIN VW_USER VU ON s.dstrt_cd = vu.dstrt_cd and S.USER_ID = VU.USER_ID and VU.TEST_YN = 'N'
+             , CM_PGM_MENU PM
+         where 1=1
+           and S.PGM_MENU_ID = PM.PGM_MENU_ID
+           and S.ACCESS_DATE_FIRST BETWEEN TO_TIMESTAMP(#{searchStartDate}||'000000', 'YYYYMMDDHH24MISS')
+           and TO_TIMESTAMP(#{searchEndDate}||'235959', 'YYYYMMDDHH24MISS')
+      <!-- <if test='sysId != "COM" and sysId != "BASE" and sysId != "WIDE"'>
+           and VU.GRP_ID = #{sysId}
+           </if> -->
+           <if test='searchUserId != null and searchUserId != ""'>
+           and S.USER_ID LIKE '%' || #{searchUserId} || '%'
+           </if>
+           <if test='searchUserNm != null and searchUserNm != ""'>
+           and VU.USER_NM LIKE '%' || #{searchUserNm} || '%'
+           </if>
+    </sql>
+
+    <!--메뉴 -->
+    <select id="menuUsedListData" parameterType="java.util.HashMap" resultType="cmlMap">
+    /* menuUsedListData */
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingHeader"/>
+        <include refid="menuUsedListSql"/>
+        order by ${sidx} ${sord}, FIRST_TIME DESC
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingBottom"/>
+    </select>
+
+    <select id="menuUsedListExcel" parameterType="java.util.HashMap" resultType="cmlMap">
+    /* menuUsedListExcel */
+        <include refid="menuUsedListSql"/>
+        order by CONNECT_YMD DESC, FIRST_TIME DESC
+    </select>
+    
+</mapper>
+

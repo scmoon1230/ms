@@ -1,0 +1,977 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.co.ucp.mntr.fclt.service.impl.FcltMapper">
+
+    <resultMap id="fcltDetail" type="kr.co.ucp.mntr.fclt.service.FcltVO">
+        <result property="fcltId"          column="FCLT_ID"/>
+         <result property="fcltLblNm"      column="FCLT_LBL_NM"/>
+         <result property="fcltKndCd"      column="FCLT_KND_CD"/>
+         <result property="fcltKndNm"      column="FCLT_KND_NM"/>
+         <result property="fcltUsedTyCd"   column="FCLT_USED_TY_CD"/>
+         <result property="fcltUsedTyNm"   column="FCLT_USED_TY_NM"/>
+         <result property="fcltKndDtlCd"   column="FCLT_KND_DTL_CD"/>
+         <result property="fcltKndDtlNm"   column="FCLT_KND_DTL_NM"/>
+         <result property="fcltGdsdtTy"    column="FCLT_GDSDT_TY"/>
+         <result property="fcltGdsdtNm"    column="FCLT_GDSDT_NM"/>
+         <result property="fcltSttus"      column="FCLT_STTUS"/>
+         <result property="fcltSttusNm"    column="FCLT_STTUS_NM"/>
+
+         <result property="fcltUid"           column="FCLT_UID"/>
+         <result property="linkVmsUid"        column="LINK_VMS_UID"/>
+         <result property="presetBdwStartNum" column="PREset_BDW_START_NUM"/>
+         <result property="cctvChannel"       column="CCTV_CHANNEL"/>
+         <result property="cctvDueNtAg"       column="CCTV_DUE_NT_AG"/>
+
+         <result property="sysCd"             column="SYS_CD"/>
+         <result property="sysNm"             column="SYS_NM"/>
+         <result property="sigunguCd"         column="SIGUNGU_CD"/>
+         <result property="sigunguNm"         column="SIGUNGU_NM"/>
+         <result property="ctrCd"             column="CTR_CD"/>
+         <result property="ctrNm"             column="CTR_NM"/>
+         <result property="dstrtCd"           column="DSTRT_CD"/>
+         <result property="dstrtNm"           column="DSTRT_NM"/>
+
+         <result property="lotnoAdresNm"   column="LOTNO_ADRES_NM"/>
+         <result property="roadAdresNm"    column="ROAD_ADRES_NM"/>
+         <result property="pointX"         column="POINT_X"/>
+         <result property="pointY"         column="POINT_Y"/>
+
+         <result property="useTyCd"        column="USE_TY_CD"/>
+         <result property="useTyNm"        column="USE_TY_NM"/>
+
+        <result property="fcltMngrTelNo"   column="FCLT_MNGR_TEL_NO"/>
+         <result property="fcltMacAdres"   column="FCLT_MAC_ADRES"/>
+         <result property="gateWay"        column="GATE_WAY"/>
+         <result property="subnet"         column="SUBNET"/>
+         <result property="fcltInstlYmd"   column="FCLT_INSTL_YMD"/>
+         <result property="traLinkId"      column="TRA_LINK_ID"/>
+         <result property="beforeFcltId"   column="BEFORE_FCLT_ID"/>
+         <result property="prntFcltId"     column="PRNT_FCLT_ID"/>
+
+         <result property="connIp"         column="CONN_IP"/>
+         <result property="connPort"       column="CONN_PORT"/>
+         <result property="connId"         column="CONN_ID"/>
+         <result property="connPw"         column="CONN_PW"/>
+
+         <result property="svrConnIp"      column="SVR_CONN_IP"/>
+         <result property="svrConnPort"    column="SVR_CONN_PORT"/>
+         <result property="svrConnId"      column="SVR_CONN_ID"/>
+         <result property="svrConnPw"      column="SVR_CONN_PW"/>
+
+         <result property="dvcSeeCctvIp"   column="DVC_SEE_CCTV_IP"/>
+         <result property="dvcSeeCctvPort" column="DVC_SEE_CCTV_PORT"/>
+         <result property="dvcSeeCctvId"   column="DVC_SEE_CCTV_ID"/>
+         <result property="dvcSeeCctvPw"   column="DVC_SEE_CCTV_PW"/>
+
+         <result property="iconGisDspYn"   column="ICON_GIS_DSP_YN"/>
+         <result property="lprCctvYn"      column="LPR_CCTV_YN"/>
+
+         <result property="cpltPrdtTy"     column="CPLT_PRDT_TY"/>
+         <result property="cpltPrdtNm"     column="CPLT_PRDT_NM"/>
+         <result property="plcPtrDivCd"    column="PLC_PTR_DIV_CD"/>
+         <result property="plcPtrDivNm"    column="PLC_PTR_DIV_NM"/>
+
+         <result property="areaCd"         column="AREA_CD"/>
+         <result property="areaNm"         column="AREA_NM"/>
+
+         <result property="etc"            column="ETC"/>
+
+         <result property="vtCenterTelNo"  column="VT_CENTER_TEL_NO"/>
+         <result property="vtPointTelNo"   column="VT_POINT_TEL_NO"/>
+         <result property="mngSn"          column="MNG_SN"/>
+         <result property="cctvAgYn"       column="CCTV_AG_YN"/>
+         <result property="viewerTyCd"     column="VIEWER_TY_CD"/>
+         <result property="viewerPtzYn"    column="VIEWER_PTZ_YN"/>
+         <result property="recordingYn"    column="RECORDING_YN"/>
+         <result property="tvoTrgtYn"      column="TVO_TRGT_YN"/>
+    </resultMap>
+
+    <select id="selectFcltStatusList" resultType="egovMap">
+        select FCLT_KND_CD
+             , FN_GET_TC_CODE('FCLT_KND', FCLT_KND_CD) as FCLT_KND_NM
+             , FCLT_USED_TY_CD
+             , ( select FCLT_USED_TY_NM from    CM_TC_FCLT_USED
+                  where   FCLT_KND_CD     = B.FCLT_KND_CD and     FCLT_USED_TY_CD = B.FCLT_USED_TY_CD
+                ) as FCLT_USED_TY_NM
+             , FCLT_STTUS_CNT_TOT
+             , FCLT_STTUS_CNT_ZERO
+             , FCLT_STTUS_CNT_ONE
+             , FCLT_STTUS_CNT_TWO
+             , CASE     WHEN FCLT_KND_CD         IS NULL     and      FCLT_USED_TY_CD IS NULL
+                          THEN 0
+                          WHEN FCLT_KND_CD     IS NOT NULL     and      FCLT_USED_TY_CD IS NULL
+                          THEN 1
+                          ELSE 2
+               END as RK
+          from ( select FCLT_KND_CD
+                      , FCLT_USED_TY_CD
+                      , COUNT(FCLT_STTUS)    as FCLT_STTUS_CNT_TOT
+                      , SUM(FCLT_STTUS_ZERO) as FCLT_STTUS_CNT_ZERO
+                      , SUM(FCLT_STTUS_ONE)  as FCLT_STTUS_CNT_ONE
+                      , SUM(FCLT_STTUS_TWO)  as FCLT_STTUS_CNT_TWO
+                   from ( select FCLT_KND_CD
+                               , FCLT_USED_TY_CD
+                               , FCLT_STTUS
+                               , CASE     WHEN FCLT_STTUS = '0'
+                                          THEN 1
+                                          ELSE 0
+                                  END as FCLT_STTUS_ZERO
+                               , CASE     WHEN FCLT_STTUS = '1'
+                                          THEN 1
+                                          ELSE 0
+                                 END as FCLT_STTUS_ONE
+                               , CASE     WHEN FCLT_STTUS = '2'
+                                          THEN 1
+                                          ELSE 0
+                                 END as FCLT_STTUS_TWO
+                            from CM_FACILITY
+                           where USE_TY_CD = 'Y'
+                          <if test='searchIncludeFcltUsedTyCdYn == "Y"'>
+                             and EXISTS
+                                  ( select FCLT_USED_TY_CD
+                                      from CM_CCTV_CTL_USED_TY
+                                     where GRP_ID          = #{grpId}
+                                       and AUTH_LVL        = #{authLvl}::numeric
+                                       and FCLT_USED_TY_CD = CF.FCLT_USED_TY_CD
+                                  )
+                          </if>
+                          )
+                          A
+                 where    1 = 1
+                 group by FCLT_KND_CD
+                        , FCLT_USED_TY_CD WITH ROLLUP
+                 )
+                 B
+        order by RK
+    </select>
+
+    <select id="selectFcltStatus" resultType="egovMap">
+        select CF.FCLT_ID
+             , CF.FCLT_LBL_NM
+             , CF.FCLT_UID
+             , CF.LINK_VMS_UID
+             , CF.GATE_WAY
+             , CF.PREset_BDW_START_NUM
+             , CF.CCTV_CHANNEL
+             , CF.FCLT_KND_CD
+             , FN_GET_TC_CODE('FCLT_KND', CF.FCLT_KND_CD) as FCLT_KND_NM
+             , CF.FCLT_USED_TY_CD
+             , ( select FCLT_USED_TY_NM
+                   from CM_TC_FCLT_USED
+                  where FCLT_KND_CD     = CF.FCLT_KND_CD
+                    and FCLT_USED_TY_CD = CF.FCLT_USED_TY_CD
+               ) as FCLT_USED_TY_NM
+             , CONCAT(CF.ROAD_ADRES_NM, '(', CF.LOTNO_ADRES_NM, ')')      as ADDR
+             , COALESCE(CF.FCLT_STTUS, '2')                               as FCLT_STTUS
+             , FN_GET_TC_CODE('FCLT_STTUS', COALESCE(CF.FCLT_STTUS, '2')) as FCLT_STTUS_NM
+             , CSC.SYS_CD
+             , CSC.VIEWER_TY_CD
+             , CSC.VIEWER_PTZ_YN
+          from CM_FACILITY CF
+     left join CM_SYS_CODE CSC on CF.SYS_CD = CSC.SYS_CD
+         where CF.USE_TY_CD       = 'Y'
+        <if test='searchIncludeFcltUsedTyCdYn == "Y"'>
+           and EXISTS
+                 ( select FCLT_USED_TY_CD
+                     from CM_CCTV_CTL_USED_TY
+                    where GRP_ID          = #{grpId}
+                      and AUTH_LVL        = #{authLvl}::numeric
+                      and FCLT_USED_TY_CD = CF.FCLT_USED_TY_CD
+                 )
+        </if>
+        <if test="searchFcltKndCd    != null and searchFcltKndCd    != ''"> and CF.FCLT_KND_CD     = #{searchFcltKndCd}    </if>
+        <if test="searchFcltUsedTyCd != null and searchFcltUsedTyCd != ''"> and CF.FCLT_USED_TY_CD = #{searchFcltUsedTyCd} </if>
+        <if test="searchFcltSttus    != null and searchFcltSttus    != ''"> and CF.FCLT_STTUS      = #{searchFcltSttus}    </if>
+        order by CF.FCLT_LBL_NM
+    </select>
+
+    <!-- 시설물 목록 조회 include -->
+    <sql id="selectFcltListSql">
+        select *
+          from ( select CF.FCLT_ID             , CF.MNG_SN           , CF.FCLT_LBL_NM
+                      , CF.FCLT_KND_CD         , FN_GET_TC_CODE('FCLT_KND', CF.FCLT_KND_CD) as FCLT_KND_NM
+                      , CF.FCLT_USED_TY_CD
+                      , (select FCLT_USED_TY_NM from CM_TC_FCLT_USED
+                          where FCLT_KND_CD = CF.FCLT_KND_CD and FCLT_USED_TY_CD = CF.FCLT_USED_TY_CD
+                        ) as FCLT_USED_TY_NM
+                      , CF.FCLT_KND_DTL_CD     , FN_GET_TC_CODE(CF.FCLT_KND_CD, CF.FCLT_KND_DTL_CD) as FCLT_KND_DTL_NM
+                      , CF.FCLT_GDSDT_TY
+                      , CF.ROAD_ADRES_NM       , CF.LOTNO_ADRES_NM
+                      , CF.POINT_X             , CF.POINT_Y
+                        <choose>
+                            <when test='vmsLinkYn == "Y"'>
+                      , CF.LINK_VMS_UID as FCLT_UID
+                            </when>
+                            <otherwise>
+                      , CF.FCLT_UID
+                            </otherwise>
+                        </choose>
+                      , CF.LINK_VMS_UID             , CF.PREset_BDW_START_NUM
+                      , CF.CCTV_CHANNEL             , CF.GATE_WAY
+                      , CF.SVR_CONN_IP             , CF.SVR_CONN_PORT
+                      , COALESCE(CF.FCLT_STTUS, '2')                               as FCLT_STTUS
+                      , FN_GET_TC_CODE('FCLT_STTUS', COALESCE(CF.FCLT_STTUS, '2')) as FCLT_STTUS_NM
+                      , CF.LPR_CCTV_YN             , CSC.SYS_CD
+                      , CSC.VIEWER_TY_CD             , CSC.VIEWER_PTZ_YN
+                      , CONCAT(CF.SVR_CONN_IP, '/', CF.FCLT_UID)  as RTSP_URL
+                      <if test="radius != null and radius != 0">
+                      <!-- , ( 6371 * ACOS( TRUNCATE( COS( ( ASIN(1) * 2 ) / 180 * #{lat} ) * COS( ( ASIN(1) * 2 ) / 180 * ( CF.POINT_Y ) ) * COS( ( ( ASIN(1) * 2 ) / 180 * ${lon} ) - ( ( ASIN(1) * 2 ) / 180 * CF.POINT_X ) ) + SIN( ( ASIN(1) * 2 ) / 180 * #{lat} ) * SIN( ( ASIN(1) * 2 ) / 180 * ( CF.POINT_Y ) ) ,16) ) ) as DISTANCE -->
+                      , FN_DISTANCE_WGS84(#{lon}::numeric, #{lat}::numeric, CF.POINT_X::numeric, CF.POINT_Y::numeric) as DISTANCE
+                      </if>
+                 from CM_FACILITY CF
+            left join CM_SYS_CODE CSC on CF.SYS_CD = CSC.SYS_CD
+                where CF.USE_TY_CD = 'Y'
+                  <if test='searchIncludeFcltUsedTyCdYn == "Y"'>
+                  and EXISTS ( select FCLT_USED_TY_CD
+                                 from CM_CCTV_CTL_USED_TY
+                                where GRP_ID          = #{grpId}
+                                  and AUTH_LVL        = #{authLvl}::numeric
+                                  and FCLT_USED_TY_CD = CF.FCLT_USED_TY_CD
+                             )
+                  and EXISTS ( select 1
+                                 from UM_LAYER_MNG LM
+                            left join CM_TC_FCLT_USED FU on LM.LAYER_ID  = FU.FCLT_USED_TY_CD
+                                  and FU.USE_TY_CD = 'Y'
+                                where LM.USER_ID      = #{userId}
+                                  and LM.DSTRT_CD     = #{dstrtCd}
+                                  and LM.CHECK_YN     = 'Y'
+                                  and LM.LAYER_ID     = CF.FCLT_USED_TY_CD
+                             )
+                  </if>
+                  <if test="searchKeyword eq 'CheckList'.toString()">
+                  and ( FCLT_KND_DTL_CD IS NULL or (POINT_X = 0 or POINT_X = '') or LOTNO_ADRES_NM IS NULL or ROAD_ADRES_NM IS NULL )
+                  </if>
+                  <if test="searchKeyword neq 'CheckList'.toString()">
+                      <if test="searchFcltKndCd != null and searchFcltKndCd != ''">
+                  and CF.FCLT_KND_CD = #{searchFcltKndCd}
+                      </if>
+                      <if test="searchFcltUsedTyCd != null and searchFcltUsedTyCd != ''">
+                  and CF.FCLT_USED_TY_CD = #{searchFcltUsedTyCd}
+                      </if>
+                      <if test="searchFcltId != ''">
+                  and ( UPPER(FCLT_LBL_NM)     LIKE CONCAT('%', UPPER(#{searchFcltId}), '%')
+                      or UPPER(LOTNO_ADRES_NM) LIKE CONCAT('%', UPPER(#{searchFcltId}), '%')
+                      or UPPER(ROAD_ADRES_NM)  LIKE CONCAT('%', UPPER(#{searchFcltId}), '%')
+                      or UPPER(MNG_SN)         LIKE CONCAT('%', UPPER(#{searchFcltId}), '%')
+                      or UPPER(FCLT_ID)        LIKE CONCAT('%', UPPER(#{searchFcltId}), '%')
+                      )
+                      </if>
+                      <if test="searchFcltSttus != null and searchFcltSttus != ''">
+                  and CF.FCLT_STTUS = #{searchFcltSttus}
+                      </if>
+                      <if test="searchPlcPtrDiv != null and searchPlcPtrDiv != ''">
+                  and CF.PLC_PTR_DIV_CD = #{searchPlcPtrDiv}
+                      </if>
+                      <if test='searchIncludeMissingPlcPtrDivYn != null and searchIncludeMissingPlcPtrDivYn == "N"'>
+                  and CF.PLC_PTR_DIV_CD IS NOT NULL
+                      </if>
+                  </if>
+                  <if test='searchLprOnlyYn == "Y"'>
+                  and CF.LPR_CCTV_YN = 'Y' and CF.FCLT_KND_CD = 'CTV'
+                  </if>
+               ) FCLT
+         where 1 = 1
+           <if test="radius != null and radius != ''"> <![CDATA[ and FCLT.DISTANCE <= #{radius}::numeric ]]> </if>
+    </sql>
+
+    <!-- 시설물 목록 조회 -->
+    <select id="selectFcltList" parameterType="fcltSrchVO" resultType="egovMap">
+    /* selectFcltList */
+        <include refid="selectFcltListSql"/>
+        order by FCLT_LBL_NM DESC, FCLT_GDSDT_TY
+        offset #{firstRecordIndex} limit #{recordCountPerPage}
+    </select>
+
+    <!-- 시설물 목록 Cnt 조회 -->
+    <select id="selectFcltListTotCnt" parameterType="fcltSrchVO" resultType="int">
+    /* selectFcltListTotCnt */
+        select COUNT(1) as CNT from (
+            <include refid="selectFcltListSql"/>
+        ) CNT
+    </select>
+
+    <!-- 시설물 용도별 분포도 조회 -->
+    <select id="selectFcltUsedDistributionGeoData" parameterType="map" resultType="egovMap">
+    /* selectFcltUsedDistributionGeoData */
+        select   CF.FCLT_ID
+               , CF.FCLT_LBL_NM
+               , CF.FCLT_KND_CD
+               , FN_GET_TC_CODE('FCLT_KND', CF.FCLT_KND_CD) as FCLT_KND_NM
+               , CF.FCLT_USED_TY_CD
+               , (select CU.FCLT_USED_TY_NM
+                 from    CM_TC_FCLT_USED CU
+                 where   CF.FCLT_USED_TY_CD = CU.FCLT_USED_TY_CD
+                 )
+                 as FCLT_USED_TY_NM
+               , CF.FCLT_GDSDT_TY
+                  , ROW_NUMBER() OVER ( PARTITION BY POINT_X, POINT_Y order by FCLT_GDSDT_TY, FCLT_LBL_NM) as RANK
+               , CF.SIGUNGU_CD
+               , CF.LG_DONG_CD
+               , CF.POINT_X
+               , CF.POINT_Y
+               , COALESCE(CF.FCLT_STTUS, '2')                               as FCLT_STTUS
+               , FN_GET_TC_CODE('FCLT_STTUS', COALESCE(CF.FCLT_STTUS, '2')) as FCLT_STTUS_NM
+        from     CM_FACILITY CF
+        where 1 = 1
+        and    CF.USE_TY_CD = 'Y'
+        <if test='searchIncludeFcltUsedTyCdYn == "Y"'>
+        and    EXISTS
+               ( select FCLT_USED_TY_CD
+               from    CM_CCTV_CTL_USED_TY
+               where   GRP_ID          = #{grpId}
+               and     AUTH_LVL        = #{authLvl}::numeric
+               and     FCLT_USED_TY_CD = CF.FCLT_USED_TY_CD
+               )
+        </if>
+        and ( CF.POINT_X IS NOT NULL and CF.POINT_X != 0 )
+        and ( CF.POINT_Y IS NOT NULL and CF.POINT_Y != 0 )
+        <if test="searchFcltUsedTyCd != null and searchFcltUsedTyCd != ''">
+        and CF.FCLT_USED_TY_CD IN
+            <foreach item="fcltUsedTyCd" index="index" collection="searchFcltUsedTyCd" open="(" separator="," close=")">
+            #{fcltUsedTyCd}
+            </foreach>
+        </if>
+        <if test="searchFcltUsedTyCd == null and searchFcltUsedTyCd == ''">
+        and 1 = 2
+        </if>
+        <if test="searchLgDongCd != null and searchLgDongCd != ''">
+        and CF.LG_DONG_CD = #{searchLgDongCd}
+        </if>
+        order by CF.FCLT_LBL_NM , CF.POINT_X , CF.POINT_Y
+    </select>
+
+    <select id="selectFcltUsedDistributionFcltUsedTyList" parameterType="map" resultType="egovMap">
+        select FCLT_USED_TY_CD                                     as LAYER_ID
+             , FCLT_USED_TY_NM                                     as LAYER_NM
+             , FCLT_KND_CD                                         as LAYER_GRP_ID
+             , COALESCE(FN_GET_TC_CODE('FCLT_KND', FCLT_KND_CD), '기타') as LAYER_GRP_NM
+          from CM_TC_FCLT_USED CTFU
+         where  1 = 1
+        <if test='searchIncludeFcltUsedTyCdYn == "Y"'>
+        and    EXISTS
+                 (select DISTINCT FCLT_USED_TY_CD
+                 from             CM_FACILITY CF
+                 where            USE_TY_CD            = 'Y'
+                 and              CTFU.FCLT_USED_TY_CD = CF.FCLT_USED_TY_CD
+                 )
+        </if>
+        order by CTFU.FCLT_KND_CD
+               , CTFU.FCLT_USED_TY_CD
+    </select>
+
+    <select id="selectSggEmdBoundList" parameterType="map" resultType="egovMap">
+        select SIGUNGU_CD
+             , SIGUNGU_NM
+           <if test='emdYn == "Y"'>
+             , LG_EMD_NM
+             , LG_DONG_CD
+           </if>
+             , MIN(POINT_X) as MIN_X
+             , MIN(POINT_Y) as MIN_Y
+             , MAX(POINT_X) as MAX_X
+             , MAX(POINT_Y) as MAX_Y
+          from UM_GIS_ENTRC
+         where ( POINT_X IS NOT NULL and      POINT_X          != 0 )
+           and ( POINT_Y IS NOT NULL and      POINT_Y          != 0 )
+        <!--
+        <if test="sigunguCd != null and sigunguCd != ''">
+        and      SIGUNGU_CD IN
+            <foreach item="cd" index="index" collection="sigunguCd" open="(" separator="," close=")">
+            #{cd}
+            </foreach>
+        </if>
+         -->
+        group by SIGUNGU_CD
+               , SIGUNGU_NM
+               <if test='emdYn == "Y"'>
+               , LG_EMD_NM
+               , LG_DONG_CD
+               </if>
+        order by SIGUNGU_NM
+               <if test='emdYn == "Y"'>
+               , LG_EMD_NM
+               </if>
+    </select>
+
+    <!-- 시설물 등록 이력 SQL -->
+    <sql id="selectFcltRegHisListSql">
+        select    A.SRL_NO
+              , A.RGS_USER_ID
+              , B.USER_NM_KO as USER_NM
+              , A.ALL_CNT
+              , A.REG_CNT
+              , A.UPD_CNT
+              , DATE_FORMAT(A.RGS_DATE, '%Y/%m/%d %H:%i:%s') as RGS_DATE
+
+              , A.UPL_COL
+        from     CM_FCLT_UPL_HIS A, CM_USER B
+        where     A.RGS_USER_ID = B.USER_ID
+        <if test="searchCondition == ''">
+            <if test="searchKeyword !=''">
+        and (A.RGS_USER_ID LIKE CONCAT('%', #{searchKeyword}, '%') or B.USER_NM_KO LIKE CONCAT('%', #{searchKeyword}, '%'))
+            </if>
+        </if>
+        <if test="searchCondition == 'ID'">
+        and A.RGS_USER_ID LIKE CONCAT('%', #{searchKeyword}, '%')
+        </if>
+        <if test="searchCondition == 'NM'">
+        and B.USER_NM_KO LIKE CONCAT('%', #{searchKeyword}, '%')
+        </if>
+        <if test="searchTermStart != ''">
+        and DATE_FORMAT(A.RGS_DATE, '%Y/%m/%d') <![CDATA[>=]]> #{searchTermStart}
+        </if>
+        <if test="searchTermEnd != ''">
+        and DATE_FORMAT(A.RGS_DATE, '%Y/%m/%d') <![CDATA[<=]]> #{searchTermEnd}
+        </if>
+    </sql>
+
+    <!-- 시설물 등록 이력 조회 -->
+    <select id="selectFcltRegHisList" parameterType="fcltSrchVO" resultType="egovMap">
+        <include refid="selectFcltRegHisListSql"/>
+        order by RGS_DATE DESC
+        offset #{firstRecordIndex} limit #{recordCountPerPage}
+    </select>
+
+    <!-- 시설물 등록 이력 Cnt 조회 -->
+    <select id="selectFcltRegHisListTotCnt" parameterType="fcltSrchVO" resultType="int">
+        select COUNT(1) as CNT from (
+            <include refid="selectFcltRegHisListSql"/>
+        ) CNT
+    </select>
+
+    <!-- 시설물(그룹) 좌표 수정 -->
+    <update id="updateFcltPoint" parameterType="map">
+        update CM_FACILITY
+        set    POINT_X = #{pointX}
+             , POINT_Y = #{pointY}
+             , UPD_USER_ID = #{userId}
+             , UPD_DATE = NOW()
+        <choose>
+            <when test='mngSn != null and mngSn != ""'>
+        where  MNG_SN = #{mngSn}
+            </when>
+            <otherwise>
+        where  FCLT_ID = #{fcltId}
+            </otherwise>
+        </choose>
+    </update>
+
+    <!-- 시설물 프리셋대역 수정 -->
+    <update id="updatePresetBdwStartNum" parameterType="map">
+        update CM_FACILITY
+        set    PREset_BDW_START_NUM = #{presetBdwStartNum}
+             , UPD_USER_ID = #{userId}
+             , UPD_DATE = NOW()
+        where  FCLT_ID = #{fcltId}
+    </update>
+
+    <select id="selectFcltDetail" resultMap="fcltDetail">
+    	/* selectFcltDetail */
+        select CF.FCLT_ID
+             , CF.SYS_CD
+             , CSC.SYS_NM_KO as SYS_NM
+             , CF.SIGUNGU_CD
+             , (select SIGUNGU_NM from CM_TC_SIGUNGU where SIGUNGU_CD = CF.SIGUNGU_CD ) as SIGUNGU_NM
+             , CF.FCLT_LBL_NM
+             , CF.FCLT_KND_CD
+             , FN_GET_TC_CODE('FCLT_KND', CF.FCLT_KND_CD) as FCLT_KND_NM
+             , CF.FCLT_USED_TY_CD
+             , (select FCLT_USED_TY_NM from CM_TC_FCLT_USED where FCLT_KND_CD = CF.FCLT_KND_CD and FCLT_USED_TY_CD = CF.FCLT_USED_TY_CD ) as FCLT_USED_TY_NM
+             , CF.FCLT_KND_DTL_CD
+             , FN_GET_TC_CODE(CF.FCLT_KND_CD, CF.FCLT_KND_DTL_CD) as FCLT_KND_DTL_NM
+             , CF.FCLT_GDSDT_TY
+             , FN_GET_TC_CODE('FCLT_GDSDT_TY', CF.FCLT_GDSDT_TY) as FCLT_GDSDT_NM
+             , CF.LOTNO_ADRES_NM
+             , CF.ROAD_ADRES_NM
+             , CF.POINT_X
+             , CF.POINT_Y
+             , CF.USE_TY_CD
+             , FN_GET_TC_CODE('USE_TY', CF.USE_TY_CD) as USE_TY_NM
+             , CF.FCLT_STTUS
+             , FN_GET_TC_CODE('FCLT_STTUS', CF.FCLT_STTUS) as FCLT_STTUS_NM
+             , CF.FCLT_MNGR_TEL_NO
+             , CF.FCLT_UID
+             , CF.LINK_VMS_UID
+             , CF.PREset_BDW_START_NUM
+             , CF.CCTV_CHANNEL
+             , CF.CONN_IP
+             , CF.CONN_PORT
+             , CF.CONN_ID
+             , CF.CONN_PW
+             , CF.FCLT_MAC_ADRES
+             , CF.FCLT_INSTL_YMD
+             , CF.GATE_WAY
+             , CF.SUBNET
+             , CF.SVR_CONN_IP
+             , CF.SVR_CONN_PORT
+             , CF.SVR_CONN_ID
+             , CF.SVR_CONN_PW
+             , CF.DVC_SEE_CCTV_IP
+             , CF.DVC_SEE_CCTV_PORT
+             , CF.DVC_SEE_CCTV_ID
+             , CF.DVC_SEE_CCTV_PW
+             , CF.TRA_LINK_ID
+             , CF.CTR_CD
+             , FN_GET_TC_CODE('UCP_ID', CF.CTR_CD) as CTR_NM
+             , CF.DSTRT_CD
+             , (select DSTRT_NM from CM_DSTRT_CD_MNG where USE_TY_CD = 'Y' and DSTRT_CD  = CF.DSTRT_CD ) as DSTRT_NM
+             , CF.ICON_GIS_DSP_YN
+             , CF.BEFORE_FCLT_ID
+             , CF.LPR_CCTV_YN
+             , CF.PRNT_FCLT_ID
+             , CF.CPLT_PRDT_TY
+             , FN_GET_TC_CODE('CPLT_PRDT', CF.CPLT_PRDT_TY) as CPLT_PRDT_NM
+             , CF.VT_CENTER_TEL_NO
+             , CF.VT_POINT_TEL_NO
+             , CF.CCTV_DUE_NT_AG
+             , CF.MNG_SN
+             , CF.CCTV_AG_YN
+             , CSC.VIEWER_TY_CD
+             , CSC.VIEWER_PTZ_YN
+             , CF.RECORDING_YN /* 영상저장 */
+             , CF.TVO_TRGT_YN  /* 영상반출 */
+          from CM_FACILITY CF
+     left join CM_SYS_CODE CSC on CF.SYS_CD = CSC.SYS_CD
+         where CF.USE_TY_CD     = 'Y'
+        <if test="fcltId != null and fcltId != ''">  and CF.FCLT_ID = #{fcltId}  </if>
+        <if test="fcltUid != null and fcltUid != ''">  and CF.FCLT_UID = #{fcltUid} </if>
+    </select>
+
+    <insert id="insertFclt" parameterType="fcltDetail">
+        insert into CM_FACILITY (
+            FCLT_ID
+            <if test="sigunguCd    != null and sigunguCd != ''">           , SIGUNGU_CD         </if>
+            <if test="fcltLblNm    != null and fcltLblNm != ''">           , FCLT_LBL_NM        </if>
+            <if test="fcltKndCd    != null and fcltKndCd != ''">           , FCLT_KND_CD        </if>
+            <if test="fcltKndDtlCd != null and fcltKndDtlCd != ''">     , FCLT_KND_DTL_CD    </if>
+            <if test="sysCd        != null and sysCd != ''">                    , SYS_CD             </if>
+            <if test="fcltUsedTyCd != null and fcltUsedTyCd != ''">     , FCLT_USED_TY_CD    </if>
+            <if test="fcltGdsdtTy  != null and fcltGdsdtTy != ''">       , FCLT_GDSDT_TY      </if>
+            <if test="lotnoAdresNm != null and lotnoAdresNm != ''">     , LOTNO_ADRES_NM     </if>
+            <if test="roadAdresNm  != null and roadAdresNm != ''">       , ROAD_ADRES_NM      </if>
+            <if test="pointX       != null and pointX != ''">                 , POINT_X            </if>
+            <if test="pointY       != null and pointY != ''">                 , POINT_Y            </if>
+            <if test="useTyCd      != null and useTyCd != ''">                 , USE_TY_CD          </if>
+            <if test="fcltSttus    != null and fcltSttus != ''">             , FCLT_STTUS         </if>
+            <if test="fcltMngrTelNo != null and fcltMngrTelNo != ''">   , FCLT_MNGR_TEL_NO   </if>
+            <if test="fcltUid       != null and fcltUid != ''">                 , FCLT_UID           </if>
+            <if test="linkVmsUid    != null and linkVmsUid        != ''"> , LINK_VMS_UID         </if>
+            <if test="presetBdwStartNum != null and presetBdwStartNum != ''"> , PREset_BDW_START_NUM </if>
+            <if test="cctvChannel       != null and cctvChannel != ''">         , CCTV_CHANNEL </if>
+            <if test="connIp       != null and connIp != ''">                 , CONN_IP            </if>
+            <if test="connPort     != null and connPort != ''">             , CONN_PORT          </if>
+            <if test="connId       != null and connId != ''">                 , CONN_ID            </if>
+            <if test="connPw       != null and connPw != ''">                 , CONN_PW            </if>
+            <if test="fcltMacAdres != null and fcltMacAdres != ''">     , FCLT_MAC_ADRES     </if>
+            <if test="gateWay      != null and gateWay != ''">               , GATE_WAY           </if>
+            <if test="subnet       != null and subnet != ''">                 , SUBNET             </if>
+            <if test="fcltInstlYmd != null and fcltInstlYmd != ''">     , FCLT_INSTL_YMD     </if>
+            <if test="svrConnIp    != null and svrConnIp != ''">           , SVR_CONN_IP        </if>
+            <if test="svrConnPort  != null and svrConnPort != ''">       , SVR_CONN_PORT      </if>
+            <if test="svrConnId    != null and svrConnId != ''">           , SVR_CONN_ID        </if>
+            <if test="svrConnPw    != null and svrConnPw != ''">           , SVR_CONN_PW        </if>
+            <if test="dvcSeeCctvIp != null and dvcSeeCctvIp != ''">     , DVC_SEE_CCTV_IP    </if>
+            <if test="dvcSeeCctvPort != null and dvcSeeCctvPort != ''"> , DVC_SEE_CCTV_PORT  </if>
+            <if test="dvcSeeCctvId != null and dvcSeeCctvId != ''">     , DVC_SEE_CCTV_ID    </if>
+            <if test="dvcSeeCctvPw != null and dvcSeeCctvPw != ''">     , DVC_SEE_CCTV_PW    </if>
+            <if test="traLinkId    != null and traLinkId != ''">           , TRA_LINK_ID        </if>
+            <if test="ctrCd        != null and ctrCd != ''">                   , CTR_CD             </if>
+            <if test="dstrtCd      != null and dstrtCd != ''">               , DSTRT_CD           </if>
+            <if test="iconGisDspYn != null and iconGisDspYn != ''">     , ICON_GIS_DSP_YN    </if>
+            <if test="beforeFcltId != null and beforeFcltId != ''">     , BEFORE_FCLT_ID     </if>
+            <if test="lprCctvYn    != null and lprCctvYn != ''">           , LPR_CCTV_YN        </if>
+            <if test="prntFcltId   != null and prntFcltId != ''">         , PRNT_FCLT_ID       </if>
+            <if test="cpltPrdtTy   != null and cpltPrdtTy != ''">         , CPLT_PRDT_TY       </if>
+            <if test="userId       != null and userId != ''">                  , RGS_USER_ID        </if>
+            <if test="mngAreaCd    != null and mngAreaCd != ''">           , MNG_AREA_CD        </if>
+            <if test="plcPtrDivCd  != null and plcPtrDivCd != ''">       , PLC_PTR_DIV_CD     </if>
+            , RGS_DATE
+            <if test="userId != null and userId != ''">                 , UPD_USER_ID        </if>
+            , UPD_DATE
+            <if test="mngSn != null and mngSn != ''">                     , MNG_SN        </if>
+            <if test="etc != null and etc != ''">                         , ETC        </if>
+        )VALUES(
+            #{fcltId}
+            <if test="sigunguCd    != null and sigunguCd != ''">           , #{sigunguCd}      </if>
+            <if test="fcltLblNm    != null and fcltLblNm != ''">           , #{fcltLblNm}      </if>
+            <if test="fcltKndCd    != null and fcltKndCd != ''">           , #{fcltKndCd}      </if>
+            <if test="fcltKndDtlCd != null and fcltKndDtlCd != ''">     , #{fcltKndDtlCd}   </if>
+            <if test="sysCd        != null and sysCd != ''">                    , #{sysCd}          </if>
+            <if test="fcltUsedTyCd != null and fcltUsedTyCd != ''">     , #{fcltUsedTyCd}   </if>
+            <if test="fcltGdsdtTy  != null and fcltGdsdtTy != ''">       , #{fcltGdsdtTy}    </if>
+            <if test="lotnoAdresNm != null and lotnoAdresNm != ''">     , #{lotnoAdresNm}   </if>
+            <if test="roadAdresNm  != null and roadAdresNm != ''">       , #{roadAdresNm}    </if>
+            <if test="pointX       != null and pointX != ''">                 , #{pointX}         </if>
+            <if test="pointY       != null and pointY != ''">                 , #{pointY}         </if>
+            <if test="useTyCd      != null and useTyCd != ''">                 , #{useTyCd}        </if>
+            <if test="fcltSttus     != null and fcltSttus != ''">             , #{fcltSttus}      </if>
+            <if test="fcltMngrTelNo != null and fcltMngrTelNo != ''">   , #{fcltMngrTelNo}  </if>
+            <if test="fcltUid       != null and fcltUid != ''">                 , #{fcltUid}        </if>
+            <if test="linkVmsUid        != null and linkVmsUid        != ''"> , #{linkVmsUid}        </if>
+            <if test="presetBdwStartNum != null and presetBdwStartNum != ''"> , #{presetBdwStartNum} </if>
+            <if test="cctvChannel       != null and cctvChannel != ''">         , #{cctvChannel} </if>
+            <if test="connIp            != null and connIp != ''">                 , #{connIp}         </if>
+            <if test="connPort != null and connPort != ''">             , #{connPort}       </if>
+            <if test="connId != null and connId != ''">                 , #{connId}         </if>
+            <if test="connPw != null and connPw != ''">                 , #{connPw}         </if>
+            <if test="fcltMacAdres != null and fcltMacAdres != ''">     , #{fcltMacAdres}   </if>
+            <if test="gateWay != null and gateWay != ''">               , #{gateWay}        </if>
+            <if test="subnet != null and subnet != ''">                 , #{subnet}         </if>
+            <if test="fcltInstlYmd != null and fcltInstlYmd != ''">     , #{fcltInstlYmd}   </if>
+            <if test="svrConnIp != null and svrConnIp != ''">           , #{svrConnIp}      </if>
+            <if test="svrConnPort != null and svrConnPort != ''">       , #{svrConnPort}    </if>
+            <if test="svrConnId != null and svrConnId != ''">           , #{svrConnId}      </if>
+            <if test="svrConnPw != null and svrConnPw != ''">           , #{svrConnPw}      </if>
+            <if test="dvcSeeCctvIp != null and dvcSeeCctvIp != ''">     , #{dvcSeeCctvIp}   </if>
+            <if test="dvcSeeCctvPort != null and dvcSeeCctvPort != ''"> , #{dvcSeeCctvPort} </if>
+            <if test="dvcSeeCctvId != null and dvcSeeCctvId != ''">     , #{dvcSeeCctvId}   </if>
+            <if test="dvcSeeCctvPw != null and dvcSeeCctvPw != ''">     , #{dvcSeeCctvPw}   </if>
+            <if test="traLinkId != null and traLinkId != ''">           , #{traLinkId}      </if>
+            <if test="ctrCd != null and ctrCd != ''">                   , #{ctrCd}          </if>
+            <if test="dstrtCd != null and dstrtCd != ''">               , #{dstrtCd}        </if>
+            <if test="iconGisDspYn != null and iconGisDspYn != ''">     , #{iconGisDspYn}   </if>
+            <if test="beforeFcltId != null and beforeFcltId != ''">     , #{beforeFcltId}   </if>
+            <if test="lprCctvYn != null and lprCctvYn != ''">           , #{lprCctvYn}      </if>
+            <if test="prntFcltId != null and prntFcltId != ''">         , #{prntFcltId}     </if>
+            <if test="cpltPrdtTy != null and cpltPrdtTy != ''">         , #{cpltPrdtTy}     </if>
+            <if test="userId != null and userId != ''">                   , #{userId}          </if>
+            <if test="mngAreaCd != null and mngAreaCd != ''">           , #{mngAreaCd}      </if>
+            <if test="plcPtrDivCd != null and plcPtrDivCd != ''">       , #{plcPtrDivCd}    </if>
+             , NOW()
+            <if test="userId != null and userId != ''">             , #{userId}              </if>
+            , NOW()
+            <if test="mngSn != null and mngSn != ''">                     , #{mngSn}            </if>
+            <if test="etc != null and etc != ''">                         , #{etc}            </if>
+        )
+    </insert>
+
+    <update id="updateFclt" parameterType="fcltDetail">
+        update CM_FACILITY set UPD_DATE = NOW()
+        <if test="fcltLblNm    != null">   , FCLT_LBL_NM = #{fcltLblNm}  </if>
+        <if test="sigunguCd    != null">   , SIGUNGU_CD = #{sigunguCd}     </if>
+        <if test="fcltKndCd    != null">   , FCLT_KND_CD = #{fcltKndCd}     </if>
+        <if test="fcltKndDtlCd != null">   , FCLT_KND_DTL_CD = #{fcltKndDtlCd}  </if>
+        <if test="sysCd        != null">   , SYS_CD = #{sysCd}         </if>
+        <if test="fcltUsedTyCd != null">   , FCLT_USED_TY_CD = #{fcltUsedTyCd}  </if>
+        <if test="fcltGdsdtTy  != null">   , FCLT_GDSDT_TY = #{fcltGdsdtTy}   </if>
+        <if test="lotnoAdresNm != null">   , LOTNO_ADRES_NM = #{lotnoAdresNm}  </if>
+        <if test="roadAdresNm  != null">   , ROAD_ADRES_NM = #{roadAdresNm}   </if>
+        <if test="pointX       != null">   , POINT_X = ${pointX}        </if>
+        <if test="pointY       != null">   , POINT_Y = ${pointY}        </if>
+        <if test="useTyCd      != null">   , USE_TY_CD = #{useTyCd}       </if>
+        <if test="fcltSttus != null">   , FCLT_STTUS = #{fcltSttus}     </if>
+        <if test="fcltMngrTelNo != null">   , FCLT_MNGR_TEL_NO = #{fcltMngrTelNo} </if>
+        <if test="fcltUid != null">   , FCLT_UID = #{fcltUid}       </if>
+        <if test="linkVmsUid != null">   , LINK_VMS_UID = #{linkVmsUid}       </if>
+        <if test="presetBdwStartNum">   , PREset_BDW_START_NUM = #{presetBdwStartNum}       </if>
+        <if test="cctvChannel != null">   , CCTV_CHANNEL = #{cctvChannel}       </if>
+        <if test="connIp != null">   , CONN_IP = #{connIp}        </if>
+        <if test="connPort != null">   , CONN_PORT = #{connPort}      </if>
+        <if test="connId != null">   , CONN_ID = #{connId}        </if>
+        <if test="connPw != null">   , CONN_PW = #{connPw}        </if>
+        <if test="fcltMacAdres != null">   , FCLT_MAC_ADRES = #{fcltMacAdres}  </if>
+        <if test="gateWay != null">   , GATE_WAY = #{gateWay}       </if>
+        <if test="subnet != null">   , SUBNET = #{subnet}        </if>
+        <if test="fcltInstlYmd != null">   , FCLT_INSTL_YMD = #{fcltInstlYmd}  </if>
+        <if test="svrConnIp != null">   , SVR_CONN_IP = #{svrConnIp}     </if>
+        <if test="svrConnPort != null">   , SVR_CONN_PORT = #{svrConnPort}   </if>
+        <if test="svrConnId != null">   , SVR_CONN_ID = #{svrConnId}     </if>
+        <if test="svrConnPw != null">   , SVR_CONN_PW = #{svrConnPw}     </if>
+        <if test="dvcSeeCctvIp != null">   , DVC_SEE_CCTV_IP = #{dvcSeeCctvIp}  </if>
+        <if test="dvcSeeCctvPort != null">   , DVC_SEE_CCTV_PORT = #{dvcSeeCctvPort}</if>
+        <if test="dvcSeeCctvId != null">   , DVC_SEE_CCTV_ID = #{dvcSeeCctvId}  </if>
+        <if test="dvcSeeCctvPw != null">   , DVC_SEE_CCTV_PW = #{dvcSeeCctvPw}  </if>
+        <if test="traLinkId != null">   , TRA_LINK_ID = #{traLinkId}     </if>
+        <if test="ctrCd != null">   , CTR_CD = #{ctrCd}         </if>
+        <if test="dstrtCd != null">   , DSTRT_CD = #{dstrtCd}       </if>
+        <if test="iconGisDspYn != null">   , ICON_GIS_DSP_YN = #{iconGisDspYn}  </if>
+        <if test="beforeFcltId != null">   , BEFORE_FCLT_ID = #{beforeFcltId}  </if>
+        <if test="lprCctvYn != null">   , LPR_CCTV_YN = #{lprCctvYn}     </if>
+        <if test="prntFcltId != null">   , PRNT_FCLT_ID = #{prntFcltId}    </if>
+        <if test="cpltPrdtTy != null">   , CPLT_PRDT_TY = #{cpltPrdtTy}    </if>
+        <if test="userId != null">   , UPD_USER_ID = #{userId}     </if>
+        <if test="plcPtrDivCd != null"> , PLC_PTR_DIV_CD = #{plcPtrDivCd}</if>
+        <if test="cctvDueNtAg != null"> , CCTV_DUE_NT_AG = #{cctvDueNtAg}</if>
+        <if test="vtCenterTelNo != null"> , VT_CENTER_TEL_NO = #{vtCenterTelNo}</if>
+        <if test="vtPointTelNo != null"> , VT_POINT_TEL_NO = #{vtPointTelNo}</if>
+        <if test="mngSn != null"> , MNG_SN = #{mngSn}</if>
+        <if test="etc != null"> , ETC = #{etc}</if>
+        where FCLT_ID = #{fcltId}
+    </update>
+
+    <!-- 2017 시설물 엑셀다운로드 : 필수로 작성할 시설물 기본항목 조회  -->
+    <select id="selectFcltDefaultColumns" resultType="java.lang.String">
+        select CD_DSCRT as FCLT_BASE_ITEM
+        from   CM_TC_CODE
+        where  CD_GRP_ID = 'FCLT_FILE'
+        and    CD_ID     = 'FCLT_FILE_ITEM_BASE'
+    </select>
+
+    <!-- 2017 시설물 엑셀다운로드 : 그리드에 표출할 컬럼 리스트 -->
+    <select id="selectFcltColumnList" parameterType="fcltSrchVO" resultType="egovMap">
+        select COLUMN_NAME
+             , TRIM(COLUMN_COMMENT) as COMMENTS
+        from   INFORMATION_SCHEMA.COLUMNS
+        where  TABLE_SCHEMA='sctvo'
+        and    TABLE_NAME  ='cm_facility'
+    </select>
+
+    <!-- 2017 시설물 엑셀다운로드 : 그리드에 표출할 컬럼 리스트 -->
+    <select id="selectFcltColumnListForExcelDownload" resultType="egovMap">
+        select COLUMN_NAME
+             , TRIM(COLUMN_COMMENT) as COMMENTS
+        from   INFORMATION_SCHEMA.COLUMNS
+        where  TABLE_SCHEMA='sctvo'
+        and    TABLE_NAME  ='cm_facility'
+    </select>
+
+    <!-- 2017 시설물 일괄업로드 전체 컬럼 리스트 -->
+    <select id="selectFcltColumnListForExcelUpload" resultType="egovMap">
+        select 'RGSUPD_TY' as COLUMN_NAME
+             , '등록구분'      as COMMENTS
+        from   DUAL
+        union all
+        select COLUMN_NAME
+             , TRIM(COLUMN_COMMENT) as COMMENTS
+        from   INFORMATION_SCHEMA.COLUMNS
+        where  TABLE_SCHEMA='sctvo'
+        and    TABLE_NAME  ='cm_facility'
+    </select>
+
+    <!-- 2017 시설물 엑셀다운로드 : 그리드에서 체크한 컬럼만 조회 -->
+    <select id="excelDownFcltList" parameterType="fcltSrchVO" resultType="egovMap">
+        select ${columnName}
+        from   CM_FACILITY
+        <trim prefix="where" prefixOverrides="and|OR">
+            <if test="selectFcltUsed != null and selectFcltUsed != ''">
+        and    FCLT_USED_TY_CD                        = #{selectFcltUsed}
+            </if>
+            <if test="chkFcltUseTy != null and chkFcltUseTy != ''">
+        and    USE_TY_CD                           IN
+                <foreach item="item" index="index" collection="chkFcltUseTy" open="(" separator="," close=")">
+        #{item}
+                </foreach>
+            </if>
+        </trim>
+    </select>
+
+    <select id="excelDownCodeList" resultType="egovMap">
+        select   COALESCE(CD_GRP_NM, ' ') CD_GRP_NM
+               , COALESCE(CD_ID, ' ') CD_ID
+               , COALESCE(CD_NM_KO, ' ') CD_NM_KO
+               , CD_DSCRT
+        from     ( select
+                         CASE
+                                 WHEN CD_TY = 'G' THEN 1
+                                 ELSE 2
+                         END CD_GRP_KEY
+                       , CASE
+                                 WHEN CD_GRP_ID = 'FCLT_KND'      THEN 1
+                                 WHEN CD_GRP_ID = 'CTV'           THEN 2
+                                 WHEN CD_GRP_ID = 'FCLT_USED_CTV' THEN 3
+                                 WHEN CD_GRP_ID = 'FCLT_USED_VMS' THEN 4
+                                 WHEN CD_GRP_ID = 'FCLT_USED_BIT' THEN 5
+                                 WHEN CD_GRP_ID = 'FCLT_GDSDT_TY' THEN 6
+                                 WHEN CD_GRP_ID = 'USE_TY'        THEN 7
+                                 WHEN CD_GRP_ID = 'FCLT_STTUS'    THEN 8
+                                 WHEN CD_GRP_ID = 'CPLT_PRDT'     THEN 9
+                                 ELSE NULL
+                         END as CD_ID_KEY
+                       , CD_GRP_ID
+                       , CD_NM_KO CD_GRP_NM
+                       , '' CD_ID
+                       , '' CD_NM_KO
+                       , CD_DSCRT
+                       , SORT_ORDR
+                 from    CM_TC_CODE
+                 where   CD_GRP_ID IN ('FCLT_KND'
+                                     , 'CTV'
+                                     , 'FCLT_USED_CTV'
+                                     , 'FCLT_USED_VMS'
+                                     , 'FCLT_USED_BIT'
+                                     , 'FCLT_GDSDT_TY'
+                                     , 'USE_TY'
+                                     , 'FCLT_STTUS'
+                                     , 'CPLT_PRDT')
+                 and     CD_TY     ='G'
+                 and     USE_TY_CD ='Y'
+
+                 union all
+
+                 select
+                        CASE
+                               WHEN CD_TY = 'G' THEN 1
+                               ELSE 2
+                        END CD_GRP_KEY
+                      , CASE
+                               WHEN CD_GRP_ID = 'FCLT_KND'      THEN 1
+                               WHEN CD_GRP_ID = 'CTV'           THEN 2
+                               WHEN CD_GRP_ID = 'FCLT_USED_CTV' THEN 3
+                               WHEN CD_GRP_ID = 'FCLT_USED_VMS' THEN 4
+                               WHEN CD_GRP_ID = 'FCLT_USED_BIT' THEN 5
+                               WHEN CD_GRP_ID = 'FCLT_GDSDT_TY' THEN 6
+                               WHEN CD_GRP_ID = 'USE_TY'        THEN 7
+                               WHEN CD_GRP_ID = 'FCLT_STTUS'    THEN 8
+                               WHEN CD_GRP_ID = 'CPLT_PRDT'     THEN 9
+                               ELSE NULL
+                        END as CD_ID_KEY
+                      , CD_GRP_ID
+                      , '' CD_GRP_NM
+                      , CD_ID
+                      , CD_NM_KO
+                      , CD_DSCRT
+                      , SORT_ORDR
+                 from   CM_TC_CODE
+                 where  CD_GRP_ID IN ('FCLT_KND'
+                                    , 'CTV'
+                                    , 'FCLT_USED_CTV'
+                                    , 'FCLT_USED_VMS'
+                                    , 'FCLT_USED_BIT'
+                                    , 'FCLT_GDSDT_TY'
+                                    , 'USE_TY'
+                                    , 'FCLT_STTUS'
+                                    , 'CPLT_PRDT')
+                 and    CD_TY     ='C'
+                 and    USE_TY_CD ='Y'
+                 ) A
+        order by CD_ID_KEY
+               , CD_GRP_KEY
+               , SORT_ORDR
+    </select>
+
+    <!-- 2017 시설물 엑셀다운로드 : 시설물 정보 미입력 데이터 조회 -->
+    <select id="excelDownNullList" parameterType="fcltDetail" resultType="hashMap">
+        select ${columnName}
+        from   CM_FACILITY
+        <trim prefix="where" prefixOverrides="and|OR">
+            <if test="selectFcltUsed != '' and selectFcltUsed != null">
+        and    FCLT_USED_TY_CD                        = #{selectFcltUsed}
+            </if>
+            <if test="chkFcltUseTy != '' and chkFcltUseTy != null">
+        and    USE_TY_CD                           IN
+                <foreach item="item" index="index" collection="chkFcltUseTy" open="(" separator="," close=")">
+        #{item}
+                </foreach>
+            </if>
+            <if test="nullColumn != '' and nullColumn != null">
+        and
+               (
+                      ${nullColumn}
+               )
+            </if>
+        </trim>
+    </select>
+
+    <!-- 시설물 엑셀업로드 : 필수로 작성할 시설물 기본항목 조회  -->
+    <select id="selectFcltAllColumns" parameterType="fcltDetail" resultType="java.lang.String">
+        select   ${columnName}
+        from     CM_FACILITY_UPCHK
+        where    UPD_USER_ID = #{userId}
+        order by SEQ_NO
+    </select>
+
+    <!-- 시설물임시테이블 엑셀다운로드 -->
+    <select id="selectFacilityUpchkList" parameterType="fcltSrchVO" resultType="egovMap">
+        select ${columnName}
+          from CM_FACILITY_UPCHK
+         where UPD_USER_ID = #{userId}
+        order by SEQ_NO
+    </select>
+
+    <select id="selectUserValidation" parameterType="map" resultType="String">
+        select CASE
+                      WHEN COUNT(*) = 0 THEN 'X'
+                      WHEN COUNT(*) = 1 THEN 'O'
+                      ELSE 'X'
+               END
+        from   CM_USER
+        where  USER_ID  = #{userId}
+        and    PASSWORD = #{password}
+        limit  1
+    </select>
+
+    <select id="selectExcelUploadCode" resultType="egovMap">
+        select   COALESCE(CD_GRP_NM, ' ') CD_GRP_NM
+               , COALESCE(CD_ID, ' ') CD_ID
+               , COALESCE(CD_NM_KO, ' ') CD_NM_KO
+               , CD_DSCRT
+        from     ( select
+                         CASE
+                                 WHEN CD_TY = 'G' THEN 1
+                                 ELSE 2
+                         END CD_GRP_KEY
+                       , CASE
+                                 WHEN CD_GRP_ID = 'FCLT_KND'      THEN 1
+                                 WHEN CD_GRP_ID = 'CTV'           THEN 2
+                                 WHEN CD_GRP_ID = 'FCLT_USED_CTV' THEN 3
+                                 WHEN CD_GRP_ID = 'FCLT_USED_VMS' THEN 4
+                                 WHEN CD_GRP_ID = 'FCLT_USED_BIT' THEN 5
+                                 WHEN CD_GRP_ID = 'FCLT_GDSDT_TY' THEN 6
+                                 WHEN CD_GRP_ID = 'USE_TY'        THEN 7
+                                 WHEN CD_GRP_ID = 'FCLT_STTUS'    THEN 8
+                                 WHEN CD_GRP_ID = 'CPLT_PRDT'     THEN 9
+                                 ELSE NULL
+                         END as CD_ID_KEY
+                       , CD_GRP_ID
+                       , CD_NM_KO CD_GRP_NM
+                       , '' CD_ID
+                       , '' CD_NM_KO
+                       , CD_DSCRT
+                       , SORT_ORDR
+                 from    CM_TC_CODE
+                 where   CD_GRP_ID IN ('FCLT_KND'
+                                     , 'CTV'
+                                     , 'FCLT_USED_CTV'
+                                     , 'FCLT_USED_VMS'
+                                     , 'FCLT_USED_BIT'
+                                     , 'FCLT_GDSDT_TY'
+                                     , 'USE_TY'
+                                     , 'FCLT_STTUS'
+                                     , 'CPLT_PRDT')
+                 and     CD_TY     ='G'
+                 and     USE_TY_CD ='Y'
+
+                 union all
+
+                 select
+                        CASE
+                               WHEN CD_TY = 'G' THEN 1
+                               ELSE 2
+                        END CD_GRP_KEY
+                      , CASE
+                               WHEN CD_GRP_ID = 'FCLT_KND'      THEN 1
+                               WHEN CD_GRP_ID = 'CTV'           THEN 2
+                               WHEN CD_GRP_ID = 'FCLT_USED_CTV' THEN 3
+                               WHEN CD_GRP_ID = 'FCLT_USED_VMS' THEN 4
+                               WHEN CD_GRP_ID = 'FCLT_USED_BIT' THEN 5
+                               WHEN CD_GRP_ID = 'FCLT_GDSDT_TY' THEN 6
+                               WHEN CD_GRP_ID = 'USE_TY'        THEN 7
+                               WHEN CD_GRP_ID = 'FCLT_STTUS'    THEN 8
+                               WHEN CD_GRP_ID = 'CPLT_PRDT'     THEN 9
+                               ELSE NULL
+                        END as CD_ID_KEY
+                      , CD_GRP_ID
+                      , '' CD_GRP_NM
+                      , CD_ID
+                      , CD_NM_KO
+                      , CD_DSCRT
+                      , SORT_ORDR
+                 from   CM_TC_CODE
+                 where  CD_GRP_ID IN ('FCLT_KND'
+                                    , 'CTV'
+                                    , 'FCLT_USED_CTV'
+                                    , 'FCLT_USED_VMS'
+                                    , 'FCLT_USED_BIT'
+                                    , 'FCLT_GDSDT_TY'
+                                    , 'USE_TY'
+                                    , 'FCLT_STTUS'
+                                    , 'CPLT_PRDT')
+                 and    CD_TY     ='C'
+                 and    USE_TY_CD ='Y'
+                 ) A
+        order by CD_ID_KEY
+               , CD_GRP_KEY
+               , SORT_ORDR
+    </select>
+</mapper>

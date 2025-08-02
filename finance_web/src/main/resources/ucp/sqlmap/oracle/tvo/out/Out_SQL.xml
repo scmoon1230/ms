@@ -1,0 +1,701 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ucp.tvo.out.service.OutMapper">
+
+    <select id="selectOutRqstList" parameterType="outSrchVO" resultType="egovMap">
+    /* selectOutRqstList */
+        select TVR.DSTRT_CD               , (select dstrt_nm from cm_dstrt_cd_mng cdcm where cdcm.dstrt_cd = tvr.dstrt_cd) dstrt_nm
+             , TVR.VIEW_RQST_NO           , TVR.VIEW_END_YMDHMS
+             , TVR.EVT_NO                 , TVR.EVT_NM
+             , TVR.RQST_RSN_TY_CD         , FN_GET_TC_CODE('RQST_RSN_TY', COALESCE(TVR.RQST_RSN_TY_CD, '')) as RQST_RSN_TY_NM
+             , TOR.OUT_RQST_NO            , TOR.OUT_RQST_YMDHMS
+             , TOR.CCTV_ID                , CF.FCLT_LBL_NM
+             , TOR.TVO_PRGRS_CD           , FN_GET_TC_CODE('OUT_PRGRS', COALESCE(TOR.TVO_PRGRS_CD, '')) as TVO_PRGRS_NM
+             , TOR.TVO_PRGRS_DTL          , TOR.TVO_PRGRS_YMDHMS
+             , TOR.OUT_CHK_STEP_CD        , FN_GET_TC_CODE('OUT_CHK_STEP', COALESCE(TOR.OUT_CHK_STEP_CD, '')) as OUT_CHK_STEP_NM
+             , TOR.OUT_CHK_STEP_DTL       , TOR.OUT_CHK_YMDHMS
+             , TOR.VDO_YMDHMS_FR          , TOR.VDO_YMDHMS_TO
+             , TOR.PLAY_START_YMDHMS      , TOR.PLAY_END_YMDHMS
+             , TOR.THIRD_PARTY_YN         , TOR.THIRD_PARTY_PW       , TOR.MASKING_YN
+             , TOR.PLAY_CNT               , TOR.OUT_FILE_DEL_YN
+             , TOR.OUT_RQST_USER_ID       , TOR.OUT_APRV_USER_ID
+           <if test="saltText == null ">
+             , COALESCE(FN_USER_NM(TOR.OUT_RQST_USER_ID), TOR.OUT_RQST_USER_ID) as OUT_RQST_USER_NM
+             , COALESCE(FN_USER_NM(TOR.OUT_APRV_USER_ID), TOR.OUT_APRV_USER_ID) as OUT_APRV_USER_NM
+           </if>
+           <if test="saltText != null ">
+             , COALESCE(FN_USER_NM_DEC(TOR.OUT_RQST_USER_ID, #{saltText}::bytea), TOR.OUT_RQST_USER_ID) as OUT_RQST_USER_NM
+             , COALESCE(FN_USER_NM_DEC(TOR.OUT_APRV_USER_ID, #{saltText}::bytea), TOR.OUT_APRV_USER_ID) as OUT_APRV_USER_NM
+           </if>
+             , CF.POINT_X                  , CF.POINT_Y
+             , CF.LOTNO_ADRES_NM           , CF.ROAD_ADRES_NM
+          from TVO_OUT_RQST TOR
+     left join CM_FACILITY  CF   on TOR.CCTV_ID = CF.FCLT_ID
+           <if test="fcltLblNm != null and fcltLblNm != ''"> and CF.FCLT_LBL_NM LIKE CONCAT('%', #{fcltLblNm}, '%') </if>
+     left join TVO_VIEW_RQST TVR on TVR.DSTRT_CD     = TOR.DSTRT_CD
+                                and TVR.VIEW_RQST_NO = TOR.VIEW_RQST_NO
+           <if test="rqstRsnTyCd != null and rqstRsnTyCd != ''"> and TVR.RQST_RSN_TY_CD = #{rqstRsnTyCd}            </if>
+         where 1 = 1
+           <if test="dstrtCd         != null and dstrtCd         != ''"> and TOR.DSTRT_CD         = #{dstrtCd}             </if>
+           <if test="viewRqstNo      != null and viewRqstNo      != ''"> and TOR.VIEW_RQST_NO     = #{viewRqstNo}          </if>
+           <if test="evtNo           != null and evtNo           != ''"> and TVR.EVT_NO LIKE CONCAT('%', #{evtNo}, '%')    </if>
+           <if test="evtNm           != null and evtNm           != ''"> and TVR.EVT_NM LIKE CONCAT('%', #{evtNm}, '%')    </if>
+           <if test="outRqstUserId   != null and outRqstUserId   != ''"> and TOR.OUT_RQST_USER_ID = #{outRqstUserId}       </if>
+           <if test="cctvId          != null and cctvId          != ''"> and TOR.CCTV_ID          = #{cctvId}              </if>
+           <if test="vdoYmdhmsFr     != null and vdoYmdhmsFr     != ''"> and TOR.VDO_YMDHMS_FR    = #{vdoYmdhmsFr}         </if>
+           <if test="vdoYmdhmsTo     != null and vdoYmdhmsTo     != ''"> and TOR.VDO_YMDHMS_TO    = #{vdoYmdhmsTo}         </if>
+           <if test="outRqstYmdhms   != null and outRqstYmdhms   != ''"> and TOR.OUT_RQST_YMDHMS LIKE CONCAT(#{outRqstYmdhms}, '%')                    </if>
+           <if test="outRqstYmdhmsFr != null and outRqstYmdhmsFr != ''"> and CONCAT(#{outRqstYmdhmsFr}, '000000') <![CDATA[ <= ]]> TOR.OUT_RQST_YMDHMS </if>
+           <if test="outRqstYmdhmsTo != null and outRqstYmdhmsTo != ''"> and TOR.OUT_RQST_YMDHMS <![CDATA[ <= ]]> CONCAT(#{outRqstYmdhmsTo}, '235959') </if>
+           <if test="playEndYmdhms   != null and playEndYmdhms   != ''"> and TOR.PLAY_END_YMDHMS LIKE CONCAT(#{playEndYmdhms}, '%')                </if>
+           <if test="tvoPrgrsCd      != null and tvoPrgrsCd      != ''"> and TOR.TVO_PRGRS_CD        = #{tvoPrgrsCd}                                   </if>
+           <if test='expireCompFlag  != null and expireCompFlag.equals("PLAY_START_YMDHMS")'>
+            <if test="expireYmdhms   != null and expireYmdhms    != ''"> and TOR.PLAY_START_YMDHMS <![CDATA[ <= ]]> #{expireYmdhms} </if>
+           </if>
+           <if test='expireCompFlag  != null and expireCompFlag.equals("PLAY_END_YMDHMS")'>
+            <if test="expireYmdhms   != null and expireYmdhms    != ''"> and TOR.PLAY_END_YMDHMS <![CDATA[ <= ]]> #{expireYmdhms} </if>
+           </if>
+           <if test="outFileDelYn    != null and outFileDelYn    != ''"> and TOR.OUT_FILE_DEL_YN    = #{outFileDelYn}              </if>
+         order by OUT_RQST_NO desc
+        offset #{firstRecordIndex} limit #{recordCountPerPage}
+    </select>
+    
+    <select id="selectOutRqstListTotCnt" parameterType="outSrchVO" resultType="int">
+    /* selectOutRqstListTotCnt */
+    select COUNT(1) as CNT from (
+        select TOR.OUT_RQST_NO
+          from TVO_OUT_RQST TOR
+     left join CM_FACILITY  CF   on TOR.CCTV_ID = CF.FCLT_ID
+           <if test="fcltLblNm != null and fcltLblNm != ''"> and CF.FCLT_LBL_NM LIKE CONCAT('%', #{fcltLblNm}, '%') </if>
+     left join TVO_VIEW_RQST TVR on TVR.DSTRT_CD     = TOR.DSTRT_CD
+                                and TVR.VIEW_RQST_NO = TOR.VIEW_RQST_NO
+           <if test="rqstRsnTyCd != null and rqstRsnTyCd != ''"> and TVR.RQST_RSN_TY_CD = #{rqstRsnTyCd}            </if>
+         where 1 = 1
+           <if test="dstrtCd         != null and dstrtCd         != ''"> and TOR.DSTRT_CD         = #{dstrtCd}             </if>
+           <if test="viewRqstNo      != null and viewRqstNo      != ''"> and TOR.VIEW_RQST_NO     = #{viewRqstNo}          </if>
+           <if test="evtNo           != null and evtNo           != ''"> and TVR.EVT_NO LIKE CONCAT('%', #{evtNo}, '%')    </if>
+           <if test="evtNm           != null and evtNm           != ''"> and TVR.EVT_NM LIKE CONCAT('%', #{evtNm}, '%')    </if>
+           <if test="outRqstUserId   != null and outRqstUserId   != ''"> and TOR.OUT_RQST_USER_ID = #{outRqstUserId}       </if>
+           <if test="cctvId          != null and cctvId          != ''"> and TOR.CCTV_ID          = #{cctvId}              </if>
+           <if test="vdoYmdhmsFr     != null and vdoYmdhmsFr     != ''"> and TOR.VDO_YMDHMS_FR    = #{vdoYmdhmsFr}         </if>
+           <if test="vdoYmdhmsTo     != null and vdoYmdhmsTo     != ''"> and TOR.VDO_YMDHMS_TO    = #{vdoYmdhmsTo}         </if>
+           <if test="outRqstYmdhms   != null and outRqstYmdhms   != ''"> and TOR.OUT_RQST_YMDHMS LIKE CONCAT(#{outRqstYmdhms}, '%')                    </if>
+           <if test="outRqstYmdhmsFr != null and outRqstYmdhmsFr != ''"> and CONCAT(#{outRqstYmdhmsFr}, '000000') <![CDATA[ <= ]]> TOR.OUT_RQST_YMDHMS </if>
+           <if test="outRqstYmdhmsTo != null and outRqstYmdhmsTo != ''"> and TOR.OUT_RQST_YMDHMS <![CDATA[ <= ]]> CONCAT(#{outRqstYmdhmsTo}, '235959') </if>
+           <if test="playEndYmdhms   != null and playEndYmdhms   != ''"> and TOR.PLAY_END_YMDHMS LIKE CONCAT(#{playEndYmdhms}, '%')                </if>
+           <if test="tvoPrgrsCd      != null and tvoPrgrsCd      != ''"> and TOR.TVO_PRGRS_CD        = #{tvoPrgrsCd}                                   </if>
+           <if test='expireCompFlag  != null and expireCompFlag.equals("PLAY_START_YMDHMS")'>
+            <if test="expireYmdhms    != null and expireYmdhms       != ''"> and TOR.PLAY_START_YMDHMS <![CDATA[ <= ]]> #{expireYmdhms} </if>
+           </if>
+           <if test='expireCompFlag    != null and expireCompFlag.equals("PLAY_END_YMDHMS")'>
+            <if test="expireYmdhms    != null and expireYmdhms       != ''"> and TOR.PLAY_END_YMDHMS <![CDATA[ <= ]]> #{expireYmdhms} </if>
+           </if>
+           <if test="outFileDelYn    != null and outFileDelYn       != ''"> and TOR.OUT_FILE_DEL_YN    = #{outFileDelYn}              </if>
+    ) CNT
+    </select>
+    
+    
+    
+    
+    
+    <select id="selectOutRqstWorkCnt" parameterType="outSrchVO" resultType="egovMap">
+    /* selectOutRqstWorkCnt */
+        select (select count(out_rqst_no) from tvo_out_rqst tor where TVO_PRGRS_CD in ('10','50')) as ING_CNT	/* 신청,입수승인 */
+             , (select count(out_rqst_no) from tvo_out_rqst tor where TVO_PRGRS_CD in ('70','75')) as DRM_CNT	/* 암호화대기,암호화중 */
+          from tvo_out_rqst tor2 
+         limit 1
+    </select>
+    
+    <select id="selectOutRqstVdoDuration" parameterType="outSrchVO" resultType="egovMap">
+    /* selectOutRqstVdoDuration */
+        select FCLT_SYS_CD
+             , (select SYS_NM_KO from cm_sys_code csc where VIEWER_TY_CD='VMS' and SYS_CD=FCLT_SYS_CD) as FCLT_SYS_NM
+             , masking_yn
+             , cast (vdo_duration as integer) vdo_duration
+          from ( select tor.cctv_id              , cf.sys_cd as FCLT_SYS_CD              , tor.masking_yn
+                      , vdo_ymdhms_fr                                     , vdo_ymdhms_to 
+                      , to_timestamp(vdo_ymdhms_fr, 'YYYYMMDDHH24MISS')   , to_timestamp(vdo_ymdhms_to, 'YYYYMMDDHH24MISS')
+                      , (select (extract (hour from (TO_TIMESTAMP(VDO_YMDHMS_TO, 'YYYYMMDDHH24MISS') - TO_TIMESTAMP(VDO_YMDHMS_FR, 'YYYYMMDDHH24MISS')))*60)
+                               + extract (minute from (TO_TIMESTAMP(VDO_YMDHMS_TO, 'YYYYMMDDHH24MISS') - TO_TIMESTAMP(VDO_YMDHMS_FR, 'YYYYMMDDHH24MISS')))
+                        ) as VDO_DURATION
+                   from tvo_out_rqst tor
+                   left join cm_facility cf on tor.cctv_id = cf.fclt_id
+                  where TVO_PRGRS_CD in ('10','50')	/* 신청,입수승인 */
+               ) T
+    </select>
+    
+    
+    
+    
+
+    <select id="selectOutRqstDtl" parameterType="map" resultType="egovMap">
+    /* selectOutRqstDtl */
+        select TVR.DSTRT_CD               , (select dstrt_nm from cm_dstrt_cd_mng cdcm where cdcm.dstrt_cd = tor.dstrt_cd) dstrt_nm
+             , TOR.VIEW_RQST_NO           , TOR.OUT_RQST_NO
+             , TOR.CCTV_ID
+             , TOR.VDO_YMDHMS_FR
+             , TOR.VDO_YMDHMS_FR as VDO_YMDHMS_FR_ORGN
+             , CASE WHEN VDO_YMDHMS_FR IS NULL                                        THEN ''
+                    ELSE TO_CHAR(TO_TIMESTAMP(VDO_YMDHMS_FR, 'YYYYMMDDHH24MISS'), 'YYYY-MM-DD HH24:MI:SS')             END as VDO_YMD_HMS_FR
+             , TOR.VDO_YMDHMS_TO
+             , TOR.VDO_YMDHMS_TO as VDO_YMDHMS_TO_ORGN
+             , CASE WHEN VDO_YMDHMS_TO IS NULL                                        THEN ''
+                    ELSE TO_CHAR(TO_TIMESTAMP(VDO_YMDHMS_TO, 'YYYYMMDDHH24MISS'), 'YYYY-MM-DD HH24:MI:SS')             END as VDO_YMD_HMS_TO
+             , (select (extract (hour from (TO_TIMESTAMP(VDO_YMDHMS_TO, 'YYYYMMDDHH24MISS') - TO_TIMESTAMP(VDO_YMDHMS_FR, 'YYYYMMDDHH24MISS')))*60)
+                     + extract (minute from (TO_TIMESTAMP(VDO_YMDHMS_TO, 'YYYYMMDDHH24MISS') - TO_TIMESTAMP(VDO_YMDHMS_FR, 'YYYYMMDDHH24MISS')))
+               ) as VDO_DURATION
+             , TOR.PLAY_START_YMDHMS
+             , TOR.PLAY_START_YMDHMS as PLAY_START_YMDHMS_ORGN
+             , CASE WHEN ( PLAY_START_YMDHMS IS NULL or PLAY_START_YMDHMS = '' )  THEN ''
+                    ELSE TO_CHAR(TO_TIMESTAMP(PLAY_START_YMDHMS, 'YYYYMMDDHH24MISS'), 'YYYY-MM-DD HH24:MI:SS')         END as PLAY_START_YMD_HMS
+             , TOR.PLAY_END_YMDHMS
+             , TOR.PLAY_END_YMDHMS as PLAY_END_YMDHMS_ORGN
+             , CASE WHEN ( PLAY_END_YMDHMS IS NULL or PLAY_END_YMDHMS = '' )      THEN ''
+                    ELSE TO_CHAR(TO_TIMESTAMP(PLAY_END_YMDHMS, 'YYYYMMDDHH24MISS'), 'YYYY-MM-DD HH24:MI:SS')           END as PLAY_END_YMD_HMS
+             , MASKING_YN
+             , THIRD_PARTY_YN
+             , THIRD_PARTY_PW
+             , OUT_RQST_USER_ID
+             , TOR.OUT_APRV_USER_ID
+           <if test="saltText == null ">
+             , COALESCE(FN_USER_NM(OUT_RQST_USER_ID), OUT_RQST_USER_ID)               as OUT_RQST_USER_NM
+             , COALESCE(FN_USER_NM(TOR.OUT_APRV_USER_ID), TOR.OUT_APRV_USER_ID)       as OUT_APRV_USER_NM
+           </if>
+           <if test="saltText != null ">
+             , COALESCE(FN_USER_NM_DEC(OUT_RQST_USER_ID, #{saltText}::bytea), OUT_RQST_USER_ID)               as OUT_RQST_USER_NM
+             , COALESCE(FN_USER_NM_DEC(TOR.OUT_APRV_USER_ID, #{saltText}::bytea), TOR.OUT_APRV_USER_ID)       as OUT_APRV_USER_NM
+           </if>
+             , OUT_RQST_YMDHMS
+             , OUT_RQST_YMDHMS as OUT_RQST_YMDHMS_ORGN
+             , CASE WHEN OUT_RQST_YMDHMS IS NULL                                      THEN ''
+                    ELSE TO_CHAR(TO_TIMESTAMP(OUT_RQST_YMDHMS, 'YYYYMMDDHH24MISS'), 'YYYY-MM-DD HH24:MI:SS')           END as OUT_RQST_YMD_HMS
+             , TOR.TVO_PRGRS_CD
+             , FN_GET_TC_CODE('OUT_PRGRS', COALESCE(TOR.TVO_PRGRS_CD, '')) as TVO_PRGRS_NM
+             , TOR.TVO_PRGRS_YMDHMS
+             , TOR.TVO_PRGRS_YMDHMS as TVO_PRGRS_YMDHMS_ORGN
+             , CASE WHEN TOR.TVO_PRGRS_YMDHMS IS NULL                                 THEN ''
+                    ELSE TO_CHAR(TO_TIMESTAMP(TOR.TVO_PRGRS_YMDHMS, 'YYYYMMDDHH24MISS'), 'YYYY-MM-DD HH24:MI:SS')      END as TVO_PRGRS_YMD_HMS
+             , TOR.TVO_PRGRS_DTL
+             , TOR.OUT_CHK_STEP_CD
+             , FN_GET_TC_CODE('OUT_CHK_STEP', COALESCE(TOR.OUT_CHK_STEP_CD, '')) as OUT_CHK_STEP_NM
+             , COALESCE(TOR.OUT_CHK_STEP_DTL, '')                                as OUT_CHK_STEP_DTL
+             , TOR.OUT_FILE_DEL_YN
+             , TOR.OUT_CHK_YMDHMS
+             , TOR.OUT_CHK_YMDHMS as OUT_CHK_YMDHMS_ORGN
+             , CASE WHEN OUT_CHK_YMDHMS IS NULL                                       THEN ''
+                    ELSE TO_CHAR(TO_TIMESTAMP(OUT_CHK_YMDHMS, 'YYYYMMDDHH24MISS'), 'YYYY-MM-DD HH24:MI:SS')            END as OUT_CHK_YMD_HMS
+             , TOR.PLAY_CNT
+             , CF.LINK_VMS_UID
+             , CF.FCLT_LBL_NM
+             , CF.SYS_CD                                                                             as FCLT_SYS_CD
+             , (select SYS_NM_KO from cm_sys_code csc where VIEWER_TY_CD='VMS' and SYS_CD=CF.SYS_CD) as FCLT_SYS_NM
+             <!-- , TRUNCATE(CF.POINT_X, 6) as POINT_X
+             , TRUNCATE(CF.POINT_Y, 6) as POINT_Y -->
+             , substring(cast(CF.POINT_X as text), 1, 10) as POINT_X
+             , substring(cast(CF.POINT_Y as text), 1, 9)  as POINT_Y
+             , COALESCE(CF.LOTNO_ADRES_NM, '') as LOTNO_ADRES_NM
+             , COALESCE(CF.ROAD_ADRES_NM, '')  as ROAD_ADRES_NM
+             , ( select COUNT(1) as OUT_PROD_EXTN_CNT from TVO_OUT_RQST_EXTN TORE where TVO_PRGRS_CD = '10' and TORE.OUT_RQST_NO = TOR.OUT_RQST_NO ) as OUT_PROD_EXTN_CNT
+             , TVR.VIEW_END_YMDHMS
+             , TVR.EVT_YMDHMS
+          from TVO_OUT_RQST TOR
+     left join CM_FACILITY   CF  on TOR.CCTV_ID      = CF.FCLT_ID
+     left join TVO_VIEW_RQST TVR on TVR.DSTRT_CD     = TOR.DSTRT_CD
+                                and TVR.VIEW_RQST_NO = TOR.VIEW_RQST_NO
+         where 1 = 1
+           <if test="dstrtCd     != null and dstrtCd     != ''"> and TOR.DSTRT_CD      = #{dstrtCd}     </if>
+           <if test="outRqstNo   != null and outRqstNo   != ''"> and TOR.OUT_RQST_NO   = #{outRqstNo}   </if>
+           <if test="viewRqstNo  != null and viewRqstNo  != ''"> and TOR.VIEW_RQST_NO  = #{viewRqstNo}  </if>
+           <if test="cctvId      != null and cctvId      != ''"> and TOR.CCTV_ID       = #{cctvId}      </if>
+           <if test="vdoYmdhmsFr != null and vdoYmdhmsFr != ''"> and TOR.VDO_YMDHMS_FR = #{vdoYmdhmsFr} </if>
+           <if test="vdoYmdhmsTo != null and vdoYmdhmsTo != ''"> and TOR.VDO_YMDHMS_TO = #{vdoYmdhmsTo} </if>
+    </select>
+
+    <select id="selectNewOutRqstNo" parameterType="map" resultType="egovMap">
+    /* selectNewOutRqstNo */
+        select LPAD(CAST(CAST(OUT_RQST_NO as integer)+1 as text), '6','0') as OUT_RQST_NO
+          from ( select RIGHT(OUT_RQST_NO,6) OUT_RQST_NO
+                   from TVO_OUT_RQST
+                  where DSTRT_CD = #{dstrtCd}
+                  UNION ALL
+                 select '000000' OUT_RQST_NO
+               order by OUT_RQST_NO desc LIMIT 1
+               ) TB
+    </select>
+    
+    <insert id="insertTvoOutRqst" parameterType="map">
+    /* insertTvoOutRqst */
+        insert into TVO_OUT_RQST
+             ( DSTRT_CD         , VIEW_RQST_NO     , OUT_RQST_NO        , OUT_RQST_YMDHMS  , CCTV_ID
+             , VDO_YMDHMS_FR    , VDO_YMDHMS_TO    , PLAY_START_YMDHMS  , PLAY_END_YMDHMS
+             , MASKING_YN       , THIRD_PARTY_YN   , THIRD_PARTY_PW
+             , OUT_CHK_STEP_CD  , OUT_CHK_YMDHMS   , TVO_PRGRS_CD       , TVO_PRGRS_YMDHMS
+             , OUT_RQST_USER_ID , OUT_APRV_USER_ID  )
+        values
+             ( #{dstrtCd}       , #{viewRqstNo}    , #{outRqstNo}       , #{outRqstYmdhms} , #{cctvId}
+             , #{vdoYmdhmsFr}   , #{vdoYmdhmsTo}   , #{playStartYmdhms} , #{playEndYmdhms}
+             , #{maskingYn}     , #{thirdPartyYn}  , #{thirdPartyPw}
+             , #{outChkStepCd}  , #{ymdhms}        , #{tvoPrgrsCd}      , #{ymdhms}
+             , #{outRqstUserId} , #{outAprvUserId}  )
+    </insert>
+
+    <update id="updateTvoOutRqst" parameterType="map">
+    /* updateTvoOutRqst */
+        update TVO_OUT_RQST
+           set DSTRT_CD     = #{dstrtCd}
+             , OUT_RQST_NO  = #{outRqstNo}
+           <if test="outRqstYmdhms   != null"> , OUT_RQST_YMDHMS   = #{outRqstYmdhms}    </if>
+           <if test="vdoYmdhmsFr     != null"> , VDO_YMDHMS_FR     = #{vdoYmdhmsFr}      </if>
+           <if test="vdoYmdhmsTo     != null"> , VDO_YMDHMS_TO     = #{vdoYmdhmsTo}      </if>
+           <if test="tvoPrgrsCd      != null"> , TVO_PRGRS_CD      = #{tvoPrgrsCd}       </if>
+           <if test="tvoPrgrsDtl     != null"> , TVO_PRGRS_DTL     = #{tvoPrgrsDtl}      </if>
+           
+           <if test="tvoPrgrsYmdhms  != null"> , TVO_PRGRS_YMDHMS  = #{tvoPrgrsYmdhms}   </if>
+           <if test="tvoPrgrsYmdhms  == null"> , TVO_PRGRS_YMDHMS  = TO_CHAR(NOW(), 'YYYYMMDDHH24MISS')   </if>
+           
+           <if test="outChkStepCd    != null"> , OUT_CHK_STEP_CD   = #{outChkStepCd}     </if>
+           <if test="outChkStepDtl   != null"> , OUT_CHK_STEP_DTL  = #{outChkStepDtl}    </if>
+           <if test="outChkYmdhms    != null"> , OUT_CHK_YMDHMS    = #{outChkYmdhms}     </if>
+           <if test="maskingYn       != null"> , MASKING_YN        = #{maskingYn}        </if>
+           <if test="thirdPartyYn    != null"> , THIRD_PARTY_YN    = #{thirdPartyYn}     </if>
+           <if test="thirdPartyPw    != null"> , THIRD_PARTY_PW    = #{thirdPartyPw}     </if>
+           <if test="playStartYmdhms != null"> , PLAY_START_YMDHMS = #{playStartYmdhms}  </if>
+           <if test="playEndYmdhms   != null"> , PLAY_END_YMDHMS   = #{playEndYmdhms}    </if>
+           <if test="outAprvUserId   != null and outAprvUserId != ''"> , OUT_APRV_USER_ID = #{outAprvUserId} </if>
+           <if test="playCnt         != null"> , PLAY_CNT          = #{playCnt}::numeric </if>
+           <if test="outFileDelYn    != null"> , OUT_FILE_DEL_YN   = #{outFileDelYn}     </if>
+         where DSTRT_CD     = #{dstrtCd}
+           and OUT_RQST_NO  = #{outRqstNo}
+    </update>
+
+    <delete id="deleteTvoOutRqst" parameterType="map">
+    /* deleteTvoOutRqst */
+        delete from TVO_OUT_RQST
+         where DSTRT_CD     = #{dstrtCd}
+           and OUT_RQST_NO  = #{outRqstNo}
+           <if test="outRqstUserId != null and outRqstUserId != ''"> and OUT_RQST_USER_ID = #{outRqstUserId} </if>
+    </delete>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <select id="selectOutFileList" parameterType="outSrchVO" resultType="egovMap">
+    /* selectOutFileList */
+        select (TOF.OUT_FILE_SEQ+1) OUT_FILE_IND
+             , TOF.DSTRT_CD                , TOF.OUT_RQST_NO              , TOF.OUT_FILE_SEQ
+             , COALESCE(TOF.OUT_FILE_PRGRS_CD , '') as OUT_FILE_PRGRS_CD
+             , FN_GET_TC_CODE('OUT_FILE_PRGRS', COALESCE(TOF.OUT_FILE_PRGRS_CD, '')) as OUT_FILE_PRGRS_NM
+             , TOF.OUT_VDO_YMDHMS_FR
+             , CASE WHEN TOF.OUT_VDO_YMDHMS_FR IS NULL                                        THEN ''
+                    ELSE TO_CHAR(TO_TIMESTAMP(TOF.OUT_VDO_YMDHMS_FR, 'YYYYMMDDHH24MISS'), 'YYYY-MM-DD HH24:MI:SS')                          END as OUT_VDO_YMD_HMS_FR
+             , TOF.OUT_VDO_YMDHMS_TO
+             , CASE WHEN TOF.OUT_VDO_YMDHMS_TO IS NULL                                        THEN ''
+                    ELSE TO_CHAR(TO_TIMESTAMP(TOF.OUT_VDO_YMDHMS_TO, 'YYYYMMDDHH24MISS'), 'YYYY-MM-DD HH24:MI:SS')                          END as OUT_VDO_YMD_HMS_TO
+             , (select (extract (hour from (TO_TIMESTAMP(TOF.OUT_VDO_YMDHMS_TO, 'YYYYMMDDHH24MISS') - TO_TIMESTAMP(TOF.OUT_VDO_YMDHMS_FR, 'YYYYMMDDHH24MISS')))*60)
+                     + extract (minute from (TO_TIMESTAMP(TOF.OUT_VDO_YMDHMS_TO, 'YYYYMMDDHH24MISS') - TO_TIMESTAMP(TOF.OUT_VDO_YMDHMS_FR, 'YYYYMMDDHH24MISS')))
+               )::text as OUT_VDO_DURATION
+             , TOF.OUT_FILE_PATH
+             , COALESCE(TOF.CPTN_FILE_NM   , '') as CPTN_FILE_NM
+             , COALESCE(TOF.OUT_FILE_NM    , '') as OUT_FILE_NM           , COALESCE(TOF.OUT_FILE_NM_MP4, '') as OUT_FILE_NM_MP4
+             , COALESCE(TOF.OUT_FILE_NM_MSK, '') as OUT_FILE_NM_MSK       , COALESCE(TOF.OUT_FILE_NM_DRM, '') as OUT_FILE_NM_DRM
+             , TOF.DRM_PCNT                , TOF.DRM_HASH
+             , COALESCE(TOF.OUT_FILE_DEL_YMDHMS  , '') as OUT_FILE_DEL_YMDHMS
+             , TOR.TVO_PRGRS_CD            , TOR.OUT_CHK_STEP_CD          , COALESCE(TOR.OUT_CHK_STEP_DTL, '') as OUT_CHK_STEP_DTL
+             , TOR.MASKING_YN              , TOR.VDO_YMDHMS_FR            , TOR.VDO_YMDHMS_TO
+             , TOR.CCTV_ID
+             , CF.LINK_VMS_UID             , CF.FCLT_LBL_NM
+             , COALESCE(CF.SVR_CONN_IP, '') as SVR_CONN_IP
+          from TVO_OUT_FILE TOF
+          join TVO_OUT_RQST TOR on TOF.DSTRT_CD    = TOR.DSTRT_CD
+                               and TOF.OUT_RQST_NO = TOR.OUT_RQST_NO
+          join CM_FACILITY  CF  on CF.FCLT_ID = TOR.CCTV_ID
+         where 1 = 1
+        <if test="dstrtCd        != null and dstrtCd        != ''"> and TOF.DSTRT_CD          = #{dstrtCd}        </if>
+        <if test="outRqstNo      != null and outRqstNo      != ''"> and TOF.OUT_RQST_NO       = #{outRqstNo}      </if>
+        <if test="outFilePrgrsCd != null and outFilePrgrsCd != ''"> and TOF.OUT_FILE_PRGRS_CD = #{outFilePrgrsCd} </if>
+        order by OUT_FILE_SEQ
+        offset #{firstRecordIndex} limit #{recordCountPerPage}
+    </select>
+
+    <select id="selectOutFileListTotCnt" parameterType="outSrchVO" resultType="int">
+    /* selectOutFileListTotCnt */
+    select COUNT(1) as CNT from (
+        select TOF.DSTRT_CD                , TOF.OUT_RQST_NO              , TOF.OUT_FILE_SEQ
+          from TVO_OUT_FILE TOF
+          join TVO_OUT_RQST TOR on TOF.DSTRT_CD    = TOR.DSTRT_CD
+                               and TOF.OUT_RQST_NO = TOR.OUT_RQST_NO
+          join CM_FACILITY  CF  on CF.FCLT_ID = TOR.CCTV_ID
+         where 1 = 1
+        <if test="dstrtCd        != null and dstrtCd        != ''"> and TOF.DSTRT_CD          = #{dstrtCd}        </if>
+        <if test="outRqstNo      != null and outRqstNo      != ''"> and TOF.OUT_RQST_NO       = #{outRqstNo}      </if>
+        <if test="outFilePrgrsCd != null and outFilePrgrsCd != ''"> and TOF.OUT_FILE_PRGRS_CD = #{outFilePrgrsCd} </if>
+    ) CNT
+    </select>
+
+
+
+
+    <select id="selectOutFileNeedMp4List" resultType="egovMap">
+    /* selectOutFileNeedMp4List */
+        select (TOF.OUT_FILE_SEQ+1) OUT_FILE_IND
+             , TOF.OUT_RQST_NO
+             , TOF.OUT_FILE_SEQ
+             , COALESCE(TOF.OUT_FILE_PRGRS_CD , '') as OUT_FILE_PRGRS_CD
+             , FN_GET_TC_CODE('OUT_FILE_PRGRS', COALESCE(TOF.OUT_FILE_PRGRS_CD, '')) as OUT_FILE_PRGRS_NM
+             , TOF.OUT_VDO_YMDHMS_FR
+             , CASE WHEN TOF.OUT_VDO_YMDHMS_FR IS NULL                                        THEN ''
+                    ELSE TO_CHAR(TO_TIMESTAMP(TOF.OUT_VDO_YMDHMS_FR, 'YYYYMMDDHH24MISS'), 'YYYY-MM-DD HH24:MI:SS')                          END as OUT_VDO_YMD_HMS_FR
+             , TOF.OUT_VDO_YMDHMS_TO
+             , CASE WHEN TOF.OUT_VDO_YMDHMS_TO IS NULL                                        THEN ''
+                    ELSE TO_CHAR(TO_TIMESTAMP(TOF.OUT_VDO_YMDHMS_TO, 'YYYYMMDDHH24MISS'), 'YYYY-MM-DD HH24:MI:SS')                          END as OUT_VDO_YMD_HMS_TO
+             , (select (extract (hour from (TO_TIMESTAMP(TOF.OUT_VDO_YMDHMS_TO, 'YYYYMMDDHH24MISS') - TO_TIMESTAMP(TOF.OUT_VDO_YMDHMS_FR, 'YYYYMMDDHH24MISS')))*60)
+                     + extract (minute from (TO_TIMESTAMP(TOF.OUT_VDO_YMDHMS_TO, 'YYYYMMDDHH24MISS') - TO_TIMESTAMP(TOF.OUT_VDO_YMDHMS_FR, 'YYYYMMDDHH24MISS')))
+               ) as OUT_VDO_DURATION
+             , TOF.OUT_FILE_PATH
+             , COALESCE(TOF.CPTN_FILE_NM   , '') as CPTN_FILE_NM
+             , COALESCE(TOF.OUT_FILE_NM    , '') as OUT_FILE_NM
+             , COALESCE(TOF.OUT_FILE_NM_MP4, '') as OUT_FILE_NM_MP4
+             , COALESCE(TOF.OUT_FILE_NM_MSK, '') as OUT_FILE_NM_MSK
+             , COALESCE(TOF.OUT_FILE_NM_DRM, '') as OUT_FILE_NM_DRM
+             , TOF.DRM_PCNT
+             , TOF.DRM_HASH
+             , COALESCE(TOF.OUT_FILE_DEL_YMDHMS  , '') as OUT_FILE_DEL_YMDHMS
+             , TOR.TVO_PRGRS_CD
+             , TOR.OUT_CHK_STEP_CD
+             , COALESCE(TOR.OUT_CHK_STEP_DTL, '') as OUT_CHK_STEP_DTL
+             , TOR.MASKING_YN
+             , TOR.VDO_YMDHMS_FR
+             , TOR.VDO_YMDHMS_TO
+             , TOR.CCTV_ID
+             , CF.LINK_VMS_UID
+             , COALESCE(CF.SVR_CONN_IP, '') as SVR_CONN_IP
+          from TVO_OUT_FILE TOF
+          join TVO_OUT_RQST TOR on TOF.DSTRT_CD    = TOR.DSTRT_CD
+                               and TOF.OUT_RQST_NO = TOR.OUT_RQST_NO
+          join CM_FACILITY  CF  on CF.FCLT_ID = TOR.CCTV_ID
+         where TOF.OUT_FILE_PRGRS_CD in ('40','92') /*입수완료,암호화완료*/
+           and COALESCE(TOF.OUT_FILE_NM_MP4, '') = ''
+    </select>
+
+
+
+
+
+    <select id="selectOutFileDtl" parameterType="map" resultType="egovMap">
+    /* selectOutFileDtl */
+        select TOF.OUT_RQST_NO
+             , TOF.OUT_FILE_SEQ
+             , TOF.OUT_FILE_PRGRS_CD
+             , TOF.OUT_VDO_YMDHMS_FR
+             , CASE WHEN TOF.OUT_VDO_YMDHMS_FR IS NULL                                        THEN ''
+                    ELSE TO_CHAR(TO_TIMESTAMP(TOF.OUT_VDO_YMDHMS_FR, 'YYYYMMDDHH24MISS'), 'YYYY-MM-DD HH24:MI:SS')  END as OUT_VDO_YMD_HMS_FR
+             , TOF.OUT_VDO_YMDHMS_TO
+             , CASE WHEN TOF.OUT_VDO_YMDHMS_TO IS NULL                                        THEN ''
+                    ELSE TO_CHAR(TO_TIMESTAMP(TOF.OUT_VDO_YMDHMS_TO, 'YYYYMMDDHH24MISS'), 'YYYY-MM-DD HH24:MI:SS')  END as OUT_VDO_YMD_HMS_TO
+             , TOF.OUT_FILE_PATH
+             , COALESCE(TOF.CPTN_FILE_NM   , '') as CPTN_FILE_NM
+             , COALESCE(TOF.OUT_FILE_NM    , '') as OUT_FILE_NM
+             , COALESCE(TOF.OUT_FILE_NM_MP4, '') as OUT_FILE_NM_MP4
+             , COALESCE(TOF.OUT_FILE_NM_MSK, '') as OUT_FILE_NM_MSK
+             , COALESCE(TOF.OUT_FILE_NM_DRM, '') as OUT_FILE_NM_DRM
+             , TOF.DRM_PCNT
+             , TOF.DRM_HASH
+             , TOR.TVO_PRGRS_CD
+             , TOR.OUT_CHK_STEP_CD
+             , COALESCE(TOR.OUT_CHK_STEP_DTL, '') as OUT_CHK_STEP_DTL
+             , TOR.MASKING_YN
+             , TOR.CCTV_ID
+             , TOR.VDO_YMDHMS_FR
+             , TOR.VDO_YMDHMS_TO
+             , (select FCLT_LBL_NM from cm_facility cf where cf.FCLT_ID = TOR.CCTV_ID) as CCTV_NM
+             , CF.FCLT_LBL_NM
+          from TVO_OUT_FILE TOF
+          join TVO_OUT_RQST TOR on TOF.OUT_RQST_NO = TOR.OUT_RQST_NO
+          join CM_FACILITY CF   on TOR.CCTV_ID = CF.FCLT_ID
+         where TOF.DSTRT_CD    = #{dstrtCd}
+           and TOF.OUT_RQST_NO = #{outRqstNo}
+           <if test="outFileSeq != null"> and OUT_FILE_SEQ = #{outFileSeq}::numeric </if>
+    </select>
+
+ 
+    <insert id="insertTvoOutFile" parameterType="map">
+    /* insertTvoOutFile */
+        insert into TVO_OUT_FILE
+             ( DSTRT_CD          , OUT_RQST_NO       , OUT_FILE_SEQ          , OUT_FILE_PRGRS_CD
+             , OUT_VDO_YMDHMS_FR , OUT_VDO_YMDHMS_TO , OUT_FILE_PATH         , CPTN_FILE_NM
+             , OUT_FILE_NM       , OUT_FILE_NM_MP4   , OUT_FILE_NM_MSK       , OUT_FILE_NM_DRM
+             , CPTN_FILE_SIZE    , OUT_FILE_SIZE )
+        values
+             ( #{dstrtCd}        , #{outRqstNo}      , #{outFileSeq}::numeric , #{outFilePrgrsCd}
+             , #{outVdoYmdhmsFr} , #{outVdoYmdhmsTo} , #{outFilePath}         , #{cptnFileNm}
+             , #{outFileNm}      , #{outFileNmMp4}   , #{outFileNmMsk}        , #{outFileNmDrm}
+             , #{cptnFileSize}   , #{outFileSize} )
+            on conflict ( DSTRT_CD, OUT_RQST_NO, OUT_FILE_SEQ )
+            do update
+           set DSTRT_CD     = #{dstrtCd}
+             , OUT_RQST_NO  = #{outRqstNo}
+           <if test="outFileSeq     != null"> , OUT_FILE_SEQ      = #{outFileSeq}::numeric     </if>
+           <if test="outVdoYmdhmsFr != null"> , OUT_VDO_YMDHMS_FR = #{outVdoYmdhmsFr} </if>
+           <if test="outVdoYmdhmsTo != null"> , OUT_VDO_YMDHMS_TO = #{outVdoYmdhmsTo} </if>
+           <if test="cptnFileNm     != null"> , CPTN_FILE_NM      = #{cptnFileNm}     </if>
+           <if test="outFileNm      != null"> , OUT_FILE_NM       = #{outFileNm}      </if>
+           <if test="outFileNmMp4   != null"> , OUT_FILE_NM_MP4   = #{outFileNmMp4}   </if>
+           <if test="outFileNmMsk   != null"> , OUT_FILE_NM_MSK   = #{outFileNmMsk}   </if>
+           <if test="outFileNmDrm   != null"> , OUT_FILE_NM_DRM   = #{outFileNmDrm}   </if>
+           <if test="cptnFileSize   != null"> , CPTN_FILE_SIZE    = #{cptnFileSize}   </if>
+           <if test="outFileSize    != null"> , OUT_FILE_SIZE     = #{outFileSize}    </if>
+    </insert>
+
+    <update id="updateTvoOutFile" parameterType="map">
+    /* updateTvoOutFile */
+        update TVO_OUT_FILE
+           set DSTRT_CD     = #{dstrtCd}
+             , OUT_RQST_NO  = #{outRqstNo}
+           <if test="outFilePrgrsCd   != null"> , OUT_FILE_PRGRS_CD   = #{outFilePrgrsCd}   </if>
+           <if test="outFileStepDtl   != null"> , OUT_FILE_STEP_DTL   = #{outFileStepDtl}   </if>
+           <if test="outFilePath      != null"> , OUT_FILE_PATH       = #{outFilePath}      </if>
+           <if test="cptnFileNm       != null"> , CPTN_FILE_NM        = #{cptnFileNm}       </if>
+           <if test="outFileNm        != null"> , OUT_FILE_NM         = #{outFileNm}        </if>
+           <if test="outFileNmMp4     != null"> , OUT_FILE_NM_MP4     = #{outFileNmMp4}     </if>
+           <if test="outFileNmMsk     != null"> , OUT_FILE_NM_MSK     = #{outFileNmMsk}     </if>
+           <if test="outFileNmDrm     != null"> , OUT_FILE_NM_DRM     = #{outFileNmDrm}     </if>
+           <if test="drmPcnt          != null"> , DRM_PCNT            = #{drmPcnt}          </if>
+           <if test="drmHash          != null"> , DRM_HASH            = #{drmHash}          </if>
+           <if test="cptnFileSize     != null"> , CPTN_FILE_SIZE      = #{cptnFileSize}     </if>
+           <if test="outFileSize      != null"> , OUT_FILE_SIZE       = #{outFileSize}      </if>
+           <if test="outFileDelYmdhms != null"> , OUT_FILE_DEL_YMDHMS = #{outFileDelYmdhms} </if>
+         where DSTRT_CD     = #{dstrtCd}
+           and OUT_RQST_NO  = #{outRqstNo}
+           <if test="outFileSeq != null"> and OUT_FILE_SEQ = #{outFileSeq}::numeric </if>
+    </update>
+
+    <delete id="deleteTvoOutFile" parameterType="map">
+    /* deleteTvoOutFile */
+        delete from TVO_OUT_FILE
+         where DSTRT_CD     = #{dstrtCd}
+           and OUT_RQST_NO  = #{outRqstNo}
+           <if test="outFileSeq != null"> and OUT_FILE_SEQ = #{outFileSeq}::numeric </if>
+    </delete>
+
+
+
+
+
+
+    
+    <!--  반출연장 신청 -->
+    <sql id="selectTvoOutExtnListSql">
+        select TOR.VIEW_RQST_NO
+             , TOR.CCTV_ID          , CF.FCLT_LBL_NM
+             , CF.FCLT_USED_TY_CD   , (select FCLT_USED_TY_NM from CM_TC_FCLT_USED where FCLT_KND_CD = CF.FCLT_KND_CD and FCLT_USED_TY_CD = CF.FCLT_USED_TY_CD ) as FCLT_USED_TY_NM
+             , CF.POINT_X           , CF.POINT_Y
+             , TORE.DSTRT_CD        , (select dstrt_nm from cm_dstrt_cd_mng cdcm where cdcm.dstrt_cd = TORE.dstrt_cd) dstrt_nm
+             , TORE.OUT_RQST_NO
+             , TORE.OUT_EXTN_RQST_YMDHMS
+             , TORE.OUT_EXTN_RQST_RSN
+             , TORE.OUT_EXTN_RQST_USER_ID
+             , TORE.RQST_PLAY_END_YMDHMS , TORE.APRV_PLAY_END_YMDHMS
+             , TORE.TVO_PRGRS_CD
+             , FN_GET_TC_CODE('TVO_APRV', COALESCE(TORE.TVO_PRGRS_CD, '')) as TVO_PRGRS_NM
+             , TORE.TVO_PRGRS_YMDHMS
+             , TORE.TVO_PRGRS_DTL
+             , TORE.OUT_CHK_STEP_CD
+             , TVR.EVT_NO
+             , TVR.EVT_NM
+             , CASE   WHEN TOR.PLAY_END_YMDHMS IS NULL                              THEN ''
+                      ELSE TO_CHAR(TO_TIMESTAMP(TOR.PLAY_END_YMDHMS, 'YYYYMMDDHH24MISS'), 'YYYY-MM-DD HH24:MI:SS')    END as PLAY_END_YMD_HMS
+           <if test="saltText == null ">
+             , COALESCE(FN_USER_NM(TORE.OUT_EXTN_RQST_USER_ID), TORE.OUT_EXTN_RQST_USER_ID) as OUT_EXTN_RQST_USER_NM
+           </if>
+           <if test="saltText != null ">
+             , COALESCE(FN_USER_NM_DEC(TORE.OUT_EXTN_RQST_USER_ID, #{saltText}::bytea), TORE.OUT_EXTN_RQST_USER_ID) as OUT_EXTN_RQST_USER_NM
+           </if>
+          from TVO_OUT_RQST_EXTN TORE
+          join TVO_OUT_RQST TOR  on TORE.DSTRT_CD    = TOR.DSTRT_CD
+                                and TORE.OUT_RQST_NO = TOR.OUT_RQST_NO
+          join CM_FACILITY CF    on TOR.CCTV_ID = CF.FCLT_ID
+               <if test="fcltLblNm != null and fcltLblNm != ''"> and CF.FCLT_LBL_NM LIKE CONCAT('%', #{fcltLblNm}, '%') </if>
+          join TVO_VIEW_RQST TVR on TVR.VIEW_RQST_NO = TOR.VIEW_RQST_NO
+               <if test="evtNo     != null and evtNo     != ''"> and TVR.EVT_NO     LIKE CONCAT('%', #{evtNo}, '%')     </if>
+        where 1 = 1
+        <if test="outExtnRqstUserId != null and outExtnRqstUserId != ''"> and TORE.OUT_EXTN_RQST_USER_ID = #{outExtnRqstUserId}                 </if>
+        <if test="outExtnRqstYmdhms != null and outExtnRqstYmdhms != ''"> and TORE.OUT_EXTN_RQST_YMDHMS  LIKE CONCAT(#{outExtnRqstYmdhms}, '%') </if>
+        <if test="outExtnRqstRsn    != null and outExtnRqstRsn    != ''"> and TORE.OUT_EXTN_RQST_RSN     LIKE CONCAT(#{outExtnRqstRsn}, '%')    </if>
+        <if test="playEndYmdhms     != null and playEndYmdhms     != ''"> and TOR.PLAY_END_YMDHMS        LIKE CONCAT(#{playEndYmdhms}, '%')     </if>
+        <if test="tvoPrgrsCd        != null and tvoPrgrsCd        != ''"> and TORE.TVO_PRGRS_CD          = #{tvoPrgrsCd}                        </if>
+    </sql>
+    
+    <select id="selectOutExtnList" parameterType="outSrchVO" resultType="egovMap">
+    /* selectOutExtnList */
+        <include refid="selectTvoOutExtnListSql"/>
+        order by OUT_EXTN_RQST_YMDHMS DESC
+        offset #{firstRecordIndex} limit #{recordCountPerPage}
+    </select>
+
+    <select id="selectOutExtnListTotCnt" parameterType="outSrchVO" resultType="int">
+    /* selectOutExtnListTotCnt */
+        select COUNT(1) as CNT from (
+            <include refid="selectTvoOutExtnListSql"/>
+        ) CNT
+    </select>
+    
+    
+    <sql id="selectTvoOutExtnHisListSql">
+        select TORE.DSTRT_CD        , (select dstrt_nm from cm_dstrt_cd_mng cdcm where cdcm.dstrt_cd = TORE.dstrt_cd) dstrt_nm
+             , TORE.OUT_RQST_NO
+             , OUT_EXTN_RQST_YMDHMS
+             , OUT_EXTN_RQST_RSN
+             , OUT_EXTN_RQST_USER_ID
+             , RQST_PLAY_END_YMDHMS , APRV_PLAY_END_YMDHMS
+             , TORE.TVO_PRGRS_CD
+             , FN_GET_TC_CODE('TVO_APRV', COALESCE(TORE.TVO_PRGRS_CD, '')) as TVO_PRGRS_NM
+             , TORE.TVO_PRGRS_YMDHMS
+             , TORE.TVO_PRGRS_DTL
+             , TORE.OUT_CHK_STEP_CD
+          from TVO_OUT_RQST_EXTN TORE
+          join TVO_OUT_RQST TOR  on TORE.DSTRT_CD    = TOR.DSTRT_CD
+                                and TORE.OUT_RQST_NO = TOR.OUT_RQST_NO
+         where OUT_EXTN_RQST_USER_ID = #{outExtnRqstUserId}
+           and TORE.OUT_RQST_NO      = #{outRqstNo}
+    </sql>
+
+    <select id="selectOutExtnHisList" parameterType="outSrchVO" resultType="egovMap">
+    /* selectOutExtnHisList */
+        <include refid="selectTvoOutExtnHisListSql"/>
+        order by OUT_EXTN_RQST_YMDHMS DESC
+        offset #{firstRecordIndex} limit #{recordCountPerPage}
+    </select>
+
+    <select id="selectOutExtnHisListTotCnt" parameterType="outSrchVO" resultType="int">
+    /* selectOutExtnHisListTotCnt */
+        select COUNT(1) as CNT from (
+            <include refid="selectTvoOutExtnHisListSql"/>
+        ) CNT
+    </select>
+    
+    
+    <select id="selectOutExtnDtl" parameterType="map" resultType="egovMap">
+    /* selectOutExtnDtl */
+        select TORE.DSTRT_CD        , (select dstrt_nm from cm_dstrt_cd_mng cdcm where cdcm.dstrt_cd = TORE.dstrt_cd) dstrt_nm
+             , TORE.OUT_RQST_NO
+             , OUT_EXTN_RQST_YMDHMS
+             , OUT_EXTN_RQST_YMDHMS                                                                                    as OUT_EXTN_RQST_YMDHMS_ORGN
+             , CASE WHEN OUT_EXTN_RQST_YMDHMS IS NULL                            THEN ''
+                    ELSE TO_CHAR(TO_TIMESTAMP(OUT_EXTN_RQST_YMDHMS, 'YYYYMMDDHH24MISS'), 'YYYY-MM-DD HH24:MI:SS')  END as OUT_EXTN_RQST_YMD_HMS
+             , RQST_PLAY_END_YMDHMS as RQST_PLAY_END_YMDHMS_ORGN
+             , CASE WHEN RQST_PLAY_END_YMDHMS IS NULL                               THEN ''
+                    ELSE TO_CHAR(TO_TIMESTAMP(RQST_PLAY_END_YMDHMS, 'YYYYMMDDHH24MISS'), 'YYYY-MM-DD HH24:MI:SS')  END as RQST_PLAY_END_YMD_HMS
+             , OUT_EXTN_RQST_RSN
+             , OUT_EXTN_RQST_USER_ID
+             , OUT_EXTN_APRV_USER_ID
+           <if test="saltText == null ">
+             , COALESCE(FN_USER_NM(OUT_EXTN_RQST_USER_ID), OUT_EXTN_RQST_USER_ID) as OUT_EXTN_RQST_USER_NM
+             , COALESCE(FN_USER_NM(OUT_EXTN_APRV_USER_ID), OUT_EXTN_APRV_USER_ID) as OUT_EXTN_APRV_USER_NM
+           </if>
+           <if test="saltText != null ">
+             , COALESCE(FN_USER_NM_DEC(OUT_EXTN_RQST_USER_ID, #{saltText}::bytea), OUT_EXTN_RQST_USER_ID) as OUT_EXTN_RQST_USER_NM
+             , COALESCE(FN_USER_NM_DEC(OUT_EXTN_APRV_USER_ID, #{saltText}::bytea), OUT_EXTN_APRV_USER_ID) as OUT_EXTN_APRV_USER_NM
+           </if>
+             , APRV_PLAY_END_YMDHMS as APRV_PLAY_END_YMDHMS_ORGN
+             , CASE WHEN ( APRV_PLAY_END_YMDHMS IS NULL or APRV_PLAY_END_YMDHMS = '' ) THEN ''
+                    ELSE TO_CHAR(TO_TIMESTAMP(APRV_PLAY_END_YMDHMS, 'YYYYMMDDHH24MISS'), 'YYYY-MM-DD HH24:MI:SS')  END as APRV_PLAY_END_YMD_HMS
+             , TORE.TVO_PRGRS_CD
+             , concat('연장',FN_GET_TC_CODE('TVO_APRV', COALESCE(TORE.TVO_PRGRS_CD, '')))                               as TVO_PRGRS_NM
+             , TORE.TVO_PRGRS_YMDHMS                                                                                   as TVO_PRGRS_YMDHMS_ORGN
+             , CASE WHEN TORE.TVO_PRGRS_YMDHMS IS NULL                                THEN ''
+                    ELSE TO_CHAR(TO_TIMESTAMP(TORE.TVO_PRGRS_YMDHMS, 'YYYYMMDDHH24MISS'), 'YYYY-MM-DD HH24:MI:SS') END as TVO_PRGRS_YMD_HMS
+             , TORE.TVO_PRGRS_DTL
+             , TORE.OUT_CHK_STEP_CD
+             , CASE WHEN TOR.PLAY_END_YMDHMS IS NULL                                THEN ''
+                    ELSE TO_CHAR(TO_TIMESTAMP(TOR.PLAY_END_YMDHMS, 'YYYYMMDDHH24MISS'), 'YYYY-MM-DD HH24:MI:SS')   END as PLAY_END_YMD_HMS
+          from TVO_OUT_RQST_EXTN TORE
+          join TVO_OUT_RQST TOR on TORE.OUT_RQST_NO = TOR.OUT_RQST_NO
+         where TORE.OUT_RQST_NO      = #{outRqstNo}
+           and OUT_EXTN_RQST_YMDHMS  = #{outExtnRqstYmdhms}
+      <!-- and OUT_EXTN_RQST_USER_ID = #{outExtnRqstUserId} -->
+    </select>
+
+    <insert id="insertTvoOutProdExtn" parameterType="map">
+    /* insertTvoOutProdExtn */
+        insert into TVO_OUT_RQST_EXTN
+             ( DSTRT_CD                          , OUT_RQST_NO
+             , OUT_EXTN_RQST_YMDHMS              , RQST_PLAY_END_YMDHMS
+             , OUT_EXTN_RQST_RSN                 , OUT_EXTN_RQST_USER_ID  , OUT_EXTN_APRV_USER_ID
+             , TVO_PRGRS_CD      )
+        values
+             ( #{dstrtCd}                         , #{outRqstNo}
+             , TO_CHAR(NOW(), 'YYYYMMDDHH24MISS') , #{rqstPlayEndYmdhms}
+             , #{outExtnRqstRsn}                  , #{outExtnRqstUserId}   , #{outExtnAprvUserId}
+             , #{tvoPrgrsCd}   )
+    </insert>
+
+    <update id="updateTvoOutProdExtn" parameterType="map">
+    /* updateTvoOutProdExtn */
+        update TVO_OUT_RQST_EXTN
+           set TVO_PRGRS_YMDHMS      = TO_CHAR(NOW(), 'YYYYMMDDHH24MISS')
+           <if test="tvoPrgrsCd        != null"> , TVO_PRGRS_CD          = #{tvoPrgrsCd}        </if>
+           <if test="tvoPrgrsDtl       != null"> , TVO_PRGRS_DTL         = #{tvoPrgrsDtl}       </if>
+           <if test="rqstPlayEndYmdhms != null"> , RQST_PLAY_END_YMDHMS  = #{rqstPlayEndYmdhms} </if>
+           <if test="aprvPlayEndYmdhms != null"> , APRV_PLAY_END_YMDHMS  = #{aprvPlayEndYmdhms} </if>
+           <if test="outExtnRqstRsn    != null"> , OUT_EXTN_RQST_RSN     = #{outExtnRqstRsn}    </if>
+           <if test="outExtnRqstUserId != null"> , OUT_EXTN_RQST_USER_ID = #{outExtnRqstUserId} </if>
+           <if test="outExtnAprvUserId != null"> , OUT_EXTN_APRV_USER_ID = #{outExtnAprvUserId} </if>
+           <if test="outChkStepCd      != null"> , OUT_CHK_STEP_CD       = #{outChkStepCd}      </if>
+         where DSTRT_CD             = #{dstrtCd}
+           and OUT_RQST_NO          = #{outRqstNo}
+           and OUT_EXTN_RQST_YMDHMS = #{outExtnRqstYmdhms}
+    </update>
+    
+    <delete id="deleteTvoOutProdExtn" parameterType="map">
+    /* deleteTvoOutProdExtn */
+        delete from TVO_OUT_RQST_EXTN
+         where DSTRT_CD     = #{dstrtCd}
+           and OUT_RQST_NO  = #{outRqstNo}
+           <if test="outExtnRqstYmdhms != null"> and OUT_EXTN_RQST_YMDHMS = #{outExtnRqstYmdhms} </if>
+    </delete>
+    
+    <!-- 반출파일 다운로드 이력 -->
+    <insert id="insertOutFileDownloadHis" parameterType="map">
+    /* insertOutFileDownloadHis */
+        insert into TVO_HIS_FILE_DOWNLOAD
+             ( DOWNLOAD_SEQ                           , DOWNLOAD_USER_ID   <!-- , OUT_FILE_SEQ -->
+             , DOWNLOAD_YMDHMS
+             , OUT_RQST_NO   , OUT_RQST_YMDHMS                   )
+        values
+             ( TO_CHAR(NOW(), 'YYYYMMDDHH24MISS')     , #{downloadUserId}  <!-- , #{outFileSeq} -->
+             , TO_CHAR(NOW(), 'YYYYMMDDHH24MISS')
+             , #{outRqstNo}  , SUBSTRING(#{outRqstNo}, 1, 14)   )
+    </insert>
+    
+    
+    
+    
+    <select id="selectSvrConnIpList" parameterType="outSrchVO" resultType="egovMap">
+    /* selectSvrConnIpList */
+        select SVR_CONN_IP from cm_facility group by SVR_CONN_IP
+    </select>
+    
+    
+    
+    <select id="selectUserInfo" parameterType="map" resultType="egovMap">
+    /* selectUserInfo */
+        select USER_ID , PLAY_PWD
+          from CM_USER
+         where DSTRT_CD = #{dstrtCd}
+           and USER_ID  = #{userId}
+    </select>
+    
+</mapper>

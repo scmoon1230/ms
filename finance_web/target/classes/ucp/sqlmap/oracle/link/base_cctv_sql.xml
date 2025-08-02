@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.co.ucp.link.base.cctv.service.BaseCctvMapper">
+
+    <select id="selectCctvList" resultType="cmlMap2">
+    /* selectCctvList */
+        select CF.FCLT_ID                                        AS CCTV_ID
+             , CF.FCLT_STTUS                                     AS CCTV_STATUS
+           <if test='stateYn != "Y"'>
+             , CF.SYS_CD
+             , CF.FCLT_LBL_NM                                    AS CCTV_NM
+             , CF.FCLT_USED_TY_CD                                AS CCTV_USED_CD
+             , ( select FCLT_USED_TY_NM
+                   from CM_TC_FCLT_USED
+                  where FCLT_KND_CD = CF.FCLT_KND_CD
+                    and FCLT_USED_TY_CD = CF.FCLT_USED_TY_CD
+               )                                                 AS CCTV_USED_NM
+             , CF.POINT_X                                        AS POINT_X
+             , CF.POINT_Y                                        AS POINT_Y
+             , CF.LOTNO_ADRES_NM                                 AS LOT_NUM_ADDR
+             , CF.ROAD_ADRES_NM                                  AS ROAD_NM_ADDR
+             , CF.FCLT_KND_DTL_CD                                AS CCTV_TY
+             , CF.FCLT_GDSDT_TY                                  AS CCTV_MSTR_TY
+             , CF.USE_TY_CD                                      AS USE_YN
+             , CF.PRESET_BDW_START_NUM                           AS PRESET_BDW_START_NUM
+             , CF.LINK_VMS_UID                                   AS VRS_CCTV_UID
+             , CF.CCTV_OSVT_X                                    AS OSVT_POINT_X
+             , CF.CCTV_OSVT_Y                                    AS OSVT_POINT_Y
+             , CF.RECORDING_YN
+             , CF.TVO_TRGT_YN
+           </if>
+        from CM_FACILITY CF
+        where CF.FCLT_KND_CD = 'CTV'
+          and CF.USE_TY_CD   = 'Y'
+          and CF.DSTRT_CD    = #{dstrtCd}
+    </select>
+
+    <select id="selectCctvPresetList" resultType="cmlMap2">
+    /* selectCctvPresetList */
+        select UPI.CCTV_ID
+             , UPI.PRESET_NUM
+             , UPI.POINT_X
+             , UPI.POINT_Y
+        from UM_PRESET_INFO UPI
+        JOIN CM_FACILITY CF ON UPI.CCTV_ID = CF.FCLT_ID and CF.USE_TY_CD = 'Y'
+        where CF.DSTRT_CD = #{dstrtCd}
+    </select>
+    
+</mapper>

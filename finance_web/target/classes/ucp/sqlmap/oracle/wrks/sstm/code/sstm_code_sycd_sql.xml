@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.co.ucp.wrks.sstm.code.service.CodeSycdMapper">
+
+	<select id="sycdList" parameterType="java.util.HashMap" resultType="egovMap">
+			select
+				AA.*
+				,(
+				select
+					COUNT(*)
+				from
+					CM_SYS_CODE A
+					left join (select CD_ID, CD_NM_KO from CM_TC_CODE where CD_GRP_ID = 'USE_TY' and CD_TY = 'C') B
+					ON A.USE_TY_CD = B.CD_ID
+				where
+					1 = 1
+					<if test="USVC_GRP_CD != null and USVC_GRP_CD != '' "> and A.USVC_GRP_CD LIKE CONCAT('%', #{USVC_GRP_CD}, '%') </if>
+					<if test="SYS_NM_KO   != null and SYS_NM_KO   != '' "> and A.SYS_NM_KO LIKE CONCAT('%', #{SYS_NM_KO}, '%') </if>
+					<if test="USE_TY_CD   != null and USE_TY_CD   != '' "> and A.USE_TY_CD = #{USE_TY_CD} </if>
+				) as ROWCNT
+			from(
+				select
+					ROW_NUMBER() OVER(order by ${sidx} ${sord}) as RK
+					, A.*
+					, B.CD_NM_KO
+				from(
+					select
+						A.SYS_CD			, A.SYS_NM_KO		, A.SYS_NM_EN		, A.DSCRT		, A.USVC_GRP_CD			, A.USE_TY_CD
+						, A.RGS_USER_ID		, A.RGS_DATE		, A.UPD_USER_ID		, A.UPD_DATE
+						, B.CD_NM_KO as USE_NM
+					from
+						CM_SYS_CODE A
+						left join (select CD_ID, CD_NM_KO from CM_TC_CODE where CD_GRP_ID = 'USE_TY' and CD_TY = 'C') B
+						ON A.USE_TY_CD = B.CD_ID
+					where
+						1 = 1
+						<if test="USVC_GRP_CD != null and USVC_GRP_CD != '' "> and A.USVC_GRP_CD LIKE CONCAT('%', #{USVC_GRP_CD}, '%') </if>
+						<if test="SYS_NM_KO   != null and SYS_NM_KO   != '' "> and A.SYS_NM_KO LIKE CONCAT('%', #{SYS_NM_KO}, '%') </if>
+						<if test="USE_TY_CD   != null and USE_TY_CD   != '' "> and A.USE_TY_CD = #{USE_TY_CD} </if>
+				) A
+				left join (select CD_ID, CD_NM_KO from CM_TC_CODE where CD_TY = 'C' and CD_GRP_ID = 'USVC_GRP') B
+				ON A.USVC_GRP_CD = B.CD_ID
+			) AA
+			 OFFSET ((#{pageNo}::integer - 1) * #{rowsPerPage}::integer)
+			 LIMIT #{rowsPerPage}::integer
+	</select>
+
+	<insert id="insert" parameterType="java.util.HashMap">
+		<![CDATA[
+			INSERT INTO CM_SYS_CODE(
+				SYS_CD				, SYS_NM_KO		, SYS_NM_EN			, DSCRT		, USVC_GRP_CD		, USE_TY_CD
+				, RGS_USER_ID		, RGS_DATE		, UPD_USER_ID		, UPD_DATE
+			)VALUES(
+				#{SYS_CD}			, #{SYS_NM_KO}	, #{SYS_NM_EN}		, #{DSCRT}	, #{USVC_GRP_CD}	, #{USE_TY_CD}
+				, #{RGS_USER_ID}	, NOW()		, #{RGS_USER_ID}	, NOW()
+			)
+		]]>
+	</insert>
+
+	<update id="update" parameterType="java.util.HashMap">
+		<![CDATA[
+			update CM_SYS_CODE
+				set
+					SYS_NM_KO = #{SYS_NM_KO}
+					, SYS_NM_EN = #{SYS_NM_EN}
+					, DSCRT = #{DSCRT}
+					, USVC_GRP_CD = #{USVC_GRP_CD}
+					, USE_TY_CD = #{USE_TY_CD}
+					, UPD_USER_ID = #{UPD_USER_ID}
+					, UPD_DATE = NOW()
+				where
+					SYS_CD = #{sysCdBk}
+		]]>
+	</update>
+
+	<delete id="delete"  parameterType="java.util.HashMap">
+		<![CDATA[
+			update CM_SYS_CODE
+				set
+					USE_TY_CD = 'D'
+					, UPD_USER_ID = #{UPD_USER_ID}
+					, UPD_DATE = NOW()
+				where
+					SYS_CD = #{sysCdBk}
+		]]>
+	</delete>
+
+</mapper>
+
+

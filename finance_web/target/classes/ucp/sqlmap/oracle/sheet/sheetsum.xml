@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ucp.sheet.service.SheetsumMapper">
+
+    <select id="selectSheetSum" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectSheetSum */
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingHeader"/>
+        select 'I' IO_ORDER, '11' ORD,     STAN_YMD, ACCT_GB, 'PREV' ACCT_CODE, '지난주이월' ACCT_NAME                  /* 지난주이월 */
+             , NVL( PRE_AMT ,0) MONEY_AMT
+          from TB_MAST_WEEKSUM where STAN_YMD = #{stanYmd} and ACCT_GB  = #{acctGb}
+     UNION ALL
+        select 'I' IO_ORDER, '19' ORD, '' AS STAN_YMD, '' ACCT_GB, '' ACCT_CODE, '' ACCT_NAME, 0 MONEY_AMT from DUAL /* 빈행 */
+     UNION ALL
+        select 'I' IO_ORDER, '21' ORD, #{stanYmd} AS STAN_YMD, B.ACCT_GB, B.ACCT_CODE  , B.ACCT_NAME                 /* 수입항목 */
+             , SUM(A.MONEY_AMT) AS MONEY_AMT
+          from TB_MAST_ACCT A
+             , TB_ACCTCODE  B
+             , ( select STAN_YY from TB_ACCTYEAR where #{stanYmd} BETWEEN FROM_YMD and END_YMD ) C
+         where B.ACCT_GB     = A.ACCT_GB(+)
+           and B.ACCT_CODE   = A.ACCT_CODE(+)
+           and B.STAN_YY     = C.STAN_YY
+           and B.INOUT_GB    = '수입'
+           and B.SUM_YN      = 'N'
+           and A.STAN_YMD(+) = #{stanYmd}
+           and B.ACCT_GB     = #{acctGb}
+           and ( A.ACCT_GB, A.ACCT_CODE) IN
+               ( /* 1재정보고서에는 모든 수입이 표시되고 다른 재정은 헌금수입만 보이도록 헌금분류의 계정코드 연결 조인*/
+                 select A.ACCT_GB , A.ACCT_CODE
+                   from TB_ACCTCODE A
+                      , ( select STAN_YY from TB_ACCTYEAR where #{stanYmd} BETWEEN FROM_YMD and END_YMD ) C
+                  where A.STAN_YY  = C.STAN_YY
+                    and A.ACCT_GB  = #{acctGb}
+                    and A.INOUT_GB = '수입'
+                  UNION
+                 select ACCT_GB , ACCT_CODE from TB_MONEY where ACCT_GB != #{acctGb}
+                  UNION
+                 select A.ACCT_GB , A.ACCT_CODE
+                   from TB_ACCTCODE A
+                      , ( select  STAN_YY from TB_ACCTYEAR where #{stanYmd} BETWEEN FROM_YMD and END_YMD ) C
+                  where A.STAN_YY  = C.STAN_YY
+                    and A.INOUT_GB = '수입'
+                    and A.ACCT_GB  != #{acctGb}
+                    and 'Y' = NVL(#{incYn}, 'N')
+               )
+      group by B.ACCT_GB , B.ACCT_CODE , B.ACCT_NAME
+     UNION ALL
+        select 'I' IO_ORDER, '29' ORD, '' AS STAN_YMD, '' ACCT_GB, '' ACCT_CODE, '' ACCT_NAME, 0 MONEY_AMT from DUAL /* 빈행 */
+     UNION     
+        select 'I' IO_ORDER, '31' ORD, STAN_YMD, ACCT_GB, 'IN' ACCT_CODE, '수 입 계' ACCT_NAME                          /* 수입계 */
+             , NVL( IN_AMT ,0) MONEY_AMT
+          from TB_MAST_WEEKSUM where STAN_YMD = #{stanYmd} and ACCT_GB  = #{acctGb}
+     UNION     
+        select 'I' IO_ORDER, '32' ORD, STAN_YMD, ACCT_GB, 'IN' ACCT_CODE, '수입합계' ACCT_NAME                          /* 수입합계 */
+             , NVL( PRE_AMT ,0) + NVL( IN_AMT ,0) MONEY_AMT
+          from TB_MAST_WEEKSUM where STAN_YMD = #{stanYmd} and ACCT_GB  = #{acctGb}
+     UNION ALL
+        select 'I' IO_ORDER, '33' ORD, #{stanYmd} AS STAN_YMD, #{acctGb} ACCT_GB , 'IN' ACCT_CODE, '수입누계' ACCT_NAME /* 수입누계 */
+             , NVL( SUM(DECODE(B.INOUT_GB,'수입',A.MONEY_AMT))+NVL(MAX(D.PRE_AMT),0) ,0) AS MONEY_AMT                       
+          from TB_MAST_ACCT A
+             , TB_ACCTCODE  B
+             , ( select FROM_YMD , END_YMD from TB_ACCTYEAR where FROM_YMD <![CDATA[<=]]> #{stanYmd} and END_YMD <![CDATA[>=]]> #{stanYmd} ) C
+             , ( select ACCT_GB,STAN_YMD,PRE_AMT
+                   from TB_MAST_WEEKSUM
+                  where ACCT_GB = #{acctGb}
+                    and STAN_YMD = ( select MIN(B.STAN_YMD)
+                                       from TB_ACCTYEAR     A
+                                          , TB_MAST_WEEKSUM B
+                                      where A.FROM_YMD <![CDATA[<=]]> B.STAN_YMD and A.END_YMD <![CDATA[>=]]> B.STAN_YMD
+                                        and A.FROM_YMD <![CDATA[<=]]> #{stanYmd} and A.END_YMD <![CDATA[>=]]> #{stanYmd}
+                                        and B.ACCT_GB = #{acctGb}
+                                   )
+               ) D
+             , ( select STAN_YY from TB_ACCTYEAR where #{stanYmd} BETWEEN FROM_YMD and END_YMD ) X
+         where A.ACCT_GB   = B.ACCT_GB
+           and A.ACCT_CODE = B.ACCT_CODE
+           and B.STAN_YY   = X.STAN_YY
+           and A.STAN_YMD  <![CDATA[>=]]>  C.FROM_YMD and A.STAN_YMD  <![CDATA[<=]]>  C.END_YMD
+           and A.ACCT_GB   =  D.ACCT_GB(+)
+           and A.STAN_YMD  <![CDATA[<=]]>  #{stanYmd} and A.ACCT_GB   =   #{acctGb}
+     UNION ALL
+        select 'I' IO_ORDER, '39' ORD, '' AS STAN_YMD, '' ACCT_GB, '' ACCT_CODE, '' ACCT_NAME, 0 MONEY_AMT from DUAL /* 빈행 */
+     UNION ALL
+        select 'O' IO_ORDER, '41' ORD , #{stanYmd} AS STAN_YMD , A.ACCT_GB , A.ACCT_GB , (A.ACCT_NAME) AS ACCT_NAME  /* 지출항목 */
+             , NVL( B.MONEY_AMT ,0) MONEY_AMT
+          from ( select ACCT_GB , PRINT_NAME AS ACCT_NAME from TB_ACCT_GB )  A
+             , ( select A.ACCT_GB ,SUM(A.MONEY_AMT) AS MONEY_AMT
+                   from TB_MAST_ACCT A
+                      , TB_ACCTCODE  B
+                      , ( select STAN_YY from TB_ACCTYEAR where #{stanYmd} BETWEEN FROM_YMD and END_YMD ) C
+                  where A.ACCT_GB   = B.ACCT_GB
+                    and A.ACCT_CODE = B.ACCT_CODE
+                    and B.STAN_YY   = C.STAN_YY
+                    and B.INOUT_GB  = '지출'
+                    and A.STAN_YMD  = #{stanYmd}
+                    and A.ACCT_GB LIKE DECODE('1','1','%','1')
+               group by A.ACCT_GB
+               ) B
+         where A.ACCT_GB = B.ACCT_GB
+           and A.ACCT_GB = #{acctGb}
+     UNION           
+        select 'O' IO_ORDER, '51' ORD , STAN_YMD, ACCT_GB, 'OUT' ACCT_CODE, '지 출 계' ACCT_NAME                         /* 지출계 */
+             , NVL( OUT_AMT ,0) MONEY_AMT
+          from TB_MAST_WEEKSUM where STAN_YMD = #{stanYmd} and ACCT_GB  = #{acctGb}
+     UNION ALL
+        select 'O' IO_ORDER, '52' ORD, #{stanYmd} AS STAN_YMD, #{acctGb} ACCT_GB , 'OUT' ACCT_CODE, '지출누계' ACCT_NAME /* 지출누계 */
+             , NVL( SUM(DECODE(B.INOUT_GB,'지출',A.MONEY_AMT)) ,0) AS MONEY_AMT                                        
+          from TB_MAST_ACCT A
+             , TB_ACCTCODE  B
+             , ( select FROM_YMD , END_YMD from TB_ACCTYEAR where FROM_YMD <![CDATA[<=]]> #{stanYmd} and END_YMD <![CDATA[>=]]> #{stanYmd} ) C
+             , ( select ACCT_GB,STAN_YMD,PRE_AMT
+                   from TB_MAST_WEEKSUM
+                  where ACCT_GB = #{acctGb}
+                    and STAN_YMD = ( select MIN(B.STAN_YMD)
+                                       from TB_ACCTYEAR     A
+                                          , TB_MAST_WEEKSUM B
+                                      where A.FROM_YMD <![CDATA[<=]]> B.STAN_YMD and A.END_YMD  <![CDATA[>=]]> B.STAN_YMD
+                                        and A.FROM_YMD <![CDATA[<=]]> #{stanYmd} and A.END_YMD  <![CDATA[>=]]> #{stanYmd}
+                                        and B.ACCT_GB = #{acctGb}
+                                   )
+               ) D
+             , ( select STAN_YY from TB_ACCTYEAR where #{stanYmd} BETWEEN FROM_YMD and END_YMD ) X
+         where A.ACCT_GB   = B.ACCT_GB
+           and A.ACCT_CODE = B.ACCT_CODE
+           and B.STAN_YY   = X.STAN_YY
+           and A.STAN_YMD  <![CDATA[>=]]>  C.FROM_YMD and A.STAN_YMD  <![CDATA[<=]]>  C.END_YMD
+           and A.ACCT_GB   =  D.ACCT_GB(+)
+           and A.STAN_YMD  <![CDATA[<=]]>  #{stanYmd} and A.ACCT_GB   =   #{acctGb}
+     UNION ALL
+        select 'O' IO_ORDER, '53' ORD , STAN_YMD, ACCT_GB, 'NEXT' ACCT_CODE, '다음주이월' ACCT_NAME                    /* 다음주이월 */
+             , (NVL(PRE_AMT,0)+NVL(IN_AMT,0)-NVL(OUT_AMT,0)) AS MONEY_AMT
+          from TB_MAST_WEEKSUM where STAN_YMD = #{stanYmd} and ACCT_GB  = #{acctGb}
+     UNION ALL
+        select 'O' IO_ORDER, '59' ORD, '' AS STAN_YMD, '' ACCT_GB, '' ACCT_CODE, '' ACCT_NAME, 0 MONEY_AMT from DUAL /* 빈행 */
+        
+     UNION     
+        select 'O' IO_ORDER, '61' ORD, STAN_YMD, #{acctGb} ACCT_GB, 'ASSET' ACCT_CODE, '입출식 예금 및 현금' ACCT_NAME      /* 입출식 예금 및 현금 */
+             , (NVL(PRE_AMT,0)+NVL(IN_AMT,0)-NVL(OUT_AMT,0)) AS MONEY_AMT
+          from TB_MAST_WEEKSUM where STAN_YMD = #{stanYmd} and ACCT_GB  = #{acctGb}
+     UNION ALL
+        select 'O' IO_ORDER, '62' ORD , A.STAN_YMD, #{acctGb} ACCT_GB , 'ASSET' ACCT_CODE, '정기예금 및 적금' ACCT_NAME   /* 정기예금 및 적금 */
+             , SUM(DECODE(ASSET_GB,'2',0, NVL(A.INIT_AMT,0) + NVL(A.ADD_AMT,0))) AS MONEY_AMT
+          from TB_FINANCE_MAST A
+             , TB_FINANCE_INFO B
+         where A.ASSET_CODE = B.ASSET_CODE
+           and A.STAN_YMD = #{stanYmd} and B.ACCT_GB  = #{acctGb}
+      group by A.STAN_YMD  
+     UNION ALL
+        select 'O' IO_ORDER, '63' ORD , A.STAN_YMD, #{acctGb} ACCT_GB , 'ASSET' ACCT_CODE, '기타' ACCT_NAME           /* 기타 */
+             , SUM(DECODE(ASSET_GB,'2',NVL(A.INIT_AMT,0) + NVL(A.ADD_AMT,0),0)) AS MONEY_AMT
+          from TB_FINANCE_MAST A
+             , TB_FINANCE_INFO B
+         where A.ASSET_CODE = B.ASSET_CODE
+           and A.STAN_YMD = #{stanYmd} and B.ACCT_GB  = #{acctGb}
+      group by A.STAN_YMD
+     UNION     
+        select 'O' IO_ORDER, '79' ORD, '' AS STAN_YMD, #{acctGb} ACCT_GB , 'ASSET' ACCT_CODE, '합 계' ACCT_NAME                     /* 합계 */
+             , NVL( ( select (NVL(PRE_AMT,0)+NVL(IN_AMT,0)-NVL(OUT_AMT,0)) AS MONEY_AMT
+                        from TB_MAST_WEEKSUM where STAN_YMD = #{stanYmd} and ACCT_GB  = #{acctGb}
+                    ) +
+                    ( select SUM(DECODE(ASSET_GB,'2',0, NVL(A.INIT_AMT,0) + NVL(A.ADD_AMT,0))) AS MONEY_AMT
+                        from TB_FINANCE_MAST A
+                           , TB_FINANCE_INFO B
+                       where A.ASSET_CODE = B.ASSET_CODE
+                         and A.STAN_YMD = #{stanYmd} and B.ACCT_GB  = #{acctGb}
+                    group by A.STAN_YMD  
+                    ) +
+                    ( select SUM(DECODE(ASSET_GB,'2',NVL(A.INIT_AMT,0) + NVL(A.ADD_AMT,0),0)) AS MONEY_AMT
+                        from TB_FINANCE_MAST A
+                           , TB_FINANCE_INFO B
+                       where A.ASSET_CODE = B.ASSET_CODE
+                         and A.STAN_YMD = #{stanYmd} and B.ACCT_GB  = #{acctGb}
+                    group by A.STAN_YMD
+                    )
+               ,0) AS MONEY_AMT
+          from DUAL
+      order by ${sidx} ${sord}
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingBottom"/>
+    </select>
+
+</mapper>

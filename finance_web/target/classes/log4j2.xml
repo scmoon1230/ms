@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration>
+	<properties>
+		<property name="log-path">D:\msch\logs</property>
+		<property name="log-file-nm">finance</property>
+	</properties>
+    <Appenders>
+        <Console name="console" target="SYSTEM_OUT">
+			<PatternLayout charset="UTF-8" disableAnsi="true" pattern="%d %5p [%F::%M] %m%n" />
+            <!--
+				<PatternLayout charset="UTF-8" disableAnsi="true" pattern="%d %5p [%c::%M] %m%n" />
+ 				<PatternLayout disableAnsi="false"  pattern="%highlight{%d{HH:mm:ss.SSS} %-5level %logger{36}.%M() @%L - %msg%n}{FATAL=red blink, ERROR=red, WARN=yellow bold, INFO=black, DEBUG=green bold, TRACE=blue}"/>\
+ 				 -->
+            <RegexFilter regex="(?s).*Mapped.*" onMatch="DENY" onMismatch="NEUTRAL" useRawMsg="true" />
+        </Console>
+		<RollingFile name="file" fileName="${log-path}/${log-file-nm}.log" filePattern="${log-path}/${log-file-nm}/${log-file-nm}_%d{yyyy-MM-dd}.log">
+			<PatternLayout charset="UTF-8" pattern="%d %5p [%F::%M] %m%n" />
+			<Policies>
+				<TimeBasedTriggeringPolicy />
+			</Policies>
+			<!--
+			<DefaultRolloverStrategy max="30" />
+			 -->
+		  <DefaultRolloverStrategy>
+		    <Delete basePath="${log-path}/${log-file-nm}/" maxDepth="1">
+		      <IfFileName glob="${log-file-nm}_??????????.log" />
+		      <IfLastModified age="14d" />
+		    </Delete>
+		  </DefaultRolloverStrategy>
+            <RegexFilter regex="(?s).*Mapped.*" onMatch="DENY" onMismatch="NEUTRAL" useRawMsg="true" />
+		</RollingFile>
+		<RollingFile name="fileErr" fileName="${log-path}/${log-file-nm}-error.log"
+			filePattern="${log-path}/${log-file-nm}/${log-file-nm}-error_%d{yyyy-MM-dd}.log">
+			<LevelRangeFilter minLevel="ERROR" maxLevel="ERROR" onMatch="ACCEPT" onMismatch="DENY"/>
+			<PatternLayout pattern="%d %5p [%F::%M] %m%n" />
+			<Policies>
+				<TimeBasedTriggeringPolicy />
+			</Policies>
+			<!--
+			<DefaultRolloverStrategy max="30" />
+			 -->
+		  <DefaultRolloverStrategy>
+		    <Delete basePath="${log-path}/${log-file-nm}/" maxDepth="1">
+		      <IfFileName glob="${log-file-nm}-error_??????????.log" />
+		      <IfLastModified age="14d" />
+		    </Delete>
+		  </DefaultRolloverStrategy>
+		</RollingFile>
+		<!--
+		<LevelRangeFilter minLevel="DEBUG" maxLevel="DEBUG" onMatch="ACCEPT" onMismatch="DENY"/>
+		<LevelRangeFilter minLevel="INFO" maxLevel="INFO" onMatch="ACCEPT" onMismatch="DENY"/>
+		 -->
+    </Appenders>
+    <Loggers>
+<!--
+        <Logger name="java.sql" level="INFO" additivity="false">
+            <AppenderRef ref="console" />
+			<AppenderRef ref="file"/>
+			<AppenderRef ref="fileErr"/>
+        </Logger>
+        <Logger name="egovframework" level="DEBUG" additivity="false">
+            <AppenderRef ref="console" />
+			<AppenderRef ref="file"/>
+			<AppenderRef ref="fileErr"/>
+        </Logger>
+        <Logger name="kr.co.ucp" level="DEBUG" additivity="false">
+            <AppenderRef ref="console" />
+			<AppenderRef ref="file"/>
+			<AppenderRef ref="fileErr"/>
+        </Logger>
+        <Logger name="jdbc.sqltiming" level="INFO" additivity="false">
+            <AppenderRef ref="console" />
+			<AppenderRef ref="file"/>
+			<AppenderRef ref="fileErr"/>
+        </Logger>
+        <Logger name="org.springframework" level="INFO" additivity="false">
+            <AppenderRef ref="console" />
+			<AppenderRef ref="file"/>
+			<AppenderRef ref="fileErr"/>
+        </Logger>
+		<logger name="*Mapper" level="DEBUG" additivity="false">
+			<AppenderRef ref="console" />
+			<AppenderRef ref="file"/>
+			<AppenderRef ref="fileErr"/>
+		</logger>
+		<logger name="*DAO" level="DEBUG" additivity="false">
+			<AppenderRef ref="console" />
+			<AppenderRef ref="file"/>
+			<AppenderRef ref="fileErr"/>
+		</logger>
+		<Logger name="org.apache" level="ERROR"></Logger>
+		<Logger name="org.springframework" level="ERROR"></Logger>
+		<Logger name="egovframework" level="ERROR"></Logger>
+		<Logger name="egovframework.let" level="DEBUG"></Logger>
+		<Logger name="egovframework.com.cmm" level="DEBUG"></Logger>
+ -->
+        <Logger name="kr.co.ucp" level="DEBUG"></Logger>
+		<Logger name="org.apache" level="ERROR"></Logger>
+		<Logger name="org.springframework" level="ERROR"></Logger>
+		<Logger name="org.mybatis.spring" level="OFF"></Logger>
+
+		<Logger name="org.springframework.web.servlet.view" level="DEBUG" additivity="false">
+			<AppenderRef ref="console" />
+		</Logger>
+
+    <!-- 파라메타 쿼리 완성문 출력 여부, 운영시 OFF로 설정
+	<Logger name="jdbc.sqlonly" level="OFF">
+    -->
+	<Logger name="jdbc.sqlonly" level="DEBUG">
+		<!--
+		<RegexFilter regex="(?s).*NOT_SQL_LOG.*" onMatch="DENY" onMismatch="NEUTRAL" useRawMsg="true" />
+		-->
+	</Logger>
+	<Logger name="jdbc.sqltiming" 	level="OFF"></Logger>
+	<Logger name="jdbc.audit" 		level="OFF">
+		<RegexFilter regex="(?s).*prepareStatement.*" onMatch="ACCEPT" onMismatch="DENY" useRawMsg="true" />
+	</Logger>
+	<Logger name="jdbc.resultset" 		level="OFF"></Logger>
+	<Logger name="jdbc.resultsettable" 	level="OFF"></Logger>
+	<Logger name="jdbc.connection" 		level="OFF"></Logger>
+	<logger name="java.sql.ResultSet" 	level="OFF"></logger>
+	<logger name="java.sql.PreparedStatement" 	level="OFF"></logger>
+	<logger name="java.sql.Connection" 			level="OFF"></logger>
+	<logger name="log4jdbc.debug" 				level="OFF"></logger>
+	<logger name="org.quartz.core.QuartzSchedulerThread" level="OFF"></logger>
+
+<!--  -->
+        <Root level="debug">
+            <AppenderRef ref="console" />
+			<AppenderRef ref="file"/>
+			<AppenderRef ref="fileErr"/>
+        </Root>
+
+     </Loggers>
+</Configuration>

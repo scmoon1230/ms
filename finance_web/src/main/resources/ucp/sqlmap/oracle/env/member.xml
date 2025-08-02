@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ucp.env.service.MemberMapper">
+
+    <select id="selectMember" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectMember */
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingHeader"/>
+        select MEM.MEMBER_ID      , MEM.MEMBER_NO       , MEM.MEMBER_NAME
+             , MEM.SEX_TYPE       , MEM.TEL_NO          , MEM.HPHONE_NO
+             , MEM.POSITION_CODE  , P.POSITION_NAME
+             , MEM.DEPT_CODE      , (SELECT DEPT_NAME from TB_DEPT P where P.DEPT_CODE = MEM.DEPT_CODE) DEPT_NAME
+             , MEM.REGION_CODE    , (SELECT REGION_NAME from TB_REGION R where R.REGION_CODE = MEM.REGION_CODE) REGION_NAME
+             , MEM.ADDR           , MEM.FAMILY_REMARK   , MEM.USE_YN         , MEM.REG_TIME
+             , TO_CHAR(MEM.REG_TIME,'YYYY-MM-DD') REG_DATE
+          from TB_MEMBER MEM
+     left join TB_POSITION p ON p.POSITION_CODE = mem.POSITION_CODE
+         where 1 = 1
+           <if test="memberId     != null and memberId     != '' "> and MEM.MEMBER_ID   LIKE #{memberId}   || '%' </if>
+           <if test="memberNo     != null and memberNo     != '' "> and MEM.MEMBER_NO   LIKE #{memberNo}   || '%' </if>
+           <if test="memberName   != null and memberName   != '' "> and MEM.MEMBER_NAME LIKE #{memberName} || '%' </if>
+           <if test="positionCode != null and positionCode != '' "> and MEM.POSITION_CODE = #{positionCode} </if>
+           <if test="deptCode     != null and deptCode     != '' "> and MEM.DEPT_CODE     = #{deptCode}     </if>
+           <if test="regionCode   != null and regionCode   != '' "> and MEM.REGION_CODE   = #{regionCode}   </if>
+           <if test="useYn        != null and useYn        != '' "> and MEM.USE_YN        = #{useYn}        </if>
+           <if test="memberQuery  != null and memberQuery  != '' "> and ( MEM.MEMBER_NO   LIKE '%' || #{memberQuery} || '%'
+                                                                       or MEM.MEMBER_NAME LIKE '%' || #{memberQuery} || '%' )
+           </if>
+      order by ${sidx} ${sord}
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingBottom"/>
+    </select>
+
+    <select id="selectMemberExt" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectMemberExt */
+        select MEM.MEMBER_ID      , MEM.MEMBER_NO       , MEM.MEMBER_NAME
+             , MEM.SEX_TYPE       , MEM.TEL_NO          , MEM.HPHONE_NO
+             , MEM.POSITION_CODE  , P.POSITION_NAME
+             , MEM.DEPT_CODE      , (SELECT DEPT_NAME from TB_DEPT P where P.DEPT_CODE = MEM.DEPT_CODE) DEPT_NAME
+             , MEM.REGION_CODE    , (SELECT REGION_NAME from TB_REGION R where R.REGION_CODE = MEM.REGION_CODE) REGION_NAME
+             , MEM.ADDR           , MEM.FAMILY_REMARK   , MEM.USE_YN         , MEM.REG_TIME
+             , TO_CHAR(MEM.REG_TIME,'YYYY-MM-DD') REG_DATE
+          from TB_MEMBER MEM
+     left join TB_POSITION p ON p.POSITION_CODE = mem.POSITION_CODE
+         where 1 = 1
+           <if test="memberId     != null and memberId     != '' "> and MEM.MEMBER_ID     = #{memberId}     </if>
+           <if test="memberNo     != null and memberNo     != '' "> and MEM.MEMBER_NO     = #{memberNo}     </if>
+           <if test="memberName   != null and memberName   != '' "> and MEM.MEMBER_NAME   = #{memberName}   </if>
+           <if test="positionCode != null and positionCode != '' "> and MEM.POSITION_CODE = #{positionCode} </if>
+           <if test="deptCode     != null and deptCode     != '' "> and MEM.DEPT_CODE     = #{deptCode}     </if>
+           <if test="regionCode   != null and regionCode   != '' "> and MEM.REGION_CODE   = #{regionCode}   </if>
+           <if test="useYn        != null and useYn        != '' "> and MEM.USE_YN        = #{useYn}        </if>
+    </select>
+
+    <select id="selectNewMemberId" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectNewMemberId */
+        select TO_NUMBER(NVL(MAX(SUBSTR(MEMBER_ID,-3)),'0'))+1 MEMBER_ID
+          from TB_MEMBER
+         where MEMBER_ID LIKE #{stanYmd} || '%'
+    </select>
+
+    <insert id="insertMember" parameterType="java.util.HashMap">
+    /* insertMember */
+        insert into TB_MEMBER
+             ( MEMBER_ID       , MEMBER_NO       , MEMBER_NAME
+             , SEX_TYPE        , TEL_NO          , HPHONE_NO 
+             , POSITION_CODE   , DEPT_CODE       , REGION_CODE
+             , ADDR            , FAMILY_REMARK   , USE_YN        , REG_TIME )
+        values
+             ( #{memberId}     , #{memberNo}     , #{memberName}  
+             , #{sexType}      , #{telNo}        , #{hphoneNo}  
+             , #{positionCode} , #{deptCode}     , #{regionCode}
+             , #{addr}         , #{familyRemark} , #{useYn}      , SYSDATE  )
+    </insert>
+    
+    <update id="updateMember" parameterType="java.util.HashMap">
+    /* updateMember */
+        update TB_MEMBER
+           set MEMBER_ID     = #{memberId}
+           <if test="memberNo     != null"> , MEMBER_NO     = #{memberNo}     </if>
+           <if test="memberName   != null"> , MEMBER_NAME   = #{memberName}   </if>
+           <if test="sexType      != null"> , SEX_TYPE      = #{sexType}      </if>
+           <if test="telNo        != null"> , TEL_NO        = #{telNo}        </if>
+           <if test="hphoneNo     != null"> , HPHONE_NO     = #{hphoneNo}     </if>
+           <if test="positionCode != null"> , POSITION_CODE = #{positionCode} </if>
+           <if test="deptCode     != null"> , DEPT_CODE     = #{deptCode}     </if>
+           <if test="regionCode   != null"> , REGION_CODE   = #{regionCode}   </if>
+           <if test="addr         != null"> , ADDR          = #{addr}         </if>
+           <if test="familyRemark != null"> , FAMILY_REMARK = #{familyRemark} </if>
+           <if test="useYn        != null"> , USE_YN        = #{useYn}        </if>
+         where MEMBER_ID = #{memberId}
+    </update>
+
+    <delete id="deleteMember" parameterType="java.util.HashMap">
+    /* deleteMember */
+        delete from TB_MEMBER
+         where MEMBER_ID = #{memberId}
+           and MEMBER_NO = #{memberNo}
+    </delete>
+    
+</mapper>

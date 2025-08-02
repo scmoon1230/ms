@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.co.ucp.wrks.sstm.code.service.CodeDtcdMapper">
+
+    <!-- 목록 -->
+    <select id="dtcdList" parameterType="java.util.HashMap" resultType="egovMap">
+    /* dtcdList */
+        select A.*
+             , ( select COUNT(*)
+                   from CM_TC_CODE    A
+              left join (select CD_GRP_ID, CD_ID, CD_NM_KO from CM_TC_CODE where CD_GRP_ID = 'USE_TY' and CD_TY = 'C') B
+                     on A.USE_TY_CD = B.CD_ID
+                      , (select CD_GRP_ID, CD_NM_KO from CM_TC_CODE where CD_TY = 'G') C
+                  where A.CD_TY = 'C'
+                    and A.CD_GRP_ID = C.CD_GRP_ID
+                    <if test="CD_GRP_ID != null and CD_GRP_ID != '' "> and C.CD_GRP_ID = #{CD_GRP_ID} </if>
+                    <if test="USE_TY_CD != null and USE_TY_CD != '' "> and A.USE_TY_CD = #{USE_TY_CD} </if>
+                    <if test="CD_NM_KO  != null and CD_NM_KO  != '' "> and A.CD_NM_KO  = #{CD_NM_KO}  </if>
+               ) as ROWCNT
+          from ( select ROW_NUMBER() OVER (order by ${sidx} ${sord}) as RK
+                      , A.*
+                   from ( select C.CD_GRP_ID                     , C.CD_NM_KO as CD_GRP_NM_KO
+                               , A.CD_ID                         , A.CD_NM_KO
+                               , A.CD_NM_EN                      , A.USE_TY_CD
+                               , B.CD_NM_KO as USE_NM
+                               , A.CD_DSCRT                      , A.SORT_ORDR
+                            from CM_TC_CODE A
+                       left join (select CD_GRP_ID, CD_ID, CD_NM_KO from CM_TC_CODE where CD_GRP_ID = 'USE_TY' and CD_TY = 'C') B
+                              ON A.USE_TY_CD = B.CD_ID
+                               , (select CD_GRP_ID, CD_NM_KO from CM_TC_CODE where CD_TY = 'G' ) C
+                           where A.CD_TY = 'C'
+                             and A.CD_GRP_ID = C.CD_GRP_ID
+                             <if test="CD_GRP_ID != null and CD_GRP_ID != '' "> and C.CD_GRP_ID = #{CD_GRP_ID} </if>
+                             <if test="USE_TY_CD != null and USE_TY_CD != '' "> and A.USE_TY_CD = #{USE_TY_CD} </if>
+                             <if test="CD_NM_KO  != null and CD_NM_KO  != '' "> and A.CD_NM_KO  = #{CD_NM_KO}  </if>
+                        ) A
+               ) A
+        OFFSET ((#{pageNo}::integer - 1) * #{rowsPerPage}::integer)
+         LIMIT #{rowsPerPage}::integer
+    </select>
+
+    <select id="selectUserInsttInfoList" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectUserInsttInfoList */
+        select CD_GRP_ID    , CD_ID       , CD_TY        , CD_NM_KO      , CD_NM_EN
+             , CD_DSCRT     , SORT_ORDR   , SYS_CD       , USE_TY_CD
+             , RGS_USER_ID  , RGS_DATE    , UPD_USER_ID  , UPD_DATE
+          from CM_TC_CODE
+         where 1 = 1
+           <if test="CD_GRP_ID   != null and CD_GRP_ID   != '' ">  and CD_GRP_ID   = #{CD_GRP_ID}   </if>
+           <if test="CD_TY       != null and CD_TY       != '' ">  and CD_TY       = #{CD_TY}       </if>
+           <if test="USE_TY_CD   != null and USE_TY_CD   != '' ">  and USE_TY_CD   = #{USE_TY_CD}   </if>
+           <if test="PRNT_GRP_ID != null and PRNT_GRP_ID != '' ">  and PRNT_GRP_ID = #{PRNT_GRP_ID} </if>
+           <if test="CD_NM_KO    != null and CD_NM_KO    != '' ">  and CD_NM_KO    = #{CD_NM_KO}    </if>
+           <if test="ORDER_BY    != null and ORDER_BY    != '' ">  ${ORDER_BY}                      </if>
+    </select>
+
+    <!-- 등록 -->
+    <insert id="insert" parameterType="java.util.HashMap">
+    /* insert */
+        insert into CM_TC_CODE
+             ( CD_GRP_ID       , CD_ID       , CD_TY
+             , CD_NM_KO        , CD_NM_EN    , CD_DSCRT        , USE_TY_CD    , SORT_ORDR
+             , RGS_USER_ID     , RGS_DATE    , UPD_USER_ID     , UPD_DATE
+           <if test="PRNT_GRP_ID != null and PRNT_GRP_ID != '' ">
+             , PRNT_GRP_ID       , CHLD_GRP_ID
+           </if>
+             )
+        values
+             ( #{CD_GRP_ID}    , #{CD_ID}    , 'C'
+             , #{CD_NM_KO}     , #{CD_NM_EN} , #{CD_DSCRT}     , #{USE_TY_CD} , #{SORT_ORDR}::numeric
+             , #{RGS_USER_ID}  , NOW()       , #{RGS_USER_ID}  , NOW()
+           <if test="PRNT_GRP_ID != null and PRNT_GRP_ID != '' ">
+             , #{PRNT_GRP_ID}  , #{CHLD_GRP_ID}
+           </if>
+             )
+    </insert>
+
+    <!-- 수정 -->
+    <update id="update" parameterType="java.util.HashMap">
+    /* update */
+        update CM_TC_CODE
+           set CD_NM_KO = #{CD_NM_KO}
+             , CD_NM_EN = #{CD_NM_EN}
+             , CD_DSCRT = #{CD_DSCRT}
+             , USE_TY_CD = #{USE_TY_CD}
+             , SORT_ORDR = #{SORT_ORDR}
+             , UPD_USER_ID = #{UPD_USER_ID}
+             , UPD_DATE = NOW()
+         where CD_TY = 'C'
+           and CD_GRP_ID = #{bCdGrpId}
+           and CD_ID = #{bCdId}
+    </update>
+
+    <!-- 삭제 -->
+    <delete id="delete" parameterType="java.util.HashMap">
+    /* delete */
+        update CM_TC_CODE
+           set USE_TY_CD = 'D'
+             , UPD_USER_ID = #{UPD_USER_ID}
+             , UPD_DATE = NOW()
+         where CD_TY = 'C'
+           and CD_GRP_ID = #{CD_GRP_ID}
+           and CD_ID = #{CD_ID}
+    </delete>
+
+</mapper>

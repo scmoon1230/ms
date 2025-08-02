@@ -1,0 +1,33 @@
+#indexMap {
+	background: none;
+	background-repeat: no-repeat;
+	background-size: 100%;
+}
+
+#indexMapDiv {
+	position: absolute;
+	/* width: 204px;
+	height: 204px; */
+	right: 10px;
+	bottom: 10px;
+	background: white;
+	z-index: 29;
+	opacity: 0.7;
+}
+
+#indexMapToggle {
+	position: absolute;
+	display: block;
+	right: 10px;
+	bottom: 13px;
+	z-index: 30;
+	opacity: 0.5;
+}
+
+#indexMapToggle:focus {
+	outline: 0;
+}
+
+#map #tbFcltInfo, #map #tbEventInfo {
+	margin-bottom: 5px;
+}

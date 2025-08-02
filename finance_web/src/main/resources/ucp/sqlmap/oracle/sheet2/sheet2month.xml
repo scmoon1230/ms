@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ucp.sheet2.service.Sheet2monthMapper">
+
+    <select id="selectDurationMonth" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectDurationMonth */
+        select TO_CHAR(TRUNC(TO_DATE(#{stanYmd},'YYYYMMDD'),'MM'),'YYYY-MM-DD') FROM_YMD
+             , TO_CHAR(LAST_DAY(TO_DATE(#{stanYmd},'YYYYMMDD')),'YYYY-MM-DD') END_YMD
+          from DUAL
+    </select>
+
+    <select id="selectDurationSumm" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectDurationSumm */
+        select ( select TO_CHAR(TO_DATE(AY.FROM_YMD,'YYYYMMDD'),'YYYY-MM-DD') FROM_YMD
+                   from TB_ACCTYEAR AY
+                  where STAN_YY = TO_CHAR(TRUNC(TO_DATE(#{stanYmd},'YYYYMMDD'),'YY'),'YYYY')
+               ) FROM_YMD
+             , TO_CHAR(LAST_DAY(TO_DATE(#{stanYmd},'YYYYMMDD')),'YYYY-MM-DD') END_YMD
+          from DUAL
+    </select>
+
+    <select id="selectMoneyMonth" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectMoneyMonth */
+    <!-- <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingHeader"/> -->
+        select A.STAN_YY
+             , A.ACCT_GB        , (SELECT ACCT_GB_NAME from TB_ACCT_GB AG where AG.ACCT_GB = A.ACCT_GB) ACCT_GB_NAME
+             , A.INOUT_GB       , A.ACCT_LEVEL    , A.ACCT_CODE
+             , A.PRINT_NAME     , A.INOUT_GB      , A.ACCT_LEVEL
+             , NVL(B.MONEY_AMT,0) MONEY_AMT
+             , NVL(C.MONEY_AMT,0) YSUM_AMT
+             , D.MONTHPRE_AMT   , E.MONTHNEXT_AMT , F.YEARPRE_AMT
+          from TB_ACCTCODE A
+             , ( select ACCT_GB , ACCT_CODE , MONEY_AMT
+                   from TB_MAST_ACCTSUM
+                  where STAN_YM = SUBSTR(#{stanYmd},1,6)
+                    <if test="acctGb != null and acctGb != '' "> and ACCT_GB = #{acctGb} </if>
+               order by ACCT_GB, ACCT_CODE
+               ) B
+             , ( select ACCT_GB , ACCT_CODE , SUM(MONEY_AMT) MONEY_AMT
+                   from TB_MAST_ACCTSUM       
+                  where STAN_YM <![CDATA[>=]]> SUBSTR(#{yearFromYmd},1,6)
+                    and STAN_YM <![CDATA[<=]]> SUBSTR(#{stanYmd},1,6)
+                    <if test="acctGb != null and acctGb != '' "> and ACCT_GB = #{acctGb} </if>
+               group by ACCT_GB,ACCT_CODE
+               ) C
+             , ( /* 전월이월금 구하는 부분 : 조회하는월의 최초주일의 전잔을 구함 */
+                 select ACCT_GB , NVL(PRE_AMT,0) AS MONTHPRE_AMT
+                   from TB_MAST_WEEKSUM
+                  where 1 =1
+                    <if test="acctGb != null and acctGb != '' "> and ACCT_GB = #{acctGb} </if>
+                    and STAN_YMD = ( select MIN(STAN_YMD)
+                                       from TB_MAST_WEEKSUM
+                                      where STAN_YMD LIKE SUBSTR(#{stanYmd},1,6)||'%'
+                                        <if test="acctGb != null and acctGb != '' "> and ACCT_GB = #{acctGb} </if>
+                                    )
+               ) D
+             , ( /* 차기(월)이월금 구하는 부분: 조회하는 월의 마지막 주일자의 당잔을 구함 */
+                 select ACCT_GB, (NVL(PRE_AMT,0) + NVL(IN_AMT,0) - NVL(OUT_AMT,0)) AS MONTHNEXT_AMT
+                   from TB_MAST_WEEKSUM
+                  where 1 =1
+                    <if test="acctGb != null and acctGb != '' "> and ACCT_GB = #{acctGb} </if>
+                    and STAN_YMD = ( select MAX(STAN_YMD)
+                                       from TB_MAST_WEEKSUM
+                                      where STAN_YMD LIKE SUBSTR(#{stanYmd},1,6)||'%'
+                                        <if test="acctGb != null and acctGb != '' "> and ACCT_GB = #{acctGb} </if>
+                                   )
+               ) E
+             , ( /* 전년도 이월금 구하는 부분: 조회하는 월이 속하는 회계년도의 최초일보다 큰 가장 작은 주일의 전주 이월금 */
+                 select ACCT_GB , NVL(PRE_AMT,0) AS YEARPRE_AMT
+                   from TB_MAST_WEEKSUM
+                  where 1 =1
+                    <if test="acctGb != null and acctGb != '' "> and ACCT_GB = #{acctGb} </if>
+                    and STAN_YMD = ( select MIN(STAN_YMD)
+                                       from TB_MAST_WEEKSUM
+                                      where STAN_YMD <![CDATA[>=]]> #{yearFromYmd}
+                                        <if test="acctGb != null and acctGb != '' "> and ACCT_GB = #{acctGb} </if>
+                                   )
+               ) F
+         where A.STAN_YY   = ( select STAN_YY from TB_ACCTYEAR AY where #{stanYmd} BETWEEN AY.FROM_YMD and AY.END_YMD )
+           and A.ACCT_GB   = B.ACCT_GB(+)
+           and A.ACCT_CODE = B.ACCT_CODE(+)
+           and A.ACCT_GB   = C.ACCT_GB(+)
+           and A.ACCT_CODE = C.ACCT_CODE(+)
+           and A.ACCT_GB   = D.ACCT_GB(+)
+           and A.ACCT_GB   = E.ACCT_GB(+)
+           and A.ACCT_GB   = F.ACCT_GB(+)
+           <if test="acctGb != null and acctGb != '' "> and A.ACCT_GB = #{acctGb} </if>
+     UNION ALL
+        select ( select STAN_YY from TB_ACCTYEAR AY where #{stanYmd} BETWEEN AY.FROM_YMD and AY.END_YMD ) STAN_YY
+             , #{acctGb} ACCT_GB , ( select ACCT_GB_NAME from TB_ACCT_GB AG where AG.ACCT_GB = #{acctGb}) ACCT_GB_NAME
+             , '' INOUT_GB , '과' ACCT_LEVEL , '00000' ACCT_CODE , '수입' PRINT_NAME , '' INOUT_GB , '' ACCT_LEVEL
+             , 0 MONEY_AMT , 0 YSUM_AMT , 0 MONTHPRE_AMT , 0 MONTHNEXT_AMT , 0 YEARPRE_AMT
+          from DUAL
+     UNION ALL
+        select ( select STAN_YY from TB_ACCTYEAR AY where #{stanYmd} BETWEEN AY.FROM_YMD and AY.END_YMD ) STAN_YY
+             , #{acctGb} ACCT_GB , ( select ACCT_GB_NAME from TB_ACCT_GB AG where AG.ACCT_GB = #{acctGb}) ACCT_GB_NAME
+             , '' INOUT_GB , '과' ACCT_LEVEL , '01' ACCT_CODE , '수입계' PRINT_NAME , '' INOUT_GB , '' ACCT_LEVEL
+             , 0 MONEY_AMT , 0 YSUM_AMT , 0 MONTHPRE_AMT , 0 MONTHNEXT_AMT , 0 YEARPRE_AMT
+          from DUAL
+     UNION ALL
+        select ( select STAN_YY from TB_ACCTYEAR AY where #{stanYmd} BETWEEN AY.FROM_YMD and AY.END_YMD ) STAN_YY
+             , #{acctGb} ACCT_GB , ( select ACCT_GB_NAME from TB_ACCT_GB AG where AG.ACCT_GB = #{acctGb}) ACCT_GB_NAME
+             , '' INOUT_GB , '과' ACCT_LEVEL , '010' ACCT_CODE , '전기이월' PRINT_NAME , '' INOUT_GB , '' ACCT_LEVEL
+             , 0 MONEY_AMT , 0 YSUM_AMT , 0 MONTHPRE_AMT , 0 MONTHNEXT_AMT , 0 YEARPRE_AMT
+          from DUAL
+     UNION ALL
+        select ( select STAN_YY from TB_ACCTYEAR AY where #{stanYmd} BETWEEN AY.FROM_YMD and AY.END_YMD ) STAN_YY
+             , #{acctGb} ACCT_GB , '' ACCT_GB_NAME
+             , '' INOUT_GB , '무' ACCT_LEVEL , '0100' ACCT_CODE , '' PRINT_NAME , '' INOUT_GB , '' ACCT_LEVEL
+             , 0 MONEY_AMT , 0 YSUM_AMT , 0 MONTHPRE_AMT , 0 MONTHNEXT_AMT , 0 YEARPRE_AMT
+          from DUAL
+     UNION ALL
+        select ( select STAN_YY from TB_ACCTYEAR AY where #{stanYmd} BETWEEN AY.FROM_YMD and AY.END_YMD ) STAN_YY
+             , #{acctGb} ACCT_GB , ( select ACCT_GB_NAME from TB_ACCT_GB AG where AG.ACCT_GB = #{acctGb}) ACCT_GB_NAME
+             , '' INOUT_GB , '과' ACCT_LEVEL , '01000' ACCT_CODE , '지출' PRINT_NAME , '' INOUT_GB , '' ACCT_LEVEL
+             , 0 MONEY_AMT , 0 YSUM_AMT , 0 MONTHPRE_AMT , 0 MONTHNEXT_AMT , 0 YEARPRE_AMT
+          from DUAL
+     UNION ALL
+        select ( select STAN_YY from TB_ACCTYEAR AY where #{stanYmd} BETWEEN AY.FROM_YMD and AY.END_YMD ) STAN_YY
+             , #{acctGb} ACCT_GB , ( select ACCT_GB_NAME from TB_ACCT_GB AG where AG.ACCT_GB = #{acctGb}) ACCT_GB_NAME
+             , '' INOUT_GB , '과' ACCT_LEVEL , '90' ACCT_CODE , '지출계' PRINT_NAME , '' INOUT_GB , '' ACCT_LEVEL
+             , 0 MONEY_AMT , 0 YSUM_AMT , 0 MONTHPRE_AMT , 0 MONTHNEXT_AMT , 0 YEARPRE_AMT
+          from DUAL
+      order by ${sidx} ${sord}
+    <!-- <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingBottom"/> -->
+    </select>
+
+    <insert id="insertMoney" parameterType="java.util.HashMap">
+    /* insertMoney */
+        insert into TB_MEMBER
+             ( MEMBER_ID       , MEMBER_NO       , MEMBER_NAME
+             , SEX_TYPE        , TEL_NO          , HPHONE_NO 
+             , POSITION_CODE   , DEPT_CODE       , REGION_CODE
+             , ADDR            , FAMILY_REMARK   , USE_YN        , REG_TIME )
+        values
+             ( #{memberId}     , #{memberNo}     , #{memberName}  
+             , #{sexType}      , #{telNo}        , #{hphoneNo}  
+             , #{positionCode} , #{deptCode}     , #{regionCode}
+             , #{addr}         , #{familyRemark} , #{useYn}      , SYSDATE  )
+    </insert>
+    
+    <update id="updateMoney" parameterType="java.util.HashMap">
+    /* updateMoney */
+        update TB_MEMBER
+           set MEMBER_ID     = #{memberId}
+             , MEMBER_NO     = #{memberNo}
+             , MEMBER_NAME   = #{memberName}
+             , SEX_TYPE      = #{sexType}
+             , TEL_NO        = #{telNo}
+             , HPHONE_NO     = #{hphoneNo}
+             , POSITION_CODE = #{positionCode}
+             , DEPT_CODE     = #{deptCode}
+             , REGION_CODE   = #{regionCode}
+             , ADDR          = #{addr}
+             , FAMILY_REMARK = #{familyRemark}
+             , USE_YN        = #{useYn}
+         where MEMBER_ID = #{memberId}
+    </update>
+
+    <delete id="deleteMoney" parameterType="java.util.HashMap">
+    /* deleteMoney */
+        delete from TB_MEMBER
+         where MEMBER_ID = #{memberId}
+           and MEMBER_NO = #{memberNo}
+    </delete>
+    
+</mapper>

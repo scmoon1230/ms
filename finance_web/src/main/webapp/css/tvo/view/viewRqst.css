@@ -1,0 +1,63 @@
+#toggleLeft {
+    left: 1200px;
+    bottom: 1px;
+    border-left: dotted 1px #bdc3c7;
+}
+
+#toggleRight {
+    bottom: 1px;
+    display: none;
+}
+
+#toggleBottom {
+    width: 1190px;
+    display: none;
+}
+
+aside#left {
+    width: 1200px;
+    bottom: 1px;
+}
+
+section#body {
+    left: 1210px;
+    bottom: 1px;
+}
+
+aside#right {
+    bottom: 1px;
+}
+
+section#bottom {
+    width: 1200px;
+    height: calc(100% - 50px);
+    bottom: 0;
+    z-index: 10;
+}
+
+select.inline-block {
+    display: inline-block;
+    width: 60px;
+    position: relative;
+    top: 1px;
+}
+
+.web-rtc-view-container {
+    width: 33.3%;
+    height: 33.3%;
+}
+
+.web-rtc-view-container.one {
+    width: 100%;
+    height: 100%;
+}
+
+.web-rtc-view-container.four {
+    width: 50%;
+    height: 50%;
+}
+
+.web-rtc-view-container.six {
+    width: 33.3%;
+    height: 50%;
+}

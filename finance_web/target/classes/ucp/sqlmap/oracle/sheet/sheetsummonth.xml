@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ucp.sheet.service.SheetsummonthMapper">
+
+    <select id="selectSheetSummonth" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectSheetSummonth */
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingHeader"/>
+        select MAS.STAN_YM, AC.ACCT_GB
+             , (SELECT ACCT_GB_NAME from TB_ACCT_GB AG where AG.ACCT_GB = MAS.ACCT_GB) ACCT_GB_NAME
+             , AC.ACCT_CODE, AC.PRINT_NAME, AC.INOUT_GB, AC.ACCT_LEVEL
+             , CASE WHEN AC.INOUT_GB='수입' THEN NVL(MAS.MONEY_AMT,0) ELSE 0 END IN_AMT
+             , CASE WHEN AC.INOUT_GB='지출' THEN NVL(MAS.MONEY_AMT,0) ELSE 0 END OUT_AMT
+          from ( select XX.ACCT_GB
+                      , XX.STAN_YY
+                      , XX.ACCT_CODE  , XX.ACCT_NAME , XX.PRINT_NAME , XX.INOUT_GB, XX.ACCT_LEVEL
+                   from TB_ACCTCODE XX
+                      , TB_ACCTYEAR Z
+                  where XX.STAN_YY = Z.STAN_YY
+                    and #{stanYmd} BETWEEN Z.FROM_YMD and Z.END_YMD
+                    <if test="acctGb   != null and acctGb   != '' "> and XX.ACCT_GB = #{acctGb}   </if>
+               ) AC
+     left join TB_MAST_ACCTSUM MAS
+            ON AC.ACCT_GB = MAS.ACCT_GB and AC.ACCT_CODE = MAS.ACCT_CODE 
+                                        and MAS.STAN_YM = #{stanYm}
+      order by ${sidx} ${sord}
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingBottom"/>
+    </select>
+
+    <select id="selectTotalAmnt" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectTotalAmnt */
+        select INOUT_GB, SUM(IN_AMT) IN_TOTAL_AMNT, SUM(OUT_AMT) OUT_TOTAL_AMNT
+          from (
+        select MAS.STAN_YM, AC.ACCT_GB
+             , (SELECT ACCT_GB_NAME from TB_ACCT_GB AG where AG.ACCT_GB = MAS.ACCT_GB) ACCT_GB_NAME
+             , AC.ACCT_CODE, AC.PRINT_NAME, AC.INOUT_GB, AC.ACCT_LEVEL
+             , CASE WHEN AC.INOUT_GB='수입' THEN NVL(MAS.MONEY_AMT,0) ELSE 0 END IN_AMT
+             , CASE WHEN AC.INOUT_GB='지출' THEN NVL(MAS.MONEY_AMT,0) ELSE 0 END OUT_AMT
+          from ( select XX.ACCT_GB
+                      , XX.STAN_YY
+                      , XX.ACCT_CODE  , XX.ACCT_NAME , XX.PRINT_NAME , XX.INOUT_GB, XX.ACCT_LEVEL
+                   from TB_ACCTCODE XX
+                      , TB_ACCTYEAR Z
+                  where XX.STAN_YY = Z.STAN_YY
+                    and #{stanYmd} BETWEEN Z.FROM_YMD and Z.END_YMD
+                    and XX.ACCT_LEVEL = '대'
+                    <if test="acctGb   != null and acctGb   != '' "> and XX.ACCT_GB = #{acctGb}   </if>
+               ) AC
+     left join TB_MAST_ACCTSUM MAS
+            ON AC.ACCT_GB = MAS.ACCT_GB and AC.ACCT_CODE = MAS.ACCT_CODE 
+                                        and MAS.STAN_YM = #{stanYm}
+               ) TB
+      group by INOUT_GB
+    </select>
+
+</mapper>

@@ -1,0 +1,542 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.co.ucp.wrks.sstm.usr.service.UsrInfoMapper">
+
+    <select id="selectCmGroupList" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectCmGroupList */
+        select A.*
+             , ( select COUNT(*)
+                   from CM_GROUP
+                  where 1 = 1
+                    <if test="USER_ID != null and USER_ID != '' "> and GRP_ID NOT IN ( select GRP_ID from CM_GRP_USER where USER_ID = #{USER_ID} ) </if>
+                    <if test="GRP_ID  != null and GRP_ID  != '' "> and GRP_ID   = #{GRP_ID}                             </if>
+               ) as ROWCNT
+          from ( select A.*
+                      , ROW_NUMBER() OVER (order by A.${sidx} ${sord}) as RK
+                   from (
+        <![CDATA[
+                          select A.GRP_ID , B.DSTRT_CD
+                               , A.GRP_NM_KO , A.GRP_NM_EN
+                               , A.GRP_DSCRT , A.USE_TY_CD , B.DSTRT_NM
+                               , C.CD_NM_KO as USE_TY_NM
+                               , CONCAT('{"ID":"", "ROWS":' , REPLACE(D.AUTH_LVL, '&rec', ',') , '}') as AUTH_LVL_SELECT
+                            from CM_GROUP A
+                       left join CM_DSTRT_CD_MNG B       on A.DSTRT_CD = B.DSTRT_CD
+                       left join ( select CD_ID, CD_NM_KO from CM_TC_CODE where CD_GRP_ID = 'USE_TY' and CD_TY = 'C' ) C 
+                         on A.USE_TY_CD = C.CD_ID
+                          , ( select v.GRP_ID, CONCAT('[',  v.AUTH_LVL ,']') as AUTH_LVL
+                                from (
+                         WITH RECURSIVE W1(RNUM, GRP_ID, VAL) AS
+                         ( select a.RNUM, a.GRP_ID, a.VAL
+                             from ( select ROW_NUMBER() OVER(PARTITION BY GRP_ID order by AUTH_LVL) as RNUM
+                                         , GRP_ID, CONCAT('{"CD_ID":"' , AUTH_LVL,  '", "CD_NM":"' , AUTH_LVL_NM , '"}') as VAL
+                                      from CM_GRP_AUTH_LVL
+                                  ) a
+                            where a.RNUM = 1
+                            union all
+                           select c.RNUM, c.GRP_ID, CONCAT(w.VAL, '&rec', c.VAL)
+                             from ( select ROW_NUMBER() OVER(PARTITION BY GRP_ID order by AUTH_LVL) as  RNUM
+                                         , GRP_ID, CONCAT('{"CD_ID":"' , AUTH_LVL,  '", "CD_NM":"' , AUTH_LVL_NM , '"}') as VAL
+                                      from CM_GRP_AUTH_LVL 
+                                  ) c
+                                , W1 w
+                            where c.GRP_ID = w.GRP_ID and c.RNUM -1 = w.RNUM
+                         )
+                         select GRP_ID,MAX(VAL) as AUTH_LVL, MAX(RNUM) as RNUM from W1 group by grp_id
+                     ) v
+                  ) D
+               where A.USE_TY_CD = 'Y'
+                  and A.GRP_ID = D.GRP_ID
+        ]]>
+                  <if test="USER_ID != null and USER_ID != '' "> and A.GRP_ID NOT IN ( select GRP_ID from CM_GRP_USER where USER_ID = #{USER_ID} ) </if>
+                  <if test="GRP_ID  != null and GRP_ID  != '' "> and A.GRP_ID   = #{GRP_ID}                             </if>
+                ) A
+            ) A
+             OFFSET ((#{pageNo}::integer - 1) * #{rowsPerPage}::integer)
+             LIMIT #{rowsPerPage}::integer
+    </select>
+
+    <select id="selectCmGrpUserList" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectCmGrpUserList */
+        <![CDATA[
+            select
+                A.*
+                , (
+                    select COUNT(*) from CM_GRP_USER where 1 = 1
+                ]]>
+                <if test="USER_ID != null and USER_ID != '' "> and USER_ID = #{USER_ID} </if>
+                <![CDATA[
+            ) as ROWCNT
+            from
+            (
+                    select
+                        A.*
+                        , B.GRP_NM_KO
+                        , C.CD_NM_KO as USE_TY_NM
+                        , D.DSTRT_CD
+                        , D.DSTRT_NM
+                        , ROW_NUMBER() OVER (order by B.${sidx} ${sord}) as RK
+                        , E.AUTH_LVL_NM
+                        , CONCAT('{"ID":"' , A.AUTH_LVL , '", "ROWS":' , REPLACE(F.AUTH_LVL, '&rec', ',') , '}') as AUTH_LVL_SELECT
+                    from
+                        CM_GRP_USER A
+                   left join CM_GROUP B on A.GRP_ID = B.GRP_ID
+                   left join ( select CD_ID, CD_NM_KO from CM_TC_CODE where CD_GRP_ID = 'USE_TY' and CD_TY = 'C' ) C
+                            on A.USE_TY_CD = C.CD_ID
+                   left join CM_DSTRT_CD_MNG D on B.DSTRT_CD = D.DSTRT_CD
+                        , CM_GRP_AUTH_LVL E
+                        ,(
+                            select v.GRP_ID, CONCAT('[',  v.AUTH_LVL ,']') as AUTH_LVL from
+                            (
+                                 WITH RECURSIVE W1(RNUM, GRP_ID, VAL) AS
+                                 (
+                                 select a.RNUM, a.GRP_ID, a.VAL
+                                 from (
+                                    select ROW_NUMBER() OVER(PARTITION BY GRP_ID order by AUTH_LVL) as RNUM
+                                       , GRP_ID, CONCAT('{"CD_ID":"' , AUTH_LVL,  '", "CD_NM":"' , AUTH_LVL_NM , '"}') as VAL
+                                    from CM_GRP_AUTH_LVL
+                                 ) a
+                                 where a.RNUM = 1
+                                 union all
+                                 select c.RNUM, c.GRP_ID, CONCAT(w.VAL, '&rec', c.VAL)
+                                 from (
+                                    select ROW_NUMBER() OVER(PARTITION BY GRP_ID order by AUTH_LVL) as  RNUM
+                                       , GRP_ID, CONCAT('{"CD_ID":"' , AUTH_LVL,  '", "CD_NM":"' , AUTH_LVL_NM , '"}') as VAL
+                                    from CM_GRP_AUTH_LVL 
+                                 ) c, W1 w
+                                 where c.GRP_ID = w.GRP_ID and c.RNUM -1 = w.RNUM
+                                 )
+                                 select GRP_ID,MAX(VAL) as AUTH_LVL, MAX(RNUM) as RNUM from W1 group by grp_id
+                             ) v
+                        ) F
+                    where
+                        1 = 1
+                        and A.GRP_ID = E.GRP_ID
+                        and A.AUTH_LVL = E.AUTH_LVL
+                        and A.GRP_ID = F.GRP_ID
+                ]]>
+                <if test="USER_ID != null and USER_ID != '' "> and A.USER_ID = #{USER_ID} </if>
+        <![CDATA[
+            ) A
+             OFFSET ((#{pageNo}::integer - 1) * #{rowsPerPage}::integer)
+             LIMIT #{rowsPerPage}::integer
+        ]]>
+    </select>
+    
+    <select id="selectUserList" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectUserList */
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingHeader"/>
+        select u.USER_ID        , u.USER_PWD        , u.USER_NAME        , u.TEL_NO
+             , u.ACCT_GB        , ag.ACCT_GB_NAME   , u.USER_GB
+             , u.POSITION_CODE  , p.POSITION_NAME   , u.USE_YN
+          from TB_USER u
+     left join TB_ACCT_GB ag ON ag.ACCT_GB = u.ACCT_GB
+     left join TB_POSITION p ON p.POSITION_CODE = u.POSITION_CODE
+         where 1 = 1
+           <if test="USE_YN    != null and USE_YN    != '' "> and U.USE_YN    = #{USE_YN}                          </if>
+           <if test="USER_ID   != null and USER_ID   != '' "> and U.USER_ID   LIKE '%' || #{USER_ID} || '%'   </if>
+           <if test="USER_NAME != null and USER_NAME != '' "> and U.USER_NAME LIKE '%' || #{USER_NAME} || '%' </if>
+      order by ${sidx} ${sord}
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingBottom"/>
+    </select>
+	<!-- 
+    <select id="selectUserList" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectUserList */
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingHeader"/>
+        select A.*
+          from (
+            select CU.USER_ID   , CU.PASSWORD    , CU.USER_NM_EN
+               <if test="saltText == null ">
+                 , CU.USER_NM_KO
+                 , CU.MOBL_NO
+                 , CU.EMAIL
+                 , COALESCE(FN_USER_NM(CU.RGS_USER_ID), CU.RGS_USER_ID)         as RGS_USER_NM
+                 , COALESCE(FN_USER_NM(CU.APPROVE_USER_ID), CU.APPROVE_USER_ID) as APPROVE_USER_NM
+               </if>
+               <if test="saltText != null ">
+                 , convert_from(decrypt(decode(CU.USER_NM_KO,'hex')::bytea,#{saltText}::bytea,'aes'),'utf8') as USER_NM_KO
+                 , convert_from(decrypt(decode(CU.MOBL_NO,'hex')::bytea,#{saltText}::bytea,'aes'),'utf8')    as MOBL_NO
+                 , convert_from(decrypt(decode(CU.EMAIL,'hex')::bytea,#{saltText}::bytea,'aes'),'utf8')      as EMAIL
+                 , COALESCE(FN_USER_NM_DEC(CU.RGS_USER_ID, #{saltText}::bytea), CU.RGS_USER_ID)           as RGS_USER_NM
+                 , COALESCE(FN_USER_NM_DEC(CU.APPROVE_USER_ID, #{saltText}::bytea), CU.APPROVE_USER_ID)   as APPROVE_USER_NM
+               </if>
+                 , CU.USE_TY_CD           , fn_get_tc_code('USE_TY', CU.USE_TY_CD) USE_TY_NM
+                 , CU.OFFC_TEL_NO
+                 , CU.INSTT_CD            , fn_get_tc_code('USER_INSTT_NM', CU.INSTT_CD) as INSTT_NM
+                 , CU.DEPT_NM             , CU.RANK_NM
+                 , CU.RPSB_WORK           , CU.REMARK                   , CU.DSTRT_CD                  , DC.DSTRT_NM
+                 , GU.GRP_ID              , G.GRP_NM_KO                 , GL.AUTH_LVL_NM
+                 , CU.IP_ADRES            , CU.IP_TY_CD                 , CU.IP_CD
+                 , CU.USER_APPROVE_TY     , FN_GET_TC_CODE('USER_APPROVE_TY', CU.USER_APPROVE_TY) as USER_APPROVE_TY_NM
+                 , CU.USER_APPROVE_DT     , TO_CHAR(CU.USER_APPROVE_DT, 'YYYY-MM-DD HH24:MI:SS')  as USER_APPROVE_YMD_HMS
+                 , CU.APPROVE_USER_ID
+                 , CU.RGS_USER_ID
+              from CM_USER         CU
+         left join CM_GRP_USER     GU ON CU.USER_ID  = GU.USER_ID and cu.DSTRT_CD = gu.DSTRT_CD
+         left join CM_GROUP         G ON GU.GRP_ID   = G.GRP_ID
+         left join CM_GRP_AUTH_LVL GL ON GU.GRP_ID   = GL.GRP_ID  and GU.AUTH_LVL = GL.AUTH_LVL
+         left join CM_DSTRT_CD_MNG DC ON CU.DSTRT_CD = DC.DSTRT_CD
+             where 1 = 1
+               and CU.USER_ID != 'sys'
+               <if test="USER_ID         != null and USER_ID         != '' "> and CU.USER_ID LIKE CONCAT('%', #{USER_ID} , '%')      </if>
+               <if test="USE_TY_CD       != null and USE_TY_CD       != '' "> and CU.USE_TY_CD       = #{USE_TY_CD}                  </if>
+               <if test="DSTRT_CD        != null and DSTRT_CD        != '' "> and CU.DSTRT_CD        = #{DSTRT_CD}                   </if>
+               <if test="INSTT_CD        != null and INSTT_CD        != '' "> and CU.INSTT_CD        = #{INSTT_CD}                   </if>
+               <if test="USER_APPROVE_TY != null and USER_APPROVE_TY != '' "> and CU.USER_APPROVE_TY = #{USER_APPROVE_TY}            </if>
+               <if test="GRP_ID          != null and GRP_ID          != '' "> and CU.GRP_ID          = #{GRP_ID}                     </if>
+               ) A
+         where 1 = 1
+               <if test="USER_NM_KO      != null and USER_NM_KO      != '' "> and USER_NM_KO LIKE CONCAT('%', #{USER_NM_KO}, '%') </if>
+      order by ${sidx} ${sord}
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingBottom"/>
+    </select>
+	 -->
+
+    <select id="selectAllUserList" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectAllUserList */
+        select CU.USER_ID             , CU.PASSWORD                , CU.USER_NM_EN
+           <if test="saltText == null ">
+             , CU.USER_NM_KO
+             , CU.MOBL_NO
+             , CU.EMAIL
+             , FN_USER_NM(CU.RGS_USER_ID)     as RGS_USER_NM
+             , FN_USER_NM(CU.APPROVE_USER_ID) as APPROVE_USER_NM
+           </if>
+           <if test="saltText != null ">
+             , convert_from(decrypt(decode(CU.USER_NM_KO,'hex')::bytea,#{saltText}::bytea,'aes'),'utf8') as USER_NM_KO
+             , convert_from(decrypt(decode(CU.MOBL_NO,'hex')::bytea,#{saltText}::bytea,'aes'),'utf8')    as MOBL_NO
+             , convert_from(decrypt(decode(CU.EMAIL,'hex')::bytea,#{saltText}::bytea,'aes'),'utf8')      as EMAIL
+             , FN_USER_NM_DEC(CU.RGS_USER_ID,#{saltText}::bytea)     as RGS_USER_NM
+             , FN_USER_NM_DEC(CU.APPROVE_USER_ID,#{saltText}::bytea) as APPROVE_USER_NM
+           </if>
+             , CU.USE_TY_CD           , fn_get_tc_code('USE_TY', CU.USE_TY_CD) USE_TY_NM
+             , CU.OFFC_TEL_NO
+             , CU.INSTT_CD            , fn_get_tc_code('USER_INSTT_NM', CU.INSTT_CD) as INSTT_NM
+             , CU.DEPT_NM             , CU.RANK_NM
+             , CU.RPSB_WORK           , CU.REMARK                   , UD.DSTRT_CD                  , DC.DSTRT_NM
+             , GU.GRP_ID              , G.GRP_NM_KO                 , GL.AUTH_LVL_NM
+             , CU.IP_ADRES            , CU.IP_TY_CD                 , CU.IP_CD
+             , CU.USER_APPROVE_TY     , FN_GET_TC_CODE('USER_APPROVE_TY', CU.USER_APPROVE_TY) as USER_APPROVE_TY_NM
+             , CU.USER_APPROVE_DT     , TO_CHAR(CU.USER_APPROVE_DT, 'YYYY-MM-DD HH24:MI:SS')  as USER_APPROVE_YMD_HMS
+             , CU.APPROVE_USER_ID
+             , CU.RGS_USER_ID
+          from CM_USER         CU
+     left join CM_GRP_USER     GU ON CU.USER_ID  = GU.USER_ID
+     left join CM_GROUP         G ON GU.GRP_ID   = G.GRP_ID
+     left join CM_GRP_AUTH_LVL GL ON GU.GRP_ID   = GL.GRP_ID   and GU.AUTH_LVL = GL.AUTH_LVL
+     left join CM_USER_DSTRT   UD ON CU.USER_ID  = UD.USER_ID
+     left join CM_DSTRT_CD_MNG DC ON UD.DSTRT_CD = DC.DSTRT_CD
+      order by CU.USER_ID
+    </select>
+
+    <select id="selectUserDtl" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectUserDtl */
+        select A.USER_ID         , A.PASSWORD
+           <if test="saltText == null ">
+             , A.USER_NM_KO
+             , A.MOBL_NO
+             , A.EMAIL
+           </if>
+           <if test="saltText != null ">
+             , convert_from(decrypt(decode(A.USER_NM_KO,'hex')::bytea,#{saltText}::bytea,'aes'),'utf8') as USER_NM_KO
+             , convert_from(decrypt(decode(A.MOBL_NO,'hex')::bytea,#{saltText}::bytea,'aes'),'utf8')    as MOBL_NO
+             , convert_from(decrypt(decode(A.EMAIL,'hex')::bytea,#{saltText}::bytea,'aes'),'utf8')      as EMAIL
+           </if>
+             , A.OFFC_TEL_NO     , A.INSTT_NM        , A.INSTT_CD
+             , A.DEPT_NM         , A.RANK_NM         , A.RPSB_WORK       , A.REMARK
+             , A.IP_ADRES        , A.IP_TY_CD        , A.IP_CD           , A.GRP_ID
+             , A.GRP_NM_KO       , A.AUTH_LVL        , A.AUTH_LVL_NM
+             , A.DSTRT_CD        , A.DSTRT_NM        , A.SYS_ID          , A.SYS_NM
+             , A.USE_TY_CD       , A.USE_NM          , A.USER_NM_EN
+         from VW_USER A
+        where USER_ID = #{USER_ID}
+    </select>
+
+    <insert id="insertCmGrpUser" parameterType="java.util.HashMap">
+    /* insertCmGrpUser */
+        insert into CM_GRP_USER
+             ( DSTRT_CD        , GRP_ID      , USER_ID         , USE_TY_CD       , AUTH_LVL
+             , RGS_USER_ID     , RGS_DATE    , UPD_USER_ID     , UPD_DATE        )
+               values
+             ( #{DSTRT_CD}     , #{GRP_ID}   , #{USER_ID}      , #{USE_TY_CD}    , #{AUTH_LVL}::numeric
+             , #{RGS_USER_ID}  , NOW()       , #{UPD_USER_ID}  , NOW()           )
+    </insert>
+
+    <update id="updateCmGrpUser" parameterType="java.util.HashMap">
+    /* updateCmGrpUser */
+        update CM_GRP_USER
+           set AUTH_LVL    = #{AUTH_LVL}::numeric
+             , UPD_USER_ID = #{UPD_USER_ID}
+             , UPD_DATE    = NOW()
+         where GRP_ID  = #{GRP_ID}
+           and USER_ID = #{USER_ID}
+    </update>
+
+    <delete id="deleteUser" parameterType="java.util.HashMap">
+    /* deleteUser */
+        delete from CM_USER
+         where USER_ID = #{USER_ID}
+    </delete>
+    <!-- 
+    <delete id="deleteUser" parameterType="java.util.HashMap">
+    /* deleteUser */
+        update CM_USER
+           set USE_TY_CD = 'D'
+            , UPD_USER_ID = #{UPD_USER_ID}
+            , UPD_DATE = NOW()
+         where USER_ID = #{USER_ID}
+    </delete>
+
+    <delete id="deleteUser2" parameterType="java.util.HashMap">
+    /* deleteUser2 */
+        update CM_USER
+           set USE_TY_CD = 'D'
+            , UPD_USER_ID = #{UPD_USER_ID}
+            , UPD_DATE = NOW()
+         where USER_ID = #{USER_ID}
+    </delete>
+ -->
+    <delete id="deleteCmGrpUser" parameterType="java.util.HashMap">
+    /* deleteCmGrpUser */
+        delete from CM_GRP_USER
+        where USER_ID = #{USER_ID}
+        <if test="GRP_ID_BAK != null and GRP_ID_BAK != '' ">
+            and GRP_ID = #{GRP_ID_BAK}
+        </if>
+    </delete>
+
+	<!-- 
+    <insert id="insertUserDstrt" parameterType="java.util.HashMap">
+    /* insertUserDstrt */
+        insert into CM_USER_DSTRT
+             ( DSTRT_CD            , USER_ID            , RPRSTV_YN           , USE_TY_CD
+            , RGS_USER_ID          , RGS_DATE           , UPD_USER_ID         , UPD_DATE        )
+              values
+            ( #{DSTRT_CD}          , #{USER_ID}         , 'Y'                 , 'Y'
+            , #{RGS_USER_ID}       , NOW()          , #{RGS_USER_ID}      , NOW()        )
+    </insert>
+    
+    <insert id="deleteUserDstrt" parameterType="java.util.HashMap">
+    /* deleteUserDstrt */
+        delete from CM_USER_DSTRT
+        where USER_ID = #{USER_ID}
+        <if test="DSTRT_CD != null and DSTRT_CD != '' ">
+            and DSTRT_CD = #{DSTRT_CD}
+        </if>
+    </insert>
+	 -->
+    <select id="getDstrtCd" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+    /* getDstrtCd */
+        select DISTINCT B.DSTRT_CD
+          from CM_GRP_USER A
+          left join CM_GROUP B
+               on A.GRP_ID = B.GRP_ID
+         where USER_ID = #{USER_ID}
+    </select>
+
+    <select id="getGrpId" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+    /* getGrpId */
+        select GRP_ID
+          from CM_GRP_USER
+         where USER_ID = #{USER_ID}
+    </select>
+
+    <select id="getDstrtCdList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+    /* getDstrtCdList */
+        select DSTRT_CD
+        from CM_GROUP
+        where GRP_ID = #{GRP_ID}
+    </select>
+<!-- 
+    <insert id="insert" parameterType="java.util.HashMap">
+        insert into CM_USER(
+        USER_ID        , PASSWORD        , USER_NM_KO        , USER_NM_EN
+        , USE_TY_CD        , MOBL_NO        , EMAIL        , OFFC_TEL_NO
+        , INSTT_NM        , DEPT_NM        , RANK_NM        , RPSB_WORK
+        , IP_ADRES        , REMARK        , RGS_USER_ID        , RGS_DATE
+        , UPD_USER_ID        , UPD_DATE        , IP_TY_CD        , IP_CD
+        )VALUES(
+        #{USER_ID}        , #{PASSWORD}        , #{USER_NM_KO}        , #{USER_NM_EN}
+        , #{USE_TY_CD}        , #{MOBL_NO}        , #{EMAIL}        , #{OFFC_TEL_NO}
+        , #{INSTT_NM}        , #{DEPT_NM}        , #{RANK_NM}        , #{RPSB_WORK}
+        , #{IP_ADRES}        , #{REMARK}        , #{RGS_USER_ID}        , NOW()
+        , #{RGS_USER_ID}        , NOW()        , #{IP_TY_CD}        , #{IP_CD}
+        )
+    </insert>
+    
+    <update id="update" parameterType="java.util.HashMap">
+    /* update */
+        update CM_USER
+        set USER_NM_KO = #{USER_NM_KO}
+        <if test="PASSWORD != null and PASSWORD != '' ">
+            , PASSWORD = #{PASSWORD}
+        </if>
+        , USER_NM_EN = #{USER_NM_EN}
+        , USE_TY_CD = #{USE_TY_CD}
+        , MOBL_NO = #{MOBL_NO}
+        , EMAIL = #{EMAIL}
+        , OFFC_TEL_NO = #{OFFC_TEL_NO}
+        , INSTT_NM = #{INSTT_NM}
+        , DEPT_NM = #{DEPT_NM}
+        , RANK_NM = #{RANK_NM}
+        , IP_ADRES = #{IP_ADRES}
+        , RPSB_WORK = #{RPSB_WORK}
+        , REMARK = #{REMARK}
+        , UPD_USER_ID = #{UPD_USER_ID}
+        , UPD_DATE = NOW()
+        , IP_TY_CD = #{IP_TY_CD}
+        , IP_CD = #{IP_CD}
+        where USER_ID = #{USER_ID}
+    </update>
+ -->
+    <select id="selectUserIdCnt" parameterType="java.util.HashMap" resultType="int">
+    /* selectUserIdCnt */
+        select count(USER_ID)
+        from CM_USER
+        where DSTRT_CD = #{DSTRT_CD}
+          and USER_ID  = #{USER_ID}
+    </select>
+
+    <insert id="insertUserInfo" parameterType="java.util.HashMap">
+    /* insertUserInfo */
+        insert into CM_USER
+             ( DSTRT_CD          , USER_ID           , PASSWORD          , PLAY_PWD
+             , USER_NM_KO
+             , MOBL_NO
+             , EMAIL
+             , USER_NM_EN        , USE_TY_CD
+             , OFFC_TEL_NO       , INSTT_CD          , INSTT_NM
+             , DEPT_NM           , RANK_NM           , RPSB_WORK         , REMARK
+            <choose>
+                <when test='userApproveYn == "N"'>
+                                 , USER_APPROVE_TY   , USER_APPROVE_DT   , APPROVE_USER_ID
+                </when>
+                <otherwise>      , USER_APPROVE_TY   </otherwise>
+            </choose>
+             , IP_ADRES          , IP_TY_CD          , IP_CD
+             , RGS_USER_ID       , RGS_DATE          , UPD_USER_ID       , UPD_DATE          )
+        values
+             ( #{DSTRT_CD}       , #{USER_ID}
+            <if test="PASSWORD != null and PASSWORD != '' ">        
+                <choose>
+                    <when test='dbEncryptTag == "UCP"'> , #{PASSWORD}       </when>
+                    <when test='dbEncryptTag == "DJD"'> , #{PASSWORD}       </when>
+                    <when test='dbEncryptTag == "KSG"'> , SCP.ENC_B64('DAMO', 'SCPS','ARIA_256_FIXED_IV_CBC.SCPS', #{PASSWORD}) </when>
+                    <otherwise>                         , #{PASSWORD}                    </otherwise>
+                </choose>
+            </if>                                    , #{playPwd}
+           <if test="saltText == null ">
+            , #{USER_NM_KO}
+            , #{MOBL_NO}
+            , #{EMAIL}
+           </if>
+           <if test="saltText != null ">
+            , encode(encrypt(convert_to(#{USER_NM_KO},'utf8')::bytea,#{saltText}::bytea,'aes'),'hex')
+            , encode(encrypt(convert_to(#{MOBL_NO},'utf8')::bytea,#{saltText}::bytea,'aes'),'hex')
+            , encode(encrypt(convert_to(#{EMAIL},'utf8')::bytea,#{saltText}::bytea,'aes'),'hex')
+           </if>
+            , #{USER_NM_EN}      , #{USE_TY_CD}
+            , #{OFFC_TEL_NO}     , #{INSTT_CD}       , #{INSTT_NM}
+            , #{DEPT_NM}         , #{RANK_NM}        , #{RPSB_WORK}      , #{REMARK}
+            <choose>
+                <when test='userApproveYn == "N"'>
+                                 , '1'               , NOW()             , 'sys'
+                </when>
+                <otherwise>      , '0'               </otherwise>
+            </choose>
+            , #{IP_ADRES}        , #{IP_TY_CD}       , #{IP_CD}
+            , #{RGS_USER_ID}     , NOW()             , #{RGS_USER_ID}    , NOW()             )
+    </insert>
+
+    <update id="updateUserInfo" parameterType="java.util.HashMap">
+    /* updateUserInfo */
+        update CM_USER
+           set UPD_DATE    = NOW()
+           <if test="saltText == null ">
+             , USER_NM_KO = #{USER_NM_KO}
+             , MOBL_NO    = #{MOBL_NO}
+             , EMAIL      = #{EMAIL}
+           </if>
+           <if test="saltText != null ">
+             , USER_NM_KO = encode(encrypt(convert_to(#{USER_NM_KO},'utf8')::bytea,#{saltText}::bytea,'aes'),'hex')
+             , MOBL_NO    = encode(encrypt(convert_to(#{MOBL_NO},'utf8')::bytea,#{saltText}::bytea,'aes'),'hex')
+             , EMAIL      = encode(encrypt(convert_to(#{EMAIL},'utf8')::bytea,#{saltText}::bytea,'aes'),'hex')
+           </if>
+           <if test="PASSWORD != null and PASSWORD != '' ">
+            <choose>
+                <when test='dbEncryptTag == "KSG"'>
+                    , PASSWORD = SCP.ENC_B64('DAMO','SCPS','ARIA_256_FIXED_IV_CBC.SCPS', #{PASSWORD})
+                    , PLAY_PWD = #{playPwd}
+                </when>
+                <otherwise>
+                    , PASSWORD = #{PASSWORD}
+                    , PLAY_PWD = #{playPwd}
+                </otherwise>
+            </choose>
+           </if>
+             , USER_NM_EN  = #{USER_NM_EN}
+             , USE_TY_CD   = #{USE_TY_CD}
+             , OFFC_TEL_NO = #{OFFC_TEL_NO}
+             , INSTT_CD    = #{INSTT_CD}
+             , INSTT_NM    = #{INSTT_NM}
+             , DEPT_NM     = #{DEPT_NM}
+             , RANK_NM     = #{RANK_NM}
+             , RPSB_WORK   = #{RPSB_WORK}
+             , REMARK      = #{REMARK}
+             , IP_ADRES    = #{IP_ADRES}
+             , IP_TY_CD    = #{IP_TY_CD}
+             , IP_CD       = #{IP_CD}
+             , UPD_USER_ID = #{UPD_USER_ID}
+         where USER_ID     = #{USER_ID}
+    </update>
+    
+    <update id="updateUser" parameterType="java.util.HashMap">
+    /* updateUser */
+        update CM_USER
+           set UPD_DATE    = NOW()
+           <if test="crypto == null ">
+               <if test="USER_NM_KO != null ">  , USER_NM_KO = #{USER_NM_KO} </if>
+               <if test="MOBL_NO    != null ">  , MOBL_NO    = #{MOBL_NO}    </if>
+               <if test="EMAIL      != null ">  , EMAIL      = #{EMAIL}      </if>
+           </if>
+           <if test="crypto != null and crypto == 'ENC' ">
+               <if test="USER_NM_KO != null ">  , USER_NM_KO = encode(encrypt(convert_to(#{USER_NM_KO},'utf8')::bytea,#{saltText}::bytea,'aes'),'hex') </if>
+               <if test="MOBL_NO    != null ">  , MOBL_NO    = encode(encrypt(convert_to(#{MOBL_NO},'utf8')::bytea,#{saltText}::bytea,'aes'),'hex')    </if>
+               <if test="EMAIL      != null ">  , EMAIL      = encode(encrypt(convert_to(#{EMAIL},'utf8')::bytea,#{saltText}::bytea,'aes'),'hex')      </if>
+           </if>
+           <if test="crypto != null and crypto == 'DEC' ">
+               <if test="USER_NM_KO != null ">  , USER_NM_KO = convert_from(decrypt(decode(#{USER_NM_KO},'hex')::bytea,#{saltText}::bytea,'aes'),'utf8') </if>
+               <if test="MOBL_NO    != null ">  , MOBL_NO    = convert_from(decrypt(decode(#{MOBL_NO},'hex')::bytea,#{saltText}::bytea,'aes'),'utf8') </if>
+               <if test="EMAIL      != null ">  , EMAIL      = convert_from(decrypt(decode(#{EMAIL},'hex')::bytea,#{saltText}::bytea,'aes'),'utf8') </if>
+           </if>
+           <if test="PASSWORD != null and PASSWORD != '' ">
+            <choose>
+                <when test='dbEncryptTag == "KSG"'>
+                    , PASSWORD = SCP.ENC_B64('DAMO','SCPS','ARIA_256_FIXED_IV_CBC.SCPS', #{PASSWORD})
+                    , PLAY_PWD = #{playPwd}
+                </when>
+                <otherwise>
+                    , PASSWORD = #{PASSWORD}
+                    , PLAY_PWD = #{playPwd}
+                </otherwise>
+            </choose>
+           </if>
+           <if test="USE_TY_CD != null ">  , USE_TY_CD = #{USE_TY_CD}      </if>
+             <!-- 
+             , USER_NM_EN = #{USER_NM_EN}
+             , OFFC_TEL_NO = #{OFFC_TEL_NO}
+             , INSTT_NM = #{INSTT_NM}
+             , DEPT_NM = #{DEPT_NM}
+             , RANK_NM = #{RANK_NM}
+             , IP_ADRES = #{IP_ADRES}
+             , RPSB_WORK = #{RPSB_WORK}
+             , REMARK = #{REMARK}
+             , IP_TY_CD    = #{IP_TY_CD}
+             , IP_CD       = #{IP_CD}
+             -->
+             , UPD_USER_ID = #{UPD_USER_ID}
+         where USER_ID = #{USER_ID}
+    </update>
+
+</mapper>

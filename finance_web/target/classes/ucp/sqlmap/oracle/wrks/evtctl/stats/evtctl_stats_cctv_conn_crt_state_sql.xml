@@ -1,0 +1,1112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.co.ucp.wrks.evtctl.stats.service.CctvConnCrtStateMapper">
+
+	<select id="getYearList" resultType="java.util.HashMap">
+		select YYYY
+		  from (select DISTINCT DATE_FORMAT(CONN_DATE, '%Y') as YYYY from UM_CCTV_VIEW_LOG) A
+		order by YYYY DESC
+	</select>
+
+	<select id="getEventList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+		select EVT_ID
+			 , EVT_NM
+			 , SYS_CD
+		  from (
+				select '119UC001' as EVT_ID, '119긴급출동지원' as EVT_NM, '119' as SYS_CD, 1 as NO
+				 from DUAL
+				union all
+				select '112UC001' as EVT_ID, '112센터긴급영상지원' as EVT_NM, '112' as SYS_CD, 2 as NO
+				 from DUAL
+				union all
+				select 'WPSSF110' as EVT_ID, '사회적약자지원' as EVT_NM, 'WPS' as SYS_CD, 3 as NO
+				 from DUAL
+				union all
+				select '119UC001' as EVT_ID, '재난긴급지원' as EVT_NM, 'DUC' as SYS_CD, 4 as NO
+				 from DUAL
+			   ) A
+		 where 1 = 1
+		 order by A.NO
+	</select>
+
+	<select id="getMonthTypeList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+		select A.*
+			 , (select COUNT(*)
+				  from (
+						select EVT_OCR_ITEM_DTL
+						  from (
+								select DATE_FORMAT(A.CONN_DATE, '%m') as MON
+									 , CASE WHEN B.EVT_ID_SUB_CD IS NULL THEN '기타' ELSE B.EVT_ID_SUB_CD END as EVT_OCR_ITEM_DTL
+                                     , COUNT(FCLT_ID) as CONN_CNT
+									 , CASE WHEN B.EVT_ID_SUB_CD = '기타' THEN 99 ELSE 1 END as SEQ
+								  from UM_CCTV_VIEW_LOG A
+									 , CM_EVT_OCR B
+								 where A.EVT_OCR_NO = B.EVT_OCR_NO
+								<choose>
+								<when test="searchSysCd == 'DUC' ">
+
+								</when>
+								<otherwise>
+								   and B.EVT_ID IN (select EVT_ID from CM_EVENT where SYS_CD = #{searchSysCd})
+								</otherwise>
+								</choose>
+								   and A.USER_ID IN ( select USER_ID from CM_GRP_USER where GRP_ID LIKE #{searchSysCd} || '%' and USER_ID NOT IN (select CD_ID from CM_TC_CODE where CD_GRP_ID = 'TEST_ID' and USE_TY_CD = 'Y' and CD_TY = 'C') ) 
+								   and A.CONN_DATE between DATE_FORMAT(#{searchYear}||'0101000000', 'YYYYMMDDHH24MISS') and DATE_FORMAT(#{searchYear}||'1231235959', 'YYYYMMDDHH24MISS')
+								group by DATE_FORMAT(CONN_DATE,'%m'), B.EVT_ID_SUB_CD
+							   )
+						 where EVT_OCR_ITEM_DTL IS NOT NULL
+						group by EVT_OCR_ITEM_DTL
+					   )
+			   ) ROWCNT
+		  from (
+				select ROW_NUMBER() OVER(order by SUM(SEQ) asc) as RK
+					 , EVT_OCR_ITEM_DTL
+					 , SUM(DECODE(MON,'01', CONN_CNT, 0)) as M_01
+					 , SUM(DECODE(MON,'02', CONN_CNT, 0)) as M_02
+					 , SUM(DECODE(MON,'03', CONN_CNT, 0)) as M_03
+					 , SUM(DECODE(MON,'04', CONN_CNT, 0)) as M_04
+					 , SUM(DECODE(MON,'05', CONN_CNT, 0)) as M_05
+					 , SUM(DECODE(MON,'06', CONN_CNT, 0)) as M_06
+					 , SUM(DECODE(MON,'07', CONN_CNT, 0)) as M_07
+					 , SUM(DECODE(MON,'08', CONN_CNT, 0)) as M_08
+					 , SUM(DECODE(MON,'09', CONN_CNT, 0)) as M_09
+					 , SUM(DECODE(MON,'10', CONN_CNT, 0)) as M_10
+					 , SUM(DECODE(MON,'11', CONN_CNT, 0)) as M_11
+					 , SUM(DECODE(MON,'12', CONN_CNT, 0)) as M_12
+				  from (
+						select DATE_FORMAT(A.CONN_DATE,'%m')  as MON
+							 , CASE WHEN B.EVT_ID_SUB_CD IS NULL THEN '기타' ELSE B.EVT_ID_SUB_CD END as EVT_OCR_ITEM_DTL
+							 , COUNT(FCLT_ID) as CONN_CNT
+							 , CASE WHEN B.EVT_ID_SUB_CD = '기타' THEN 99 ELSE 1 END as SEQ
+						  from UM_CCTV_VIEW_LOG A
+							 , CM_EVT_OCR B
+						 where A.EVT_OCR_NO = B.EVT_OCR_NO
+						<choose>
+						<when test="searchSysCd == 'DUC' ">
+						   /* and B.EVT_ID IN (select EVT_ID from CM_EVENT where SYS_CD IN ('119', '112')) */
+						</when>
+						<otherwise>
+						   and B.EVT_ID IN (select EVT_ID from CM_EVENT where SYS_CD = #{searchSysCd})
+						</otherwise>
+						</choose>
+						   and A.USER_ID IN ( select USER_ID from CM_GRP_USER where GRP_ID LIKE #{searchSysCd} || '%' and USER_ID NOT IN (select CD_ID from CM_TC_CODE where CD_GRP_ID = 'TEST_ID' and USE_TY_CD = 'Y' and CD_TY = 'C') ) 
+						   and A.CONN_DATE between DATE_FORMAT(#{searchYear}||'0101000000', '%Y-%m-%d%Y %H:%i:%s') and DATE_FORMAT(#{searchYear}||'1231235959', '%Y-%m-%d%Y %H:%i:%s')
+						group by DATE_FORMAT(CONN_DATE,'%m'), B.EVT_ID_SUB_CD
+					   )
+				 where EVT_OCR_ITEM_DTL IS NOT NULL
+				group by EVT_OCR_ITEM_DTL
+			   ) A
+			 OFFSET ((#{pageNo}::integer - 1) * #{rowsPerPage}::integer)
+			 LIMIT #{rowsPerPage}::integer
+	</select>
+
+	<select id="getMonthTypeList_back" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+		select A.*
+			 , (select COUNT(*)
+				  from (
+						select EVT_OCR_ITEM_DTL
+						  from (
+								select TO_CHAR(A.CONN_DATE,'MM')  as MON
+									 , NVL(B.EVT_ID_SUB_CD, '기타') as EVT_OCR_ITEM_DTL
+									 , COUNT(FCLT_ID) as CONN_CNT
+									 , DECODE(B.EVT_ID_SUB_CD, '기타', 99, 1) as SEQ
+								  from UM_CCTV_VIEW_LOG A
+									 , CM_EVT_OCR B
+								 where A.EVT_OCR_NO = B.EVT_OCR_NO
+								<choose>
+								<when test="searchSysCd == 'DUC' ">
+								   -- and B.EVT_ID IN (select EVT_ID from CM_EVENT where SYS_CD IN ('119', '112'))
+								</when>
+								<otherwise>
+								   and B.EVT_ID IN (select EVT_ID from CM_EVENT where SYS_CD = #{searchSysCd})
+								</otherwise>
+								</choose>
+								   and A.USER_ID IN ( select USER_ID from CM_GRP_USER where GRP_ID LIKE #{searchSysCd} || '%' and USER_ID NOT IN (select CD_ID from CM_TC_CODE where CD_GRP_ID = 'TEST_ID' and USE_TY_CD = 'Y' and CD_TY = 'C') ) 
+								   and A.CONN_DATE between TO_DATE(#{searchYear}||'0101000000', 'YYYYMMDDHH24MISS') and TO_DATE(#{searchYear}||'1231235959', 'YYYYMMDDHH24MISS')
+								group by TO_CHAR(CONN_DATE,'MM'), B.EVT_ID_SUB_CD
+							   )
+						 where EVT_OCR_ITEM_DTL IS NOT NULL
+						group by EVT_OCR_ITEM_DTL
+					   )
+			   ) ROWCNT
+		  from (
+				select ROW_NUMBER() OVER(order by SUM(SEQ) asc) as RK
+					 , EVT_OCR_ITEM_DTL
+					 , SUM(DECODE(MON,'01', CONN_CNT, 0)) as M_01
+					 , SUM(DECODE(MON,'02', CONN_CNT, 0)) as M_02
+					 , SUM(DECODE(MON,'03', CONN_CNT, 0)) as M_03
+					 , SUM(DECODE(MON,'04', CONN_CNT, 0)) as M_04
+					 , SUM(DECODE(MON,'05', CONN_CNT, 0)) as M_05
+					 , SUM(DECODE(MON,'06', CONN_CNT, 0)) as M_06
+					 , SUM(DECODE(MON,'07', CONN_CNT, 0)) as M_07
+					 , SUM(DECODE(MON,'08', CONN_CNT, 0)) as M_08
+					 , SUM(DECODE(MON,'09', CONN_CNT, 0)) as M_09
+					 , SUM(DECODE(MON,'10', CONN_CNT, 0)) as M_10
+					 , SUM(DECODE(MON,'11', CONN_CNT, 0)) as M_11
+					 , SUM(DECODE(MON,'12', CONN_CNT, 0)) as M_12
+				  from (
+						select TO_CHAR(A.CONN_DATE,'MM')  as MON
+							 , NVL(B.EVT_ID_SUB_CD, '기타') as EVT_OCR_ITEM_DTL
+							 , COUNT(FCLT_ID) as CONN_CNT
+							 , DECODE(B.EVT_ID_SUB_CD, '기타', 99, 1) as SEQ
+						  from UM_CCTV_VIEW_LOG A
+							 , CM_EVT_OCR B
+						 where A.EVT_OCR_NO = B.EVT_OCR_NO
+						<choose>
+						<when test="searchSysCd == 'DUC' ">
+						   -- and B.EVT_ID IN (select EVT_ID from CM_EVENT where SYS_CD IN ('119', '112'))
+						</when>
+						<otherwise>
+						   and B.EVT_ID IN (select EVT_ID from CM_EVENT where SYS_CD = #{searchSysCd})
+						</otherwise>
+						</choose>
+						   and A.USER_ID IN ( select USER_ID from CM_GRP_USER where GRP_ID LIKE #{searchSysCd} || '%' and USER_ID NOT IN (select CD_ID from CM_TC_CODE where CD_GRP_ID = 'TEST_ID' and USE_TY_CD = 'Y' and CD_TY = 'C') ) 
+						   and A.CONN_DATE between TO_DATE(#{searchYear}||'0101000000', 'YYYYMMDDHH24MISS') and TO_DATE(#{searchYear}||'1231235959', 'YYYYMMDDHH24MISS')
+						group by TO_CHAR(CONN_DATE,'MM'), B.EVT_ID_SUB_CD
+					   )
+				 where EVT_OCR_ITEM_DTL IS NOT NULL
+				group by EVT_OCR_ITEM_DTL
+			   ) A
+	<![CDATA[
+		 where A.RK >= ((TO_NUMBER(#{pageNo}) - 1) * TO_NUMBER(#{rowsPerPage})) + 1
+		   and A.RK <= (TO_NUMBER(#{pageNo}) * TO_NUMBER(#{rowsPerPage}))
+	]]>
+	</select>
+
+	<select id="getMonthTypeExcel" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+		select EVT_OCR_ITEM_DTL
+			 , M_01, M_02, M_03, M_04, M_05, M_06
+			 , M_07, M_08, M_09, M_10, M_11, M_12
+		  from (
+				select NVL(EVT_OCR_ITEM_DTL, '합계') as EVT_OCR_ITEM_DTL
+					 , TO_CHAR(SUM(M_01), 'fm999,999,999,999,990') as M_01
+					 , TO_CHAR(SUM(M_02), 'fm999,999,999,999,990') as M_02
+					 , TO_CHAR(SUM(M_03), 'fm999,999,999,999,990') as M_03
+					 , TO_CHAR(SUM(M_04), 'fm999,999,999,999,990') as M_04
+					 , TO_CHAR(SUM(M_05), 'fm999,999,999,999,990') as M_05
+					 , TO_CHAR(SUM(M_06), 'fm999,999,999,999,990') as M_06
+					 , TO_CHAR(SUM(M_07), 'fm999,999,999,999,990') as M_07
+					 , TO_CHAR(SUM(M_08), 'fm999,999,999,999,990') as M_08
+					 , TO_CHAR(SUM(M_09), 'fm999,999,999,999,990') as M_09
+					 , TO_CHAR(SUM(M_10), 'fm999,999,999,999,990') as M_10
+					 , TO_CHAR(SUM(M_11), 'fm999,999,999,999,990') as M_11
+					 , TO_CHAR(SUM(M_12), 'fm999,999,999,999,990') as M_12
+					 , DECODE(EVT_OCR_ITEM_DTL, '', 0, 1) as NO
+				  from (
+						select EVT_OCR_ITEM_DTL
+							 , SUM(DECODE(MON,'01', CONN_CNT, 0)) as M_01
+							 , SUM(DECODE(MON,'02', CONN_CNT, 0)) as M_02
+							 , SUM(DECODE(MON,'03', CONN_CNT, 0)) as M_03
+							 , SUM(DECODE(MON,'04', CONN_CNT, 0)) as M_04
+							 , SUM(DECODE(MON,'05', CONN_CNT, 0)) as M_05
+							 , SUM(DECODE(MON,'06', CONN_CNT, 0)) as M_06
+							 , SUM(DECODE(MON,'07', CONN_CNT, 0)) as M_07
+							 , SUM(DECODE(MON,'08', CONN_CNT, 0)) as M_08
+							 , SUM(DECODE(MON,'09', CONN_CNT, 0)) as M_09
+							 , SUM(DECODE(MON,'10', CONN_CNT, 0)) as M_10
+							 , SUM(DECODE(MON,'11', CONN_CNT, 0)) as M_11
+							 , SUM(DECODE(MON,'12', CONN_CNT, 0)) as M_12
+							 , SUM(SEQ) as SEQ
+						  from (
+								select TO_CHAR(A.CONN_DATE,'MM')  as MON
+									 , NVL(B.EVT_ID_SUB_CD, '기타') as EVT_OCR_ITEM_DTL
+									 , COUNT(FCLT_ID) as CONN_CNT
+									 , DECODE(B.EVT_ID_SUB_CD, '기타', 99, 1) as SEQ
+								  from UM_CCTV_VIEW_LOG A
+									 , CM_EVT_OCR B
+								 where A.EVT_OCR_NO = B.EVT_OCR_NO
+								<choose>
+								<when test="searchSysCd == 'DUC' ">
+								   -- and B.EVT_ID IN (select EVT_ID from CM_EVENT where SYS_CD IN ('119', '112'))
+								</when>
+								<otherwise>
+								   and B.EVT_ID IN (select EVT_ID from CM_EVENT where SYS_CD = #{searchSysCd})
+								</otherwise>
+								</choose>
+								   and A.USER_ID IN ( select USER_ID from CM_GRP_USER where GRP_ID LIKE #{searchSysCd} || '%' and USER_ID NOT IN (select CD_ID from CM_TC_CODE where CD_GRP_ID = 'TEST_ID' and USE_TY_CD = 'Y' and CD_TY = 'C') ) 
+								   and A.CONN_DATE between TO_DATE(#{searchYear}||'0101000000', 'YYYYMMDDHH24MISS') and TO_DATE(#{searchYear}||'1231235959', 'YYYYMMDDHH24MISS')
+								group by TO_CHAR(CONN_DATE,'MM'), B.EVT_ID_SUB_CD
+							   )
+						 where EVT_OCR_ITEM_DTL IS NOT NULL
+						group by EVT_OCR_ITEM_DTL
+					   )
+				group by ROLLUP(EVT_OCR_ITEM_DTL)
+			   )
+		order by NO DESC
+	</select>
+
+	<select id="getMonthUserList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+		select A.*
+			 , (select COUNT(*)
+				  from (
+						select USER_ID
+						  from (
+								select TO_CHAR(A.CONN_DATE,'MM')  as MON
+									 , A.USER_ID
+									 , COUNT(FCLT_ID) as CONN_CNT
+								  from UM_CCTV_VIEW_LOG A
+									 , CM_EVT_OCR B
+								 where A.EVT_OCR_NO = B.EVT_OCR_NO
+								<choose>
+								<when test="searchSysCd == 'DUC' ">
+								   -- and B.EVT_ID IN (select EVT_ID from CM_EVENT where SYS_CD IN ('119', '112'))
+								</when>
+								<otherwise>
+								   and B.EVT_ID IN (select EVT_ID from CM_EVENT where SYS_CD = #{searchSysCd})
+								</otherwise>
+								</choose>
+								   and A.USER_ID IN ( select USER_ID from CM_GRP_USER where GRP_ID LIKE #{searchSysCd} || '%' and USER_ID NOT IN (select CD_ID from CM_TC_CODE where CD_GRP_ID = 'TEST_ID' and USE_TY_CD = 'Y' and CD_TY = 'C') )
+								   and A.CONN_DATE between TO_DATE(#{searchYear}||'0101000000', 'YYYYMMDDHH24MISS') and TO_DATE(#{searchYear}||'1231235959', 'YYYYMMDDHH24MISS')
+								group by TO_CHAR(CONN_DATE,'MM'), A.USER_ID
+							   ) M
+						group by USER_ID
+					   )
+			   ) ROWCNT
+		  from (
+				select ROW_NUMBER() OVER(order by USER_ID asc) as RK
+					 , USER_ID
+					 , (select USER_NM_KO from CM_USER U where U.USER_ID = M.USER_ID) as USER_NM
+					 , SUM(DECODE(MON,'01', CONN_CNT, 0)) as M_01
+					 , SUM(DECODE(MON,'02', CONN_CNT, 0)) as M_02
+					 , SUM(DECODE(MON,'03', CONN_CNT, 0)) as M_03
+					 , SUM(DECODE(MON,'04', CONN_CNT, 0)) as M_04
+					 , SUM(DECODE(MON,'05', CONN_CNT, 0)) as M_05
+					 , SUM(DECODE(MON,'06', CONN_CNT, 0)) as M_06
+					 , SUM(DECODE(MON,'07', CONN_CNT, 0)) as M_07
+					 , SUM(DECODE(MON,'08', CONN_CNT, 0)) as M_08
+					 , SUM(DECODE(MON,'09', CONN_CNT, 0)) as M_09
+					 , SUM(DECODE(MON,'10', CONN_CNT, 0)) as M_10
+					 , SUM(DECODE(MON,'11', CONN_CNT, 0)) as M_11
+					 , SUM(DECODE(MON,'12', CONN_CNT, 0)) as M_12
+				  from (
+						select TO_CHAR(A.CONN_DATE,'MM')  as MON
+							 , A.USER_ID
+							 , COUNT(FCLT_ID) as CONN_CNT
+						  from UM_CCTV_VIEW_LOG A
+							 , CM_EVT_OCR B
+						 where A.EVT_OCR_NO = B.EVT_OCR_NO
+						<choose>
+						<when test="searchSysCd == 'DUC' ">
+						   -- and B.EVT_ID IN (select EVT_ID from CM_EVENT where SYS_CD IN ('119', '112'))
+						</when>
+						<otherwise>
+						   and B.EVT_ID IN (select EVT_ID from CM_EVENT where SYS_CD = #{searchSysCd})
+						</otherwise>
+						</choose>
+						   and A.USER_ID IN ( select USER_ID from CM_GRP_USER where GRP_ID LIKE #{searchSysCd} || '%' and USER_ID NOT IN (select CD_ID from CM_TC_CODE where CD_GRP_ID = 'TEST_ID' and USE_TY_CD = 'Y' and CD_TY = 'C') )
+						   and A.CONN_DATE between TO_DATE(#{searchYear}||'0101000000', 'YYYYMMDDHH24MISS') and TO_DATE(#{searchYear}||'1231235959', 'YYYYMMDDHH24MISS')
+						group by TO_CHAR(CONN_DATE,'MM'), A.USER_ID
+					   ) M
+				group by USER_ID
+			   ) A
+	<![CDATA[
+		 where A.RK >= ((TO_NUMBER(#{pageNo}) - 1) * TO_NUMBER(#{rowsPerPage})) + 1
+		   and A.RK <= (TO_NUMBER(#{pageNo}) * TO_NUMBER(#{rowsPerPage}))
+	]]>
+	</select>
+
+	<select id="getMonthUserExcel" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+		select NVL(USER_NM, '합계') as USER_NM
+			 , TO_CHAR(SUM(M_01), 'fm999,999,999,999,990') as M_01
+			 , TO_CHAR(SUM(M_02), 'fm999,999,999,999,990') as M_02
+			 , TO_CHAR(SUM(M_03), 'fm999,999,999,999,990') as M_03
+			 , TO_CHAR(SUM(M_04), 'fm999,999,999,999,990') as M_04
+			 , TO_CHAR(SUM(M_05), 'fm999,999,999,999,990') as M_05
+			 , TO_CHAR(SUM(M_06), 'fm999,999,999,999,990') as M_06
+			 , TO_CHAR(SUM(M_07), 'fm999,999,999,999,990') as M_07
+			 , TO_CHAR(SUM(M_08), 'fm999,999,999,999,990') as M_08
+			 , TO_CHAR(SUM(M_09), 'fm999,999,999,999,990') as M_09
+			 , TO_CHAR(SUM(M_10), 'fm999,999,999,999,990') as M_10
+			 , TO_CHAR(SUM(M_11), 'fm999,999,999,999,990') as M_11
+			 , TO_CHAR(SUM(M_12), 'fm999,999,999,999,990') as M_12
+		  from (
+				select ROW_NUMBER() OVER(order by USER_ID asc) as RK
+					 , USER_ID
+					 , NVL((select USER_NM_KO from CM_USER U where U.USER_ID = M.USER_ID), USER_ID) as USER_NM
+					 , SUM(DECODE(MON,'01', CONN_CNT, 0)) as M_01
+					 , SUM(DECODE(MON,'02', CONN_CNT, 0)) as M_02
+					 , SUM(DECODE(MON,'03', CONN_CNT, 0)) as M_03
+					 , SUM(DECODE(MON,'04', CONN_CNT, 0)) as M_04
+					 , SUM(DECODE(MON,'05', CONN_CNT, 0)) as M_05
+					 , SUM(DECODE(MON,'06', CONN_CNT, 0)) as M_06
+					 , SUM(DECODE(MON,'07', CONN_CNT, 0)) as M_07
+					 , SUM(DECODE(MON,'08', CONN_CNT, 0)) as M_08
+					 , SUM(DECODE(MON,'09', CONN_CNT, 0)) as M_09
+					 , SUM(DECODE(MON,'10', CONN_CNT, 0)) as M_10
+					 , SUM(DECODE(MON,'11', CONN_CNT, 0)) as M_11
+					 , SUM(DECODE(MON,'12', CONN_CNT, 0)) as M_12
+				  from (
+						select TO_CHAR(A.CONN_DATE,'MM')  as MON
+							 , A.USER_ID
+							 , COUNT(FCLT_ID) as CONN_CNT
+						  from UM_CCTV_VIEW_LOG A
+							 , CM_EVT_OCR B
+						 where A.EVT_OCR_NO = B.EVT_OCR_NO
+						<choose>
+						<when test="searchSysCd == 'DUC' ">
+						   -- and B.EVT_ID IN (select EVT_ID from CM_EVENT where SYS_CD IN ('119', '112'))
+						</when>
+						<otherwise>
+						   and B.EVT_ID IN (select EVT_ID from CM_EVENT where SYS_CD = #{searchSysCd})
+						</otherwise>
+						</choose>
+						   and A.USER_ID IN ( select USER_ID from CM_GRP_USER where GRP_ID LIKE #{searchSysCd} || '%' and USER_ID NOT IN (select CD_ID from CM_TC_CODE where CD_GRP_ID = 'TEST_ID' and USE_TY_CD = 'Y' and CD_TY = 'C') )
+						   and A.CONN_DATE between TO_DATE(#{searchYear}||'0101000000', 'YYYYMMDDHH24MISS') and TO_DATE(#{searchYear}||'1231235959', 'YYYYMMDDHH24MISS')
+						group by TO_CHAR(CONN_DATE,'MM'), A.USER_ID
+					   ) M
+				group by USER_ID
+			   ) A
+	<![CDATA[
+		 where A.RK >= ((TO_NUMBER(#{pageNo}) - 1) * TO_NUMBER(#{rowsPerPage})) + 1
+		   and A.RK <= (TO_NUMBER(#{pageNo}) * TO_NUMBER(#{rowsPerPage}))
+	]]>
+		group by ROLLUP(USER_NM)
+	</select>
+
+	<select id="getTearmTypeList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+		select A.*
+			 , (select COUNT(*)
+				  from (
+						select EVT_OCR_ITEM_DTL
+						  from (
+								select EVT_OCR_ITEM_DTL
+									 , DECODE(LEV, '1', SUM(CNT)) as TOT_EVT_CNT
+									 , DECODE(LEV, '2', SUM(CNT)) as CONN_EVT_CNT
+									 , DECODE(LEV, '3', SUM(CNT)) as CCTV_CONN_CNT
+									 , DECODE(LEV, '4', SUM(CNT)) as PTZ_CONN_CNT
+								  from (
+										select EVT_OCR_ITEM_DTL, COUNT(*) as CNT, '1' as LEV
+										  from (
+												select O.EVT_OCR_NO, I.EVT_ID_SUB_CD as EVT_OCR_ITEM_DTL
+												  from CM_EVT_OCR_ACTION O, CM_EVT_OCR I
+												 where O.EVT_OCR_NO = I.EVT_OCR_NO
+												   and O.EVT_PRGRS_CD = '10'
+												   and O.UPD_DATE between TO_DATE(#{searchStartDate} || '000000', 'YYYYMMDDHH24MISS') and TO_DATE(#{searchEndDate} || '235959', 'YYYYMMDDHH24MISS')
+												   and O.ACTION_USER_ID IN (select USER_ID from CM_GRP_USER where GRP_ID LIKE #{searchSysCd} || '%' and USER_ID NOT IN (select CD_ID from CM_TC_CODE where CD_GRP_ID = 'TEST_ID' and USE_TY_CD = 'Y' and CD_TY = 'C')) 
+											   )
+										group by EVT_OCR_ITEM_DTL
+										union all
+										select EVT_OCR_ITEM_DTL, COUNT(*) as CNT, '2' as LEV
+										  from (
+												select DISTINCT V.EVT_OCR_NO, I.EVT_ID_SUB_CD as EVT_OCR_ITEM_DTL
+												  from UM_CCTV_VIEW_LOG V, CM_EVT_OCR I
+												 where V.EVT_OCR_NO = I.EVT_OCR_NO
+												   and V.USER_ID IN (select USER_ID from CM_GRP_USER where GRP_ID LIKE #{searchSysCd} || '%' and USER_ID NOT IN (select CD_ID from CM_TC_CODE where CD_GRP_ID = 'TEST_ID' and USE_TY_CD = 'Y' and CD_TY = 'C'))
+												   and V.CONN_DATE between TO_DATE(#{searchStartDate} || '000000', 'YYYYMMDDHH24MISS') and TO_DATE(#{searchEndDate} || '235959', 'YYYYMMDDHH24MISS')
+											   )
+										group by EVT_OCR_ITEM_DTL
+										union all
+										select EVT_OCR_ITEM_DTL, COUNT(*) as CNT, '3' as LEV
+										  from (
+												select V.EVT_OCR_NO, I.EVT_ID_SUB_CD as EVT_OCR_ITEM_DTL
+												  from UM_CCTV_VIEW_LOG V, CM_EVT_OCR I
+												 where V.EVT_OCR_NO = I.EVT_OCR_NO
+												   and V.USER_ID IN (select USER_ID from CM_GRP_USER where GRP_ID LIKE #{searchSysCd} || '%' and USER_ID NOT IN (select CD_ID from CM_TC_CODE where CD_GRP_ID = 'TEST_ID' and USE_TY_CD = 'Y' and CD_TY = 'C'))
+												   and V.CONN_DATE between TO_DATE(#{searchStartDate} || '000000', 'YYYYMMDDHH24MISS') and TO_DATE(#{searchEndDate} || '235959', 'YYYYMMDDHH24MISS')
+											   )
+										group by EVT_OCR_ITEM_DTL
+										union all
+										select EVT_OCR_ITEM_DTL, COUNT(*) as CNT, '4' as LEV
+										  from (
+												select P.EVT_OCR_NO, I.EVT_ID_SUB_CD as EVT_OCR_ITEM_DTL
+												  from UM_CCTV_PTZ_LOG P, CM_EVT_OCR I
+												 where P.EVT_OCR_NO = I.EVT_OCR_NO
+												   and P.USER_ID IN (select USER_ID from CM_GRP_USER where GRP_ID LIKE #{searchSysCd} || '%' and USER_ID NOT IN (select CD_ID from CM_TC_CODE where CD_GRP_ID = 'TEST_ID' and USE_TY_CD = 'Y' and CD_TY = 'C'))
+												   and P.PTZ_DATE between TO_DATE(#{searchStartDate} || '000000', 'YYYYMMDDHH24MISS') and TO_DATE(#{searchEndDate} || '235959', 'YYYYMMDDHH24MISS')
+											   )
+										group by EVT_OCR_ITEM_DTL
+									   )
+								group by EVT_OCR_ITEM_DTL, LEV
+							   )
+						group by EVT_OCR_ITEM_DTL
+					   )
+			   ) ROWCNT
+		  from (
+				select ROW_NUMBER() OVER (order by ${sidx} ${sord}) RK
+					 , EVT_OCR_ITEM_DTL
+					 , NVL(SUM(TOT_EVT_CNT), 0) as TOT_EVT_CNT
+					 , NVL(SUM(CONN_EVT_CNT), 0) as CONN_EVT_CNT
+					 , NVL(SUM(CCTV_CONN_CNT), 0) as CCTV_CONN_CNT
+					 , NVL(SUM(PTZ_CONN_CNT), 0) as PTZ_CONN_CNT
+				  from (
+						select EVT_OCR_ITEM_DTL
+							 , DECODE(LEV, '1', SUM(CNT)) as TOT_EVT_CNT
+							 , DECODE(LEV, '2', SUM(CNT)) as CONN_EVT_CNT
+							 , DECODE(LEV, '3', SUM(CNT)) as CCTV_CONN_CNT
+							 , DECODE(LEV, '4', SUM(CNT)) as PTZ_CONN_CNT
+						  from (
+								select EVT_OCR_ITEM_DTL, COUNT(*) as CNT, '1' as LEV
+								  from (
+										select O.EVT_OCR_NO, I.EVT_ID_SUB_CD as EVT_OCR_ITEM_DTL
+										  from CM_EVT_OCR_ACTION O, CM_EVT_OCR I
+										 where O.EVT_OCR_NO = I.EVT_OCR_NO
+										   and O.EVT_PRGRS_CD = '10'
+										   and O.UPD_DATE between TO_DATE(#{searchStartDate} || '000000', 'YYYYMMDDHH24MISS') and TO_DATE(#{searchEndDate} || '235959', 'YYYYMMDDHH24MISS')
+										   and O.ACTION_USER_ID IN (select USER_ID from CM_GRP_USER where GRP_ID LIKE #{searchSysCd} || '%' and USER_ID NOT IN (select CD_ID from CM_TC_CODE where CD_GRP_ID = 'TEST_ID' and USE_TY_CD = 'Y' and CD_TY = 'C')) 
+									   )
+								group by EVT_OCR_ITEM_DTL
+								union all
+								select EVT_OCR_ITEM_DTL, COUNT(*) as CNT, '2' as LEV
+								  from (
+										select DISTINCT V.EVT_OCR_NO, I.EVT_ID_SUB_CD as EVT_OCR_ITEM_DTL
+										  from UM_CCTV_VIEW_LOG V, CM_EVT_OCR I
+										 where V.EVT_OCR_NO = I.EVT_OCR_NO
+										   and V.USER_ID IN (select USER_ID from CM_GRP_USER where GRP_ID LIKE #{searchSysCd} || '%' and USER_ID NOT IN (select CD_ID from CM_TC_CODE where CD_GRP_ID = 'TEST_ID' and USE_TY_CD = 'Y' and CD_TY = 'C'))
+										   and V.CONN_DATE between TO_DATE(#{searchStartDate} || '000000', 'YYYYMMDDHH24MISS') and TO_DATE(#{searchEndDate} || '235959', 'YYYYMMDDHH24MISS')
+									   )
+								group by EVT_OCR_ITEM_DTL
+								union all
+								select EVT_OCR_ITEM_DTL, COUNT(*) as CNT, '3' as LEV
+								  from (
+										select V.EVT_OCR_NO, I.EVT_ID_SUB_CD as EVT_OCR_ITEM_DTL
+										  from UM_CCTV_VIEW_LOG V, CM_EVT_OCR I
+										 where V.EVT_OCR_NO = I.EVT_OCR_NO
+										   and V.USER_ID IN (select USER_ID from CM_GRP_USER where GRP_ID LIKE #{searchSysCd} || '%' and USER_ID NOT IN (select CD_ID from CM_TC_CODE where CD_GRP_ID = 'TEST_ID' and USE_TY_CD = 'Y' and CD_TY = 'C'))
+										   and V.CONN_DATE between TO_DATE(#{searchStartDate} || '000000', 'YYYYMMDDHH24MISS') and TO_DATE(#{searchEndDate} || '235959', 'YYYYMMDDHH24MISS')
+									   )
+								group by EVT_OCR_ITEM_DTL
+								union all
+								select EVT_OCR_ITEM_DTL, COUNT(*) as CNT, '4' as LEV
+								  from (
+										select P.EVT_OCR_NO, I.EVT_ID_SUB_CD as EVT_OCR_ITEM_DTL
+										  from UM_CCTV_PTZ_LOG P, CM_EVT_OCR I
+										 where P.EVT_OCR_NO = I.EVT_OCR_NO
+										   and P.USER_ID IN (select USER_ID from CM_GRP_USER where GRP_ID LIKE #{searchSysCd} || '%' and USER_ID NOT IN (select CD_ID from CM_TC_CODE where CD_GRP_ID = 'TEST_ID' and USE_TY_CD = 'Y' and CD_TY = 'C'))
+										   and P.PTZ_DATE between TO_DATE(#{searchStartDate} || '000000', 'YYYYMMDDHH24MISS') and TO_DATE(#{searchEndDate} || '235959', 'YYYYMMDDHH24MISS')
+									   )
+								group by EVT_OCR_ITEM_DTL
+							   )
+						group by EVT_OCR_ITEM_DTL, LEV
+					   )
+				group by EVT_OCR_ITEM_DTL
+			   ) A
+	<![CDATA[
+		 where A.RK >= ((TO_NUMBER(#{pageNo}) - 1) * TO_NUMBER(#{rowsPerPage})) + 1
+		   and A.RK <= (TO_NUMBER(#{pageNo}) * TO_NUMBER(#{rowsPerPage}))
+	]]>
+	</select>
+
+	<select id="getTearmTypeExcel" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+		select NVL(EVT_OCR_ITEM_DTL, '합계') as EVT_OCR_ITEM_DTL
+			 , TO_CHAR(NVL(SUM(TOT_EVT_CNT), 0), 'fm999,999,999,999,990') as TOT_EVT_CNT
+			 , TO_CHAR(NVL(SUM(CONN_EVT_CNT), 0), 'fm999,999,999,999,990') as CONN_EVT_CNT
+			 , TO_CHAR(NVL(SUM(CCTV_CONN_CNT), 0), 'fm999,999,999,999,990') as CCTV_CONN_CNT
+			 , TO_CHAR(NVL(SUM(PTZ_CONN_CNT), 0), 'fm999,999,999,999,990') as PTZ_CONN_CNT
+		  from (
+				select EVT_OCR_ITEM_DTL
+					 , DECODE(LEV, '1', SUM(CNT)) as TOT_EVT_CNT
+					 , DECODE(LEV, '2', SUM(CNT)) as CONN_EVT_CNT
+					 , DECODE(LEV, '3', SUM(CNT)) as CCTV_CONN_CNT
+					 , DECODE(LEV, '4', SUM(CNT)) as PTZ_CONN_CNT
+				  from (
+						select EVT_OCR_ITEM_DTL, COUNT(*) as CNT, '1' as LEV
+						  from (
+								select O.EVT_OCR_NO, I.EVT_ID_SUB_CD as EVT_OCR_ITEM_DTL
+								  from CM_EVT_OCR_ACTION O, CM_EVT_OCR I
+								 where O.EVT_OCR_NO = I.EVT_OCR_NO
+								   and O.EVT_PRGRS_CD = '10'
+								   and O.UPD_DATE between TO_DATE(#{searchStartDate} || '000000', 'YYYYMMDDHH24MISS') and TO_DATE(#{searchEndDate} || '235959', 'YYYYMMDDHH24MISS')
+								   and O.ACTION_USER_ID IN (select USER_ID from CM_GRP_USER where GRP_ID LIKE #{searchSysCd} || '%' and USER_ID NOT IN (select CD_ID from CM_TC_CODE where CD_GRP_ID = 'TEST_ID' and USE_TY_CD = 'Y' and CD_TY = 'C')) 
+							   )
+						group by EVT_OCR_ITEM_DTL
+						union all
+						select EVT_OCR_ITEM_DTL, COUNT(*) as CNT, '2' as LEV
+						  from (
+								select DISTINCT V.EVT_OCR_NO, I.EVT_ID_SUB_CD as EVT_OCR_ITEM_DTL
+								  from UM_CCTV_VIEW_LOG V, CM_EVT_OCR I
+								 where V.EVT_OCR_NO = I.EVT_OCR_NO
+								   and V.USER_ID IN (select USER_ID from CM_GRP_USER where GRP_ID LIKE #{searchSysCd} || '%' and USER_ID NOT IN (select CD_ID from CM_TC_CODE where CD_GRP_ID = 'TEST_ID' and USE_TY_CD = 'Y' and CD_TY = 'C'))
+								   and V.CONN_DATE between TO_DATE(#{searchStartDate} || '000000', 'YYYYMMDDHH24MISS') and TO_DATE(#{searchEndDate} || '235959', 'YYYYMMDDHH24MISS')
+							   )
+						group by EVT_OCR_ITEM_DTL
+						union all
+						select EVT_OCR_ITEM_DTL, COUNT(*) as CNT, '3' as LEV
+						  from (
+								select V.EVT_OCR_NO, I.EVT_ID_SUB_CD as EVT_OCR_ITEM_DTL
+								  from UM_CCTV_VIEW_LOG V, CM_EVT_OCR I
+								 where V.EVT_OCR_NO = I.EVT_OCR_NO
+								   and V.USER_ID IN (select USER_ID from CM_GRP_USER where GRP_ID LIKE #{searchSysCd} || '%' and USER_ID NOT IN (select CD_ID from CM_TC_CODE where CD_GRP_ID = 'TEST_ID' and USE_TY_CD = 'Y' and CD_TY = 'C'))
+								   and V.CONN_DATE between TO_DATE(#{searchStartDate} || '000000', 'YYYYMMDDHH24MISS') and TO_DATE(#{searchEndDate} || '235959', 'YYYYMMDDHH24MISS')
+							   )
+						group by EVT_OCR_ITEM_DTL
+						union all
+						select EVT_OCR_ITEM_DTL, COUNT(*) as CNT, '4' as LEV
+						  from (
+								select P.EVT_OCR_NO, I.EVT_ID_SUB_CD as EVT_OCR_ITEM_DTL
+								  from UM_CCTV_PTZ_LOG P, CM_EVT_OCR I
+								 where P.EVT_OCR_NO = I.EVT_OCR_NO
+								   and P.USER_ID IN (select USER_ID from CM_GRP_USER where GRP_ID LIKE #{searchSysCd} || '%' and USER_ID NOT IN (select CD_ID from CM_TC_CODE where CD_GRP_ID = 'TEST_ID' and USE_TY_CD = 'Y' and CD_TY = 'C'))
+								   and P.PTZ_DATE between TO_DATE(#{searchStartDate} || '000000', 'YYYYMMDDHH24MISS') and TO_DATE(#{searchEndDate} || '235959', 'YYYYMMDDHH24MISS')
+							   )
+						group by EVT_OCR_ITEM_DTL
+					   )
+				group by EVT_OCR_ITEM_DTL, LEV
+			   )
+		group by ROLLUP(EVT_OCR_ITEM_DTL)
+	</select>
+
+	<select id="getTearmUserList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+		select A.*
+			 , (select COUNT(*)
+				  from (
+						select USER_ID
+						  from (
+								select USER_ID
+									 , DECODE(LEV, '1', SUM(CNT)) as TOT_EVT_CNT
+									 , DECODE(LEV, '2', SUM(CNT)) as CONN_EVT_CNT
+									 , DECODE(LEV, '3', SUM(CNT)) as CCTV_CONN_CNT
+									 , DECODE(LEV, '4', SUM(CNT)) as PTZ_CONN_CNT
+								  from (
+										select A.ACTION_USER_ID as USER_ID, COUNT(*) as CNT, '1' as LEV
+										  from CM_EVT_OCR_ACTION A
+											 , CM_EVT_OCR O
+										 where A.EVT_OCR_NO = O.EVT_OCR_NO
+										   and A.EVT_PRGRS_CD = '10'
+										   and A.ACTION_USER_ID IN (select USER_ID from CM_GRP_USER where GRP_ID LIKE #{searchSysCd} || '%' and USER_ID NOT IN (select CD_ID from CM_TC_CODE where CD_GRP_ID = 'TEST_ID' and USE_TY_CD = 'Y' and CD_TY = 'C'))
+										   and O.RGS_DATE between TO_DATE(#{searchStartDate} || '000000', 'YYYYMMDDHH24MISS') and TO_DATE(#{searchEndDate} || '235959', 'YYYYMMDDHH24MISS')
+										<choose>
+										<when test="searchSysCd == 'DUC' ">
+										   -- and O.EVT_ID IN (select EVT_ID from CM_EVENT where SYS_CD IN ('119', '112'))
+										</when>
+										<otherwise>
+										   and O.EVT_ID IN (select EVT_ID from CM_EVENT where SYS_CD = #{searchSysCd})
+										</otherwise>
+										</choose>
+										group by A.ACTION_USER_ID
+										union all
+										select USER_ID, COUNT(*) as CNT, '2' as LEV
+										  from (
+												select DISTINCT V.EVT_OCR_NO, V.USER_ID
+												  from UM_CCTV_VIEW_LOG V, CM_EVT_OCR O
+												 where V.EVT_OCR_NO = O.EVT_OCR_NO
+												   and V.USER_ID IN (select USER_ID from CM_GRP_USER where GRP_ID LIKE #{searchSysCd} || '%' and USER_ID NOT IN (select CD_ID from CM_TC_CODE where CD_GRP_ID = 'TEST_ID' and USE_TY_CD = 'Y' and CD_TY = 'C'))
+												   and V.CONN_DATE between TO_DATE(#{searchStartDate} || '000000', 'YYYYMMDDHH24MISS') and TO_DATE(#{searchEndDate} || '235959', 'YYYYMMDDHH24MISS')
+												<choose>
+												<when test="searchSysCd == 'DUC' ">
+												   -- and O.EVT_ID IN (select EVT_ID from CM_EVENT where SYS_CD IN ('119', '112'))
+												</when>
+												<otherwise>
+												   and O.EVT_ID IN (select EVT_ID from CM_EVENT where SYS_CD = #{searchSysCd})
+												</otherwise>
+												</choose>
+											   )
+										group by USER_ID
+										union all
+										select V.USER_ID, COUNT(*) as CNT, '3' as LEV
+										  from UM_CCTV_VIEW_LOG V, CM_EVT_OCR O
+										 where V.EVT_OCR_NO = O.EVT_OCR_NO
+										   and V.USER_ID IN (select USER_ID from CM_GRP_USER where GRP_ID LIKE #{searchSysCd} || '%' and USER_ID NOT IN (select CD_ID from CM_TC_CODE where CD_GRP_ID = 'TEST_ID' and USE_TY_CD = 'Y' and CD_TY = 'C'))
+										   and V.CONN_DATE between TO_DATE(#{searchStartDate} || '000000', 'YYYYMMDDHH24MISS') and TO_DATE(#{searchEndDate} || '235959', 'YYYYMMDDHH24MISS')
+										<choose>
+										<when test="searchSysCd == 'DUC' ">
+										   -- and O.EVT_ID IN (select EVT_ID from CM_EVENT where SYS_CD IN ('119', '112'))
+										</when>
+										<otherwise>
+										   and O.EVT_ID IN (select EVT_ID from CM_EVENT where SYS_CD = #{searchSysCd})
+										</otherwise>
+										</choose>
+										group by V.USER_ID
+										union all
+										select USER_ID, COUNT(*) as CNT, '4' as LEV
+										  from UM_CCTV_PTZ_LOG P, CM_EVT_OCR O
+										 where P.EVT_OCR_NO = O.EVT_OCR_NO
+										   and P.USER_ID IN (select USER_ID from CM_GRP_USER where GRP_ID LIKE #{searchSysCd} || '%' and USER_ID NOT IN (select CD_ID from CM_TC_CODE where CD_GRP_ID = 'TEST_ID' and USE_TY_CD = 'Y' and CD_TY = 'C'))
+										   and P.PTZ_DATE between TO_DATE(#{searchStartDate} || '000000', 'YYYYMMDDHH24MISS') and TO_DATE(#{searchEndDate} || '235959', 'YYYYMMDDHH24MISS')
+										<choose>
+										<when test="searchSysCd == 'DUC' ">
+										   -- and O.EVT_ID IN (select EVT_ID from CM_EVENT where SYS_CD IN ('119', '112'))
+										</when>
+										<otherwise>
+										   and O.EVT_ID IN (select EVT_ID from CM_EVENT where SYS_CD = #{searchSysCd})
+										</otherwise>
+										</choose>
+										group by P.USER_ID
+									   )
+								group by USER_ID, LEV
+							   )
+						group by USER_ID
+					   )
+			   ) ROWCNT
+		  from (
+				select ROW_NUMBER() OVER (order by ${sidx} ${sord}) RK
+					 , USER_ID
+					 , (select USER_NM_KO from CM_USER U where U.USER_ID = M.USER_ID) as USER_NM
+					 , NVL(SUM(TOT_EVT_CNT), 0) as TOT_EVT_CNT
+					 , NVL(SUM(CONN_EVT_CNT), 0) as CONN_EVT_CNT
+					 , NVL(SUM(CCTV_CONN_CNT), 0) as CCTV_CONN_CNT
+					 , NVL(SUM(PTZ_CONN_CNT), 0) as PTZ_CONN_CNT
+				  from (
+						select USER_ID
+							 , DECODE(LEV, '1', SUM(CNT)) as TOT_EVT_CNT
+							 , DECODE(LEV, '2', SUM(CNT)) as CONN_EVT_CNT
+							 , DECODE(LEV, '3', SUM(CNT)) as CCTV_CONN_CNT
+							 , DECODE(LEV, '4', SUM(CNT)) as PTZ_CONN_CNT
+						  from (
+								select A.ACTION_USER_ID as USER_ID, COUNT(*) as CNT, '1' as LEV
+								  from CM_EVT_OCR_ACTION A
+									 , CM_EVT_OCR O
+								 where A.EVT_OCR_NO = O.EVT_OCR_NO
+								   and A.EVT_PRGRS_CD = '10'
+								   and A.ACTION_USER_ID IN (select USER_ID from CM_GRP_USER where GRP_ID LIKE #{searchSysCd} || '%' and USER_ID NOT IN (select CD_ID from CM_TC_CODE where CD_GRP_ID = 'TEST_ID' and USE_TY_CD = 'Y' and CD_TY = 'C'))
+								   and O.RGS_DATE between TO_DATE(#{searchStartDate} || '000000', 'YYYYMMDDHH24MISS') and TO_DATE(#{searchEndDate} || '235959', 'YYYYMMDDHH24MISS')
+								<choose>
+								<when test="searchSysCd == 'DUC' ">
+								   -- and O.EVT_ID IN (select EVT_ID from CM_EVENT where SYS_CD IN ('119', '112'))
+								</when>
+								<otherwise>
+								   and O.EVT_ID IN (select EVT_ID from CM_EVENT where SYS_CD = #{searchSysCd})
+								</otherwise>
+								</choose>
+								group by A.ACTION_USER_ID
+								union all
+								select USER_ID, COUNT(*) as CNT, '2' as LEV
+								  from (
+										select DISTINCT V.EVT_OCR_NO, V.USER_ID
+										  from UM_CCTV_VIEW_LOG V, CM_EVT_OCR O
+										 where V.EVT_OCR_NO = O.EVT_OCR_NO
+										   and V.USER_ID IN (select USER_ID from CM_GRP_USER where GRP_ID LIKE #{searchSysCd} || '%' and USER_ID NOT IN (select CD_ID from CM_TC_CODE where CD_GRP_ID = 'TEST_ID' and USE_TY_CD = 'Y' and CD_TY = 'C'))
+										   and V.CONN_DATE between TO_DATE(#{searchStartDate} || '000000', 'YYYYMMDDHH24MISS') and TO_DATE(#{searchEndDate} || '235959', 'YYYYMMDDHH24MISS')
+										<choose>
+										<when test="searchSysCd == 'DUC' ">
+										   -- and O.EVT_ID IN (select EVT_ID from CM_EVENT where SYS_CD IN ('119', '112'))
+										</when>
+										<otherwise>
+										   and O.EVT_ID IN (select EVT_ID from CM_EVENT where SYS_CD = #{searchSysCd})
+										</otherwise>
+										</choose>
+									   )
+								group by USER_ID
+								union all
+								select V.USER_ID, COUNT(*) as CNT, '3' as LEV
+								  from UM_CCTV_VIEW_LOG V, CM_EVT_OCR O
+								 where V.EVT_OCR_NO = O.EVT_OCR_NO
+								   and V.USER_ID IN (select USER_ID from CM_GRP_USER where GRP_ID LIKE #{searchSysCd} || '%' and USER_ID NOT IN (select CD_ID from CM_TC_CODE where CD_GRP_ID = 'TEST_ID' and USE_TY_CD = 'Y' and CD_TY = 'C'))
+								   and V.CONN_DATE between TO_DATE(#{searchStartDate} || '000000', 'YYYYMMDDHH24MISS') and TO_DATE(#{searchEndDate} || '235959', 'YYYYMMDDHH24MISS')
+								<choose>
+								<when test="searchSysCd == 'DUC' ">
+								   -- and O.EVT_ID IN (select EVT_ID from CM_EVENT where SYS_CD IN ('119', '112'))
+								</when>
+								<otherwise>
+								   and O.EVT_ID IN (select EVT_ID from CM_EVENT where SYS_CD = #{searchSysCd})
+								</otherwise>
+								</choose>
+								group by V.USER_ID
+								union all
+								select USER_ID, COUNT(*) as CNT, '4' as LEV
+								  from UM_CCTV_PTZ_LOG P, CM_EVT_OCR O
+								 where P.EVT_OCR_NO = O.EVT_OCR_NO
+								   and P.USER_ID IN (select USER_ID from CM_GRP_USER where GRP_ID LIKE #{searchSysCd} || '%' and USER_ID NOT IN (select CD_ID from CM_TC_CODE where CD_GRP_ID = 'TEST_ID' and USE_TY_CD = 'Y' and CD_TY = 'C'))
+								   and P.PTZ_DATE between TO_DATE(#{searchStartDate} || '000000', 'YYYYMMDDHH24MISS') and TO_DATE(#{searchEndDate} || '235959', 'YYYYMMDDHH24MISS')
+								<choose>
+								<when test="searchSysCd == 'DUC' ">
+								   -- and O.EVT_ID IN (select EVT_ID from CM_EVENT where SYS_CD IN ('119', '112'))
+								</when>
+								<otherwise>
+								   and O.EVT_ID IN (select EVT_ID from CM_EVENT where SYS_CD = #{searchSysCd})
+								</otherwise>
+								</choose>
+								group by P.USER_ID
+							   )
+						group by USER_ID, LEV
+					   ) M
+				group by USER_ID
+			   ) A
+		<![CDATA[
+		 where A.RK >= ((TO_NUMBER(#{pageNo}) - 1) * TO_NUMBER(#{rowsPerPage})) + 1
+		   and A.RK <= (TO_NUMBER(#{pageNo}) * TO_NUMBER(#{rowsPerPage}))
+		]]>
+	</select>
+
+	<select id="getTearmUserExcel" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+		select NVL(USER_NM, '합계') as USER_NM
+			 , TO_CHAR(NVL(SUM(TOT_EVT_CNT), 0), 'fm999,999,999,999,990') as TOT_EVT_CNT
+			 , TO_CHAR(NVL(SUM(CONN_EVT_CNT), 0), 'fm999,999,999,999,990') as CONN_EVT_CNT
+			 , TO_CHAR(NVL(SUM(CCTV_CONN_CNT), 0), 'fm999,999,999,999,990') as CCTV_CONN_CNT
+			 , TO_CHAR(NVL(SUM(PTZ_CONN_CNT), 0), 'fm999,999,999,999,990') as PTZ_CONN_CNT
+		  from (
+				select USER_ID
+					 , NVL((select U.USER_NM_KO from CM_USER U where U.USER_ID = M.USER_ID), USER_ID) as USER_NM
+					 , NVL(SUM(TOT_EVT_CNT), 0) as TOT_EVT_CNT
+					 , NVL(SUM(CONN_EVT_CNT), 0) as CONN_EVT_CNT
+					 , NVL(SUM(CCTV_CONN_CNT), 0) as CCTV_CONN_CNT
+					 , NVL(SUM(PTZ_CONN_CNT), 0) as PTZ_CONN_CNT
+				  from (
+						select USER_ID
+							 , DECODE(LEV, '1', SUM(CNT)) as TOT_EVT_CNT
+							 , DECODE(LEV, '2', SUM(CNT)) as CONN_EVT_CNT
+							 , DECODE(LEV, '3', SUM(CNT)) as CCTV_CONN_CNT
+							 , DECODE(LEV, '4', SUM(CNT)) as PTZ_CONN_CNT
+						  from (
+								select A.ACTION_USER_ID as USER_ID, COUNT(*) as CNT, '1' as LEV
+								  from CM_EVT_OCR_ACTION A
+									 , CM_EVT_OCR O
+								 where A.EVT_OCR_NO = O.EVT_OCR_NO
+								   and A.EVT_PRGRS_CD = '10'
+								   and A.ACTION_USER_ID IN (select USER_ID from CM_GRP_USER where GRP_ID LIKE #{searchSysCd} || '%' and USER_ID NOT IN (select CD_ID from CM_TC_CODE where CD_GRP_ID = 'TEST_ID' and USE_TY_CD = 'Y' and CD_TY = 'C'))
+								   and O.RGS_DATE between TO_DATE(#{searchStartDate} || '000000', 'YYYYMMDDHH24MISS') and TO_DATE(#{searchEndDate} || '235959', 'YYYYMMDDHH24MISS')
+								<choose>
+								<when test="searchSysCd == 'DUC' ">
+								   -- and O.EVT_ID IN (select EVT_ID from CM_EVENT where SYS_CD IN ('119', '112'))
+								</when>
+								<otherwise>
+								   and O.EVT_ID IN (select EVT_ID from CM_EVENT where SYS_CD = #{searchSysCd})
+								</otherwise>
+								</choose>
+								group by A.ACTION_USER_ID
+								union all
+								select USER_ID, COUNT(*) as CNT, '2' as LEV
+								  from (
+										select DISTINCT V.EVT_OCR_NO, V.USER_ID
+										  from UM_CCTV_VIEW_LOG V, CM_EVT_OCR O
+										 where V.EVT_OCR_NO = O.EVT_OCR_NO
+										   and V.USER_ID IN (select USER_ID from CM_GRP_USER where GRP_ID LIKE #{searchSysCd} || '%' and USER_ID NOT IN (select CD_ID from CM_TC_CODE where CD_GRP_ID = 'TEST_ID' and USE_TY_CD = 'Y' and CD_TY = 'C'))
+										   and V.CONN_DATE between TO_DATE(#{searchStartDate} || '000000', 'YYYYMMDDHH24MISS') and TO_DATE(#{searchEndDate} || '235959', 'YYYYMMDDHH24MISS')
+										<choose>
+										<when test="searchSysCd == 'DUC' ">
+										   -- and O.EVT_ID IN (select EVT_ID from CM_EVENT where SYS_CD IN ('119', '112'))
+										</when>
+										<otherwise>
+										   and O.EVT_ID IN (select EVT_ID from CM_EVENT where SYS_CD = #{searchSysCd})
+										</otherwise>
+										</choose>
+									   )
+								group by USER_ID
+								union all
+								select V.USER_ID, COUNT(*) as CNT, '3' as LEV
+								  from UM_CCTV_VIEW_LOG V, CM_EVT_OCR O
+								 where V.EVT_OCR_NO = O.EVT_OCR_NO
+								   and V.USER_ID IN (select USER_ID from CM_GRP_USER where GRP_ID LIKE #{searchSysCd} || '%' and USER_ID NOT IN (select CD_ID from CM_TC_CODE where CD_GRP_ID = 'TEST_ID' and USE_TY_CD = 'Y' and CD_TY = 'C'))
+								   and V.CONN_DATE between TO_DATE(#{searchStartDate} || '000000', 'YYYYMMDDHH24MISS') and TO_DATE(#{searchEndDate} || '235959', 'YYYYMMDDHH24MISS')
+								<choose>
+								<when test="searchSysCd == 'DUC' ">
+								   -- and O.EVT_ID IN (select EVT_ID from CM_EVENT where SYS_CD IN ('119', '112'))
+								</when>
+								<otherwise>
+								   and O.EVT_ID IN (select EVT_ID from CM_EVENT where SYS_CD = #{searchSysCd})
+								</otherwise>
+								</choose>
+								group by V.USER_ID
+								union all
+								select USER_ID, COUNT(*) as CNT, '4' as LEV
+								  from UM_CCTV_PTZ_LOG P, CM_EVT_OCR O
+								 where P.EVT_OCR_NO = O.EVT_OCR_NO
+								   and P.USER_ID IN (select USER_ID from CM_GRP_USER where GRP_ID LIKE #{searchSysCd} || '%' and USER_ID NOT IN (select CD_ID from CM_TC_CODE where CD_GRP_ID = 'TEST_ID' and USE_TY_CD = 'Y' and CD_TY = 'C'))
+								   and P.PTZ_DATE between TO_DATE(#{searchStartDate} || '000000', 'YYYYMMDDHH24MISS') and TO_DATE(#{searchEndDate} || '235959', 'YYYYMMDDHH24MISS')
+								<choose>
+								<when test="searchSysCd == 'DUC' ">
+								   -- and O.EVT_ID IN (select EVT_ID from CM_EVENT where SYS_CD IN ('119', '112'))
+								</when>
+								<otherwise>
+								   and O.EVT_ID IN (select EVT_ID from CM_EVENT where SYS_CD = #{searchSysCd})
+								</otherwise>
+								</choose>
+								group by P.USER_ID
+							   )
+						group by USER_ID, LEV
+					   ) M
+				group by USER_ID
+			   ) A
+		group by ROLLUP(USER_NM)
+	</select>
+
+	<select id="getConnDetailList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+		select A.*
+			 , (select COUNT(*)
+				  from (
+						select X.EVT_OCR_NO, X.USER_ID, X.FCLT_ID
+						  from (
+								select V.EVT_OCR_NO, V.USER_ID, V.FCLT_ID, V.VIEW_CNT, V.PTZ_CNT, V.EVT_OCR_ITEM_DTL, V.VIEW_DATE
+									 , F.FCLT_LBL_NM, F.LOTNO_ADRES_NM, F.ROAD_ADRES_NM
+									 , (select CASE WHEN U.USER_NM_KO IS NULL THEN V.USER_ID ELSE U.USER_NM_KO END 
+								     	  from CM_USER U 
+								     	 where U.USER_ID = V.USER_ID) as USER_NM  
+								  from (
+										select A.EVT_OCR_NO, A.USER_ID, A.FCLT_ID, COUNT(*) as VIEW_CNT, '' as PTZ_CNT, 0 as EVT_OCR_ITEM_DTL, MAX(DATE_FORMAT(CONN_DATE, '%Y-%m-%d') ) as VIEW_DATE
+										  from UM_CCTV_VIEW_LOG A
+										 where 1 = 1
+										   and A.USER_ID IN (select USER_ID from CM_GRP_USER where GRP_ID LIKE CONCAT( #{searchSysCd} , '%') and USER_ID NOT IN (select CD_ID from CM_TC_CODE where CD_GRP_ID = 'TEST_ID' and USE_TY_CD = 'Y' and CD_TY = 'C'))
+										   and A.CONN_DATE between DATE_FORMAT(#{searchStartDate} || '000000', '%Y-%m-%d%Y %H:%i:%s') 
+										   					and DATE_FORMAT(#{searchEndDate} || '235959', '%Y-%m-%d%Y %H:%i:%s')
+										group by A.EVT_OCR_NO, A.USER_ID, A.FCLT_ID
+									   ) V
+									 , CM_FACILITY F
+								 where V.FCLT_ID = F.FCLT_ID
+								union all
+								select P.EVT_OCR_NO, P.USER_ID, P.FCLT_ID, 0 as VIEW_CNT, PTZ_CNT, '' as EVT_OCR_ITEM_DTL, '' as VIEW_DATE
+									 , F.FCLT_LBL_NM, F.LOTNO_ADRES_NM, F.ROAD_ADRES_NM
+									 , (select CASE WHEN U.USER_NM_KO IS NULL THEN P.USER_ID ELSE U.USER_NM_KO END 
+								     	  from CM_USER U 
+								     	 where U.USER_ID = P.USER_ID) as USER_NM 
+								  from (
+										select P.EVT_OCR_NO, P.USER_ID, P.FCLT_ID, COUNT(*) as PTZ_CNT
+										  from UM_CCTV_PTZ_LOG P
+										 where 1 = 1
+										   and P.PTZ_DATE between DATE_FORMAT(#{searchStartDate} || '000000', '%Y-%m-%d%Y %H:%i:%s') 
+										   					  and DATE_FORMAT(#{searchEndDate} || '235959', '%Y-%m-%d%Y %H:%i:%s')
+										   and P.USER_ID IN (select USER_ID from CM_GRP_USER where GRP_ID LIKE CONCAT(#{searchSysCd} , '%') and USER_ID NOT IN (select CD_ID from CM_TC_CODE where CD_GRP_ID = 'TEST_ID' and USE_TY_CD = 'Y' and CD_TY = 'C'))
+										group by P.EVT_OCR_NO, P.USER_ID, P.FCLT_ID
+									   ) P
+									 , CM_FACILITY F
+								 where P.FCLT_ID = F.FCLT_ID
+							   ) X
+						 where 1 = 1
+						<if test="searchOcrNo != '' or searchUserId != '' ">
+						   and (X.EVT_OCR_NO = #{searchOcrNo} or X.USER_ID = #{searchUserId} or X.USER_NM = #{searchUserId})
+						</if>
+						group by X.EVT_OCR_NO, X.USER_ID, X.FCLT_ID
+					   ) XX
+			   ) ROWCNT
+		  from (
+				select ROW_NUMBER() OVER (order by Y.EVT_OCR_NO, Y.USER_ID, Y.FCLT_ID asc) RK
+					 , Y.EVT_OCR_NO
+					 , Y.USER_ID
+					 , Y.FCLT_ID
+					 , MAX(Y.VIEW_CNT) as VIEW_CNT
+					 , MAX(Y.PTZ_CNT) as PTZ_CNT
+					 , MAX(Y.EVT_OCR_ITEM_DTL) as EVT_OCR_ITEM_DTL
+					 , MAX(Y.VIEW_DATE) as VIEW_DATE
+					 , MAX(Y.FCLT_LBL_NM) as FCLT_LBL_NM
+					 , MAX(Y.LOTNO_ADRES_NM) as LOTNO_ADRES_NM
+					 , MAX(Y.ROAD_ADRES_NM) as ROAD_ADRES_NM
+					 , MAX(Y.USER_NM) as USER_NM
+				  from (
+						select V.EVT_OCR_NO, V.USER_ID, V.FCLT_ID, V.VIEW_CNT, V.PTZ_CNT, V.EVT_OCR_ITEM_DTL, V.VIEW_DATE
+							 , F.FCLT_LBL_NM, F.LOTNO_ADRES_NM, F.ROAD_ADRES_NM
+							 ,( select CASE WHEN U.USER_NM_KO IS NULL THEN V.USER_ID ELSE U.USER_NM_KO END	
+ 						          from CM_USER U
+                                 where U.USER_ID = V.USER_ID) as USER_NM
+						  from (
+								select A.EVT_OCR_NO, A.USER_ID, A.FCLT_ID, COUNT(*) as VIEW_CNT, 0 as PTZ_CNT, '' as EVT_OCR_ITEM_DTL, MAX(DATE_FORMAT(CONN_DATE, '%Y-%m-%d')) as VIEW_DATE
+								  from UM_CCTV_VIEW_LOG A
+								 where 1 = 1
+								   and A.USER_ID IN (select USER_ID from CM_GRP_USER where GRP_ID LIKE CONCAT(#{searchSysCd}, '%') and USER_ID NOT IN (select CD_ID from CM_TC_CODE where CD_GRP_ID = 'TEST_ID' and USE_TY_CD = 'Y' and CD_TY = 'C'))
+								   and A.CONN_DATE between DATE_FORMAT(#{searchStartDate} || '000000', '%Y-%m-%d%Y %H:%i:%s') and DATE_FORMAT(#{searchEndDate} || '235959', '%Y-%m-%d%Y %H:%i:%s')
+								group by A.EVT_OCR_NO, A.USER_ID, A.FCLT_ID
+							   ) V
+							 , CM_FACILITY F
+						 where V.FCLT_ID = F.FCLT_ID
+						union all
+						select P.EVT_OCR_NO, P.USER_ID, P.FCLT_ID, 0 as VIEW_CNT, PTZ_CNT, '' as EVT_OCR_ITEM_DTL, '' as VIEW_DATE
+							 , F.FCLT_LBL_NM, F.LOTNO_ADRES_NM, F.ROAD_ADRES_NM
+						     , (select CASE WHEN U.USER_NM_KO IS NULL THEN P.USER_ID ELSE U.USER_NM_KO END 
+						     	  from CM_USER U 
+						     	 where U.USER_ID = P.USER_ID) as USER_NM 							 
+						  from (
+								select P.EVT_OCR_NO, P.USER_ID, P.FCLT_ID, COUNT(*) as PTZ_CNT
+								  from UM_CCTV_PTZ_LOG P
+								 where 1 = 1
+								   and P.PTZ_DATE between DATE_FORMAT(#{searchStartDate} || '000000', '%Y-%m-%d%Y %H:%i:%s') and DATE_FORMAT(#{searchEndDate} || '235959', '%Y-%m-%d%Y %H:%i:%s')
+								   and P.USER_ID IN (select USER_ID from CM_GRP_USER where GRP_ID LIKE CONCAT(#{searchSysCd}, '%') and USER_ID NOT IN (select CD_ID from CM_TC_CODE where CD_GRP_ID = 'TEST_ID' and USE_TY_CD = 'Y' and CD_TY = 'C'))
+								group by P.EVT_OCR_NO, P.USER_ID, P.FCLT_ID
+							   ) P
+							 , CM_FACILITY F
+						 where P.FCLT_ID = F.FCLT_ID
+					   ) Y
+				 where 1 = 1
+				<if test="searchOcrNo != '' or searchUserId != '' ">
+				   and (Y.EVT_OCR_NO = #{searchOcrNo} or Y.USER_ID = #{searchUserId} or Y.USER_NM = #{searchUserId})
+				</if>
+				group by Y.EVT_OCR_NO, Y.USER_ID, Y.FCLT_ID
+			   ) A
+			 OFFSET ((#{pageNo}::integer - 1) * #{rowsPerPage}::integer)
+			 LIMIT #{rowsPerPage}::integer
+	</select>
+
+	<select id="getConnDetailList_back" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+		select A.*
+			 , (select COUNT(*)
+				  from (
+						select EVT_OCR_NO, USER_ID, FCLT_ID
+						  from (
+								select V.EVT_OCR_NO, V.USER_ID, V.FCLT_ID, V.VIEW_CNT, V.PTZ_CNT, V.EVT_OCR_ITEM_DTL, V.VIEW_DATE
+									 , F.FCLT_LBL_NM, F.LOTNO_ADRES_NM, F.ROAD_ADRES_NM
+									 , NVL((select U.USER_NM_KO from CM_USER U where U.USER_ID = V.USER_ID), V.USER_ID) as USER_NM
+								  from (
+										select A.EVT_OCR_NO, A.USER_ID, A.FCLT_ID, COUNT(*) as VIEW_CNT, 0 as PTZ_CNT, MAX(B.EVT_ID_SUB_CD) as EVT_OCR_ITEM_DTL, MAX(TO_CHAR(CONN_DATE, 'YYYY-MM-DD')) as VIEW_DATE
+										  from UM_CCTV_VIEW_LOG A
+											 , CM_EVT_OCR B
+										 where A.EVT_OCR_NO = B.EVT_OCR_NO
+										<choose>
+										<when test="searchSysCd == 'DUC' ">
+										   -- and B.EVT_ID IN (select EVT_ID from CM_EVENT where SYS_CD IN ('119', '112'))
+										</when>
+										<otherwise>
+										   and B.EVT_ID IN (select EVT_ID from CM_EVENT where SYS_CD = #{searchSysCd})
+										</otherwise>
+										</choose>
+										   and A.USER_ID IN (select USER_ID from CM_GRP_USER where GRP_ID LIKE #{searchSysCd} || '%' and USER_ID NOT IN (select CD_ID from CM_TC_CODE where CD_GRP_ID = 'TEST_ID' and USE_TY_CD = 'Y' and CD_TY = 'C'))
+										   and A.CONN_DATE between TO_DATE(#{searchStartDate} || '000000', 'YYYYMMDDHH24MISS') and TO_DATE(#{searchEndDate} || '235959', 'YYYYMMDDHH24MISS')
+										group by A.EVT_OCR_NO, A.USER_ID, A.FCLT_ID
+									   ) V
+									 , CM_FACILITY F
+								 where V.FCLT_ID = F.FCLT_ID
+								union all
+								select P.EVT_OCR_NO, P.USER_ID, P.FCLT_ID, 0 as VIEW_CNT, PTZ_CNT, '' as EVT_OCR_ITEM_DTL, '' as VIEW_DATE
+									 , F.FCLT_LBL_NM, F.LOTNO_ADRES_NM, F.ROAD_ADRES_NM
+									 , NVL((select U.USER_NM_KO from CM_USER U where U.USER_ID = P.USER_ID), P.USER_ID) as USER_NM
+								  from (
+										select P.EVT_OCR_NO, P.USER_ID, P.FCLT_ID, COUNT(*) as PTZ_CNT
+										  from UM_CCTV_PTZ_LOG P
+											 , CM_EVT_OCR O
+										 where P.EVT_OCR_NO = O.EVT_OCR_NO
+										   and P.PTZ_DATE between TO_DATE(#{searchStartDate} || '000000', 'YYYYMMDDHH24MISS') and TO_DATE(#{searchEndDate} || '235959', 'YYYYMMDDHH24MISS')
+										   and P.USER_ID IN (select USER_ID from CM_GRP_USER where GRP_ID LIKE #{searchSysCd} || '%' and USER_ID NOT IN (select CD_ID from CM_TC_CODE where CD_GRP_ID = 'TEST_ID' and USE_TY_CD = 'Y' and CD_TY = 'C'))
+										<choose>
+										<when test="searchSysCd == 'DUC' ">
+										   -- and O.EVT_ID IN (select EVT_ID from CM_EVENT where SYS_CD IN ('119', '112'))
+										</when>
+										<otherwise>
+										   and O.EVT_ID IN (select EVT_ID from CM_EVENT where SYS_CD = #{searchSysCd})
+										</otherwise>
+										</choose>
+										group by P.EVT_OCR_NO, P.USER_ID, P.FCLT_ID
+									   ) P
+									 , CM_FACILITY F
+								 where P.FCLT_ID = F.FCLT_ID
+							   )
+						 where 1 = 1
+						<if test="searchOcrNo != '' or searchUserId != '' ">
+						   and (EVT_OCR_NO = #{searchOcrNo} or USER_ID = #{searchUserId} or USER_NM = #{searchUserId})
+						</if>
+						group by EVT_OCR_NO, USER_ID, FCLT_ID
+					   )
+			   ) ROWCNT
+		  from (
+				select ROW_NUMBER() OVER (order by EVT_OCR_NO, USER_ID, FCLT_ID asc) RK
+					 , EVT_OCR_NO
+					 , USER_ID
+					 , FCLT_ID
+					 , MAX(VIEW_CNT) as VIEW_CNT
+					 , MAX(PTZ_CNT) as PTZ_CNT
+					 , MAX(EVT_OCR_ITEM_DTL) as EVT_OCR_ITEM_DTL
+					 , MAX(VIEW_DATE) as VIEW_DATE
+					 , MAX(FCLT_LBL_NM) as FCLT_LBL_NM
+					 , MAX(LOTNO_ADRES_NM) as LOTNO_ADRES_NM
+					 , MAX(ROAD_ADRES_NM) as ROAD_ADRES_NM
+					 , MAX(USER_NM) as USER_NM
+				  from (
+						select V.EVT_OCR_NO, V.USER_ID, V.FCLT_ID, V.VIEW_CNT, V.PTZ_CNT, V.EVT_OCR_ITEM_DTL, V.VIEW_DATE
+							 , F.FCLT_LBL_NM, F.LOTNO_ADRES_NM, F.ROAD_ADRES_NM
+							 , NVL((select U.USER_NM_KO from CM_USER U where U.USER_ID = V.USER_ID), V.USER_ID) as USER_NM
+						  from (
+								select A.EVT_OCR_NO, A.USER_ID, A.FCLT_ID, COUNT(*) as VIEW_CNT, 0 as PTZ_CNT, MAX(B.EVT_ID_SUB_CD) as EVT_OCR_ITEM_DTL, MAX(TO_CHAR(CONN_DATE, 'YYYY-MM-DD')) as VIEW_DATE
+								  from UM_CCTV_VIEW_LOG A
+									 , CM_EVT_OCR B
+								 where A.EVT_OCR_NO = B.EVT_OCR_NO
+								<choose>
+								<when test="searchSysCd == 'DUC' ">
+								   -- and B.EVT_ID IN (select EVT_ID from CM_EVENT where SYS_CD IN ('119', '112'))
+								</when>
+								<otherwise>
+								   and B.EVT_ID IN (select EVT_ID from CM_EVENT where SYS_CD = #{searchSysCd})
+								</otherwise>
+								</choose>
+								   and A.USER_ID IN (select USER_ID from CM_GRP_USER where GRP_ID LIKE #{searchSysCd} || '%' and USER_ID NOT IN (select CD_ID from CM_TC_CODE where CD_GRP_ID = 'TEST_ID' and USE_TY_CD = 'Y' and CD_TY = 'C'))
+								   and A.CONN_DATE between TO_DATE(#{searchStartDate} || '000000', 'YYYYMMDDHH24MISS') and TO_DATE(#{searchEndDate} || '235959', 'YYYYMMDDHH24MISS')
+								group by A.EVT_OCR_NO, A.USER_ID, A.FCLT_ID
+							   ) V
+							 , CM_FACILITY F
+						 where V.FCLT_ID = F.FCLT_ID
+						union all
+						select P.EVT_OCR_NO, P.USER_ID, P.FCLT_ID, 0 as VIEW_CNT, PTZ_CNT, '' as EVT_OCR_ITEM_DTL, '' as VIEW_DATE
+							 , F.FCLT_LBL_NM, F.LOTNO_ADRES_NM, F.ROAD_ADRES_NM
+							 , NVL((select U.USER_NM_KO from CM_USER U where U.USER_ID = P.USER_ID), P.USER_ID) as USER_NM
+						  from (
+								select P.EVT_OCR_NO, P.USER_ID, P.FCLT_ID, COUNT(*) as PTZ_CNT
+								  from UM_CCTV_PTZ_LOG P
+									 , CM_EVT_OCR O
+								 where P.EVT_OCR_NO = O.EVT_OCR_NO
+								   and P.PTZ_DATE between TO_DATE(#{searchStartDate} || '000000', 'YYYYMMDDHH24MISS') and TO_DATE(#{searchEndDate} || '235959', 'YYYYMMDDHH24MISS')
+								   and P.USER_ID IN (select USER_ID from CM_GRP_USER where GRP_ID LIKE #{searchSysCd} || '%' and USER_ID NOT IN (select CD_ID from CM_TC_CODE where CD_GRP_ID = 'TEST_ID' and USE_TY_CD = 'Y' and CD_TY = 'C'))
+								<choose>
+								<when test="searchSysCd == 'DUC' ">
+								   -- and O.EVT_ID IN (select EVT_ID from CM_EVENT where SYS_CD IN ('119', '112'))
+								</when>
+								<otherwise>
+								   and O.EVT_ID IN (select EVT_ID from CM_EVENT where SYS_CD = #{searchSysCd})
+								</otherwise>
+								</choose>
+								group by P.EVT_OCR_NO, P.USER_ID, P.FCLT_ID
+							   ) P
+							 , CM_FACILITY F
+						 where P.FCLT_ID = F.FCLT_ID
+					   )
+				 where 1 = 1
+				<if test="searchOcrNo != '' or searchUserId != '' ">
+				   and (EVT_OCR_NO = #{searchOcrNo} or USER_ID = #{searchUserId} or USER_NM = #{searchUserId})
+				</if>
+				group by EVT_OCR_NO, USER_ID, FCLT_ID
+			   ) A
+		<![CDATA[
+		 where A.RK >= ((TO_NUMBER(#{pageNo}) - 1) * TO_NUMBER(#{rowsPerPage})) + 1
+		   and A.RK <= (TO_NUMBER(#{pageNo}) * TO_NUMBER(#{rowsPerPage}))
+		]]>
+	</select>
+
+	<select id="getConnDetailExcel" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+		select EVT_OCR_NO
+			 , USER_ID
+			 , FCLT_ID
+			 , TO_CHAR(MAX(VIEW_CNT), 'fm999,999,999,999,990') as VIEW_CNT
+			 , TO_CHAR(MAX(PTZ_CNT), 'fm999,999,999,999,990') as PTZ_CNT
+			 , MAX(EVT_OCR_ITEM_DTL) as EVT_OCR_ITEM_DTL
+			 , MAX(VIEW_DATE) as VIEW_DATE
+			 , MAX(FCLT_LBL_NM) as FCLT_LBL_NM
+			 , MAX(LOTNO_ADRES_NM) as LOTNO_ADRES_NM
+			 , MAX(ROAD_ADRES_NM) as ROAD_ADRES_NM
+			 , MAX(USER_NM) as USER_NM
+		  from (
+				select V.EVT_OCR_NO, V.USER_ID, V.FCLT_ID, V.VIEW_CNT, V.PTZ_CNT, V.EVT_OCR_ITEM_DTL, V.VIEW_DATE
+					 , F.FCLT_LBL_NM, F.LOTNO_ADRES_NM, F.ROAD_ADRES_NM
+					 , NVL((select U.USER_NM_KO from CM_USER U where U.USER_ID = V.USER_ID), V.USER_ID) as USER_NM
+				  from (
+						select A.EVT_OCR_NO, A.USER_ID, A.FCLT_ID, COUNT(*) as VIEW_CNT, 0 as PTZ_CNT, MAX(B.EVT_ID_SUB_CD) as EVT_OCR_ITEM_DTL, MAX(TO_CHAR(CONN_DATE, 'YYYY-MM-DD')) as VIEW_DATE
+						  from UM_CCTV_VIEW_LOG A
+							 , CM_EVT_OCR B
+						 where A.EVT_OCR_NO = B.EVT_OCR_NO
+						<choose>
+						<when test="searchSysCd == 'DUC' ">
+						   -- and B.EVT_ID IN (select EVT_ID from CM_EVENT where SYS_CD IN ('119', '112'))
+						</when>
+						<otherwise>
+						   and B.EVT_ID IN (select EVT_ID from CM_EVENT where SYS_CD = #{searchSysCd})
+						</otherwise>
+						</choose>
+						   and A.USER_ID IN (select USER_ID from CM_GRP_USER where GRP_ID LIKE #{searchSysCd} || '%' and USER_ID NOT IN (select CD_ID from CM_TC_CODE where CD_GRP_ID = 'TEST_ID' and USE_TY_CD = 'Y' and CD_TY = 'C'))
+						   and A.CONN_DATE between TO_DATE(#{searchStartDate} || '000000', 'YYYYMMDDHH24MISS') and TO_DATE(#{searchEndDate} || '235959', 'YYYYMMDDHH24MISS')
+						group by A.EVT_OCR_NO, A.USER_ID, A.FCLT_ID
+					   ) V
+					 , CM_FACILITY F
+				 where V.FCLT_ID = F.FCLT_ID
+				union all
+				select P.EVT_OCR_NO, P.USER_ID, P.FCLT_ID, 0 as VIEW_CNT, PTZ_CNT, '' as EVT_OCR_ITEM_DTL, '' as VIEW_DATE
+					 , F.FCLT_LBL_NM, F.LOTNO_ADRES_NM, F.ROAD_ADRES_NM
+					 , NVL((select U.USER_NM_KO from CM_USER U where U.USER_ID = P.USER_ID), P.USER_ID) as USER_NM
+				  from (
+						select P.EVT_OCR_NO, P.USER_ID, P.FCLT_ID, COUNT(*) as PTZ_CNT
+						  from UM_CCTV_PTZ_LOG P
+							 , CM_EVT_OCR O
+						 where P.EVT_OCR_NO = O.EVT_OCR_NO
+						   and P.PTZ_DATE between TO_DATE(#{searchStartDate} || '000000', 'YYYYMMDDHH24MISS') and TO_DATE(#{searchEndDate} || '235959', 'YYYYMMDDHH24MISS')
+						   and P.USER_ID IN (select USER_ID from CM_GRP_USER where GRP_ID LIKE #{searchSysCd} || '%' and USER_ID NOT IN (select CD_ID from CM_TC_CODE where CD_GRP_ID = 'TEST_ID' and USE_TY_CD = 'Y' and CD_TY = 'C'))
+						<choose>
+						<when test="searchSysCd == 'DUC' ">
+						   -- and O.EVT_ID IN (select EVT_ID from CM_EVENT where SYS_CD IN ('119', '112'))
+						</when>
+						<otherwise>
+						   and O.EVT_ID IN (select EVT_ID from CM_EVENT where SYS_CD = #{searchSysCd})
+						</otherwise>
+						</choose>
+						group by P.EVT_OCR_NO, P.USER_ID, P.FCLT_ID
+					   ) P
+					 , CM_FACILITY F
+				 where P.FCLT_ID = F.FCLT_ID
+			   )
+		 where 1 = 1
+		<if test="searchOcrNo != '' or searchUserId != '' ">
+		   and (EVT_OCR_NO = #{searchOcrNo} or USER_ID = #{searchUserId} or USER_NM = #{searchUserId})
+		</if>
+		group by EVT_OCR_NO, USER_ID, FCLT_ID
+	</select>
+</mapper>

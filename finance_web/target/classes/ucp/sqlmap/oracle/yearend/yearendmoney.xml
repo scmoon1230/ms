@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ucp.yearend.service.YearendmoneyMapper">
+
+    <select id="selectMoney" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectMoney */
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingHeader"/>
+    select MEMBER
+         , SUBSTR(MEMBER,0,INSTR(MEMBER,'-')-1) MEMBER_NO
+         , SUBSTR(MEMBER,INSTR(MEMBER,'-')+1) MEMBER_NAME
+         , NVL(SUM(DECODE(MONEY, '001', AMT)),0) AS AMT1
+         , NVL(SUM(DECODE(MONEY, '002', AMT)),0) AS AMT2
+         , NVL(SUM(DECODE(MONEY, '004', AMT)),0) AS AMT4
+         , NVL(SUM(DECODE(MONEY, '999', AMT)),0) AS AMT9
+         , NVL(SUM(DECODE(MONEY, 'TOTAL', AMT)),0) AS TOTAL
+      from (
+             select MEMBER_NO||'-'||MEMBER_NAME MEMBER, MONEY_NAME MONEY, sum(MONEY_AMT) AMT
+               from (
+                      select MM.MEMBER_ID       , MEM.MEMBER_NO        , MEM.POSITION_CODE
+                           , decode( MM.ID_EXIST,'Y'
+                                   , decode( MM.member_id
+                                           , '888888',nvl(MM.member_name,MEM.member_name)
+                                           , '999999',nvl(MM.member_name,MEM.member_name)
+                                           , MEM.MEMBER_NAME
+                                           )
+                                   , MM.MEMBER_NAME
+                                   ) MEMBER_NAME
+                           , CASE WHEN MM.MONEY_CODE = '001' THEN '001'  /*십일조*/
+                                  WHEN MM.MONEY_CODE = '002' THEN '002'  /*감사*/
+                                  WHEN MM.MONEY_CODE = '004' THEN '004'  /*선교*/
+                                  ELSE '999'  /*기타*/
+                             END MONEY_NAME
+                           , MM.MONEY_AMT
+                        from TB_MAST_MONEY MM
+                           , TB_MEMBER MEM
+                           , TB_MONEY   M
+                       where NVL(MM.MEMBER_ID, 'X') = MEM.MEMBER_ID(+)
+                         and MM.MONEY_CODE     = M.MONEY_CODE
+                         and MEM.MEMBER_NO IS NOT NULL
+                         <if test="startDate    != null and startDate    != '' ">
+                         and ( MM.STAN_YMD <![CDATA[>=]]> #{startDate} and MM.STAN_YMD <![CDATA[<=]]> #{endDate} )
+                         </if>
+                         <if test="memberNo     != null and memberNo     != '' "> and MEM.MEMBER_NO   LIKE '%' || #{memberNo}   || '%' </if>
+                         <if test="memberName   != null and memberName   != '' "> and MEM.MEMBER_NAME LIKE '%' || #{memberName} || '%' </if>
+                    ) TB
+           group by MEMBER_NO, MEMBER_NAME, MONEY_NAME
+           UNION ALL
+             select MEMBER_NO||'-'||MEMBER_NAME MEMBER, MONEY_NAME MONEY, sum(MONEY_AMT) AMT
+               from (
+                      select MM.MEMBER_ID       , MEM.MEMBER_NO        , MEM.POSITION_CODE
+                           , decode( MM.ID_EXIST,'Y'
+                                   , decode( MM.member_id
+                                           , '888888',nvl(MM.member_name,MEM.member_name)
+                                           , '999999',nvl(MM.member_name,MEM.member_name)
+                                           , MEM.MEMBER_NAME
+                                           )
+                                   , MM.MEMBER_NAME
+                                   ) MEMBER_NAME
+                           , 'TOTAL' MONEY_NAME /*합계*/
+                           , MM.MONEY_AMT
+                        from TB_MAST_MONEY MM
+                           , TB_MEMBER MEM
+                           , TB_MONEY   M
+                       where NVL(MM.MEMBER_ID, 'X') = MEM.MEMBER_ID(+)
+                         and MM.MONEY_CODE     = M.MONEY_CODE
+                         and MEM.MEMBER_NO IS NOT NULL
+                         <if test="startDate    != null and startDate    != '' ">
+                         and ( MM.STAN_YMD <![CDATA[>=]]> #{startDate} and MM.STAN_YMD <![CDATA[<=]]> #{endDate} )
+                         </if>
+                         <if test="memberNo     != null and memberNo     != '' "> and MEM.MEMBER_NO   LIKE '%' || #{memberNo}   || '%' </if>
+                         <if test="memberName   != null and memberName   != '' "> and MEM.MEMBER_NAME LIKE '%' || #{memberName} || '%' </if>
+                    ) TB
+           group by MEMBER_NO, MEMBER_NAME, MONEY_NAME
+           ) TB2
+  group by MEMBER
+  <!-- order by MEMBER_NAME -->
+  order by ${sidx} ${sord}
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingBottom"/>
+    </select>
+
+</mapper>

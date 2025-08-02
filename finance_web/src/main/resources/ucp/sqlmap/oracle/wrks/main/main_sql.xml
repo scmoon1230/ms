@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="wrks_lgn">
+
+	<select id="statsList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+		<![CDATA[
+
+			/* TODO */
+			select
+				'TODO' as TAG
+				, RK
+				, WORK_ID	AS ID
+				, WORK_TITLE as TITLE
+				, WORK_REQ_YMD_HMS as S_DATE
+				, WORK_END_YMD_HMS as E_DATE
+			from(
+				select  ROW_NUMBER() OVER(order by EUML.RGS_DATE DESC) as RK,
+                        CEO.EVT_OCR_NO WORK_ID,
+                        CEO.EVT_DTL WORK_TITLE,
+                        TO_CHAR(TO_DATE(EVT_OCR_YMD_HMS,'YYYYMMDDHH24MISS'),'YYYY-MM-DD HH24:MI') as WORK_REQ_YMD_HMS,
+                        '' WORK_END_YMD_HMS
+				 from ES_USER_MNTR_LIST EUML, CM_EVT_OCR CEO
+				where 1 = 1
+				  and EUML.USER_ID = #{USER_ID}
+				  and EUML.CLMT_OCR_NO = CEO.EVT_OCR_NO
+				order by EUML.RGS_DATE DESC
+				) A
+			where
+				A.RK >= ((TO_NUMBER(1) - 1) * TO_NUMBER(5)) + 1
+			  	and A.RK <= (TO_NUMBER(1) * TO_NUMBER(5))
+			union all
+			/* SCHD */
+			select
+				'SCHD' as TAG
+				, RK
+				, SCHD_ID	AS ID
+				, SCHD_TITLE	AS TITLE
+				, SCHD_START_YMD	AS S_DATE
+				, SCHD_END_YMD	AS E_DATE
+			from
+				(
+				select
+					SCHD_ID
+					, SCHD_TITLE
+					, TO_CHAR(TO_DATE(SCHD_START_YMD, 'YYYY-MM-DD'),'YYYY-MM-DD') as SCHD_START_YMD
+					, TO_CHAR(TO_DATE(SCHD_END_YMD, 'YYYY-MM-DD'),'YYYY-MM-DD') as SCHD_END_YMD
+					, ROW_NUMBER() OVER (order by RGS_DATE DESC) as RK
+				from UW_SCHD_MNG
+				where 1 = 1
+					and RGS_USER_ID = #{USER_ID}
+				) A
+			where
+				1 = 1
+				and	A.RK >= ((TO_NUMBER(1) - 1) * TO_NUMBER(5)) + 1
+				and A.RK <= (TO_NUMBER(1) * TO_NUMBER(5))
+			union all
+
+			/* BBS */
+
+			select
+				'BBS' as Tag
+				, RK
+				, BBN_ID as ID
+				, BBN_TITLE as TITLE
+				, RGS_DATE as S_DATE
+				, UPD_DATE as E_DATE
+
+			from
+				(
+				select
+					ROWNUM  as RK
+					, BBN_ID
+					, BBN_TITLE
+					, TO_CHAR(UPD_DATE, 'YYYY-MM-DD') as UPD_DATE
+					, TO_CHAR(RGS_DATE, 'YYYY-MM-DD') as RGS_DATE
+				from UW_BBS
+				where BBS_ID = 'BBS_N_002'
+				   and USE_YN = 'Y'
+				CONNECT BY PRIOR BBN_ID = PRNT_BBN_ID
+				START WITH BBN_ID > ' '
+				ORDER SIBLINGS BY PRNT_BBN_ID , REPLY_LVL
+				) A
+			where
+				1 = 1
+				and	A.RK >= ((TO_NUMBER(1) - 1) * TO_NUMBER(5)) + 1
+				and A.RK <= (TO_NUMBER(1) * TO_NUMBER(5))
+
+
+		]]>
+	</select>
+
+	<select id="messengerId" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+		select MAX(DECODE(SEQ_NO, 1, PGM_MENU_ID)) as LEFT_ID
+			 , MAX(DECODE(SEQ_NO, 2, PGM_MENU_ID)) as TOP_ID
+			 , MAX(DECODE(SEQ_NO, 1, PGM_MENU_NM_KO)) as PGM_MENU_NM_KO
+			 , MAX(DECODE(SEQ_NO, 1, PRNT_PGM_MENU_ID)) as PRNT_PGM_MENU_ID
+			 , MAX(DECODE(SEQ_NO, 1, PGM_ID)) as PGM_ID
+			 , MAX(DECODE(SEQ_NO, 1, NEW_WIN_WIDTH)) as NEW_WIN_WIDTH
+			 , MAX(DECODE(SEQ_NO, 1, NEW_WIN_HEIGHT)) as NEW_WIN_HEIGHT
+			 , ID
+		  from (
+				select PGM_MENU_ID
+					 , PGM_MENU_NM_KO
+					 , PRNT_PGM_MENU_ID
+					 , PGM_ID
+					 , NEW_WDW_YN
+					 , TO_CHAR(NEW_WIN_WIDTH) as NEW_WIN_WIDTH
+					 , TO_CHAR(NEW_WIN_HEIGHT) as NEW_WIN_HEIGHT
+					 , 1 as SEQ_NO
+					 , 'ID' as ID
+				  from CM_PGM_MENU
+				 where PGM_MENU_NM_KO = #{pgmMenuNmKo}
+				   and USE_TY_CD != 'N'
+				   and PGM_ID != 0
+				union all
+				select *
+				  from (
+						select PGM_MENU_ID
+							 , PGM_MENU_NM_KO
+							 , PRNT_PGM_MENU_ID
+							 , PGM_ID
+							 , NEW_WDW_YN
+							 , TO_CHAR(NEW_WIN_WIDTH) as NEW_WIN_WIDTH
+							 , TO_CHAR(NEW_WIN_HEIGHT) as NEW_WIN_HEIGHT
+							 , 2 as SEQ_NO
+							 , 'ID' as ID
+						  from CM_PGM_MENU
+						START WITH PGM_MENU_ID = (select PGM_MENU_ID from CM_PGM_MENU where PGM_MENU_NM_KO = #{pgmMenuNmKo} and PGM_ID != 0 and ROWNUM = 1)
+						CONNECT BY PRIOR  PRNT_PGM_MENU_ID = PGM_MENU_ID
+						ORDER SIBLINGS BY PRNT_PGM_MENU_ID asc, SORT_ORDR asc
+					   )
+				 where PRNT_PGM_MENU_ID = (select SYS_TOP_MENU_ID from CM_TOP_MENU where SYS_ID = #{sysId})
+			   )
+		group by ID
+	</select>
+
+</mapper>

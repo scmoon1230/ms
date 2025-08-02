@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ucp.wrks.evtctl.stats.service.CctvConnFcltMapper">
+
+<!-- 영상접속통계(CCTV별) -->
+    <sql id="selectMonthSql">
+        select A.*
+             , CASE WHEN A.FCLT_ID = '-' THEN '- 합계 -'
+                    ELSE COALESCE(NULLIF(( select FCLT_LBL_NM from CM_FACILITY where FCLT_ID = A.FCLT_ID ),''), A.FCLT_ID)
+                     END as FCLT_LBL_NM
+          from ( select COALESCE(NULLIF(FCLT_ID,''), '-') as FCLT_ID
+                      , SUM( CASE WHEN CONN_MONTH = '01' THEN CONN_CNT ELSE 0 END ) as M_01
+                      , SUM( CASE WHEN CONN_MONTH = '02' THEN CONN_CNT ELSE 0 END ) as M_02
+                      , SUM( CASE WHEN CONN_MONTH = '03' THEN CONN_CNT ELSE 0 END ) as M_03
+                      , SUM( CASE WHEN CONN_MONTH = '04' THEN CONN_CNT ELSE 0 END ) as M_04
+                      , SUM( CASE WHEN CONN_MONTH = '05' THEN CONN_CNT ELSE 0 END ) as M_05
+                      , SUM( CASE WHEN CONN_MONTH = '06' THEN CONN_CNT ELSE 0 END ) as M_06
+                      , SUM( CASE WHEN CONN_MONTH = '07' THEN CONN_CNT ELSE 0 END ) as M_07
+                      , SUM( CASE WHEN CONN_MONTH = '08' THEN CONN_CNT ELSE 0 END ) as M_08
+                      , SUM( CASE WHEN CONN_MONTH = '09' THEN CONN_CNT ELSE 0 END ) as M_09
+                      , SUM( CASE WHEN CONN_MONTH = '10' THEN CONN_CNT ELSE 0 END ) as M_10
+                      , SUM( CASE WHEN CONN_MONTH = '11' THEN CONN_CNT ELSE 0 END ) as M_11
+                      , SUM( CASE WHEN CONN_MONTH = '12' THEN CONN_CNT ELSE 0 END ) as M_12
+                      , SUM( CASE WHEN CONN_MONTH IS NULL THEN CONN_CNT ELSE 0 END ) as M_TT
+                   from ( select TO_CHAR(A.CONN_DATE, 'MM') as CONN_MONTH, A.FCLT_ID, COUNT(A.FCLT_ID) as CONN_CNT
+                            from UM_CCTV_VIEW_LOG A
+                            join VW_USER VU ON A.USER_ID = VU.USER_ID and A.DSTRT_CD = VU.DSTRT_CD and VU.TEST_YN = 'N'
+                             <if test='searchCctvNm != ""'>
+                            join CM_FACILITY CF ON A.FCLT_ID = CF.FCLT_ID and FCLT_LBL_NM LIKE concat('%' , #{searchCctvNm} , '%')
+                             </if>
+                             and A.CONN_DATE between TO_TIMESTAMP(#{searchYear} || '0101', 'YYYYMMDD')+'1 seconds'
+                                                 and TO_TIMESTAMP(#{searchYear} || '0101', 'YYYYMMDD')+'1 years -1 seconds'
+                         group by rollup(TO_CHAR(A.CONN_DATE, 'MM'), A.FCLT_ID)
+                        union all
+                         select null as CONN_MONTH                       , A.FCLT_ID, COUNT(A.FCLT_ID) as CONN_CNT
+                            from UM_CCTV_VIEW_LOG A
+                            join VW_USER VU ON A.USER_ID = VU.USER_ID and A.DSTRT_CD = VU.DSTRT_CD and VU.TEST_YN = 'N'
+                             <if test='searchCctvNm != ""'>
+                            join CM_FACILITY CF ON A.FCLT_ID = CF.FCLT_ID and FCLT_LBL_NM LIKE concat('%' , #{searchCctvNm} , '%')
+                             </if>
+                             and A.CONN_DATE between TO_TIMESTAMP(#{searchYear} || '0101', 'YYYYMMDD')+'1 seconds'
+                                                 and TO_TIMESTAMP(#{searchYear} || '0101', 'YYYYMMDD')+'1 years -1 seconds'
+                         group by A.FCLT_ID
+                        ) A
+               group by FCLT_ID
+               ) A
+    </sql>
+
+    <select id="selectMonthList" parameterType="map" resultType="egovMap">
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingHeader"/>
+        <include refid="selectMonthSql"/>
+        order by FCLT_LBL_NM ASC
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingBottom"/>
+    </select>
+
+    <select id="selectMonthExcel" parameterType="map" resultType="egovMap">
+        <include refid="selectMonthSql"/>
+        order by FCLT_LBL_NM ASC
+    </select>
+
+    <sql id="selectDaySql">
+        select A.*
+             , CASE WHEN A.FCLT_ID = '-' THEN '- 합계 -'
+               ELSE COALESCE(NULLIF(( select FCLT_LBL_NM from CM_FACILITY where FCLT_ID = A.FCLT_ID ),''), A.FCLT_ID)
+                END as FCLT_LBL_NM
+          from ( select CASE WHEN FCLT_ID IS NULL THEN '-' ELSE FCLT_ID END as FCLT_ID
+                      , SUM(CASE WHEN CONN_DAY = '01' THEN CONN_CNT ELSE 0 END ) as DAY_01
+                      , SUM(CASE WHEN CONN_DAY = '02' THEN CONN_CNT ELSE 0 END ) as DAY_02
+                      , SUM(CASE WHEN CONN_DAY = '03' THEN CONN_CNT ELSE 0 END ) as DAY_03
+                      , SUM(CASE WHEN CONN_DAY = '04' THEN CONN_CNT ELSE 0 END ) as DAY_04
+                      , SUM(CASE WHEN CONN_DAY = '05' THEN CONN_CNT ELSE 0 END ) as DAY_05
+                      , SUM(CASE WHEN CONN_DAY = '06' THEN CONN_CNT ELSE 0 END ) as DAY_06
+                      , SUM(CASE WHEN CONN_DAY = '07' THEN CONN_CNT ELSE 0 END ) as DAY_07
+                      , SUM(CASE WHEN CONN_DAY = '08' THEN CONN_CNT ELSE 0 END ) as DAY_08
+                      , SUM(CASE WHEN CONN_DAY = '09' THEN CONN_CNT ELSE 0 END ) as DAY_09
+                      , SUM(CASE WHEN CONN_DAY = '10' THEN CONN_CNT ELSE 0 END ) as DAY_10
+                      , SUM(CASE WHEN CONN_DAY = '11' THEN CONN_CNT ELSE 0 END ) as DAY_11
+                      , SUM(CASE WHEN CONN_DAY = '12' THEN CONN_CNT ELSE 0 END ) as DAY_12
+                      , SUM(CASE WHEN CONN_DAY = '13' THEN CONN_CNT ELSE 0 END ) as DAY_13
+                      , SUM(CASE WHEN CONN_DAY = '14' THEN CONN_CNT ELSE 0 END ) as DAY_14
+                      , SUM(CASE WHEN CONN_DAY = '15' THEN CONN_CNT ELSE 0 END ) as DAY_15
+                      , SUM(CASE WHEN CONN_DAY = '16' THEN CONN_CNT ELSE 0 END ) as DAY_16
+                      , SUM(CASE WHEN CONN_DAY = '17' THEN CONN_CNT ELSE 0 END ) as DAY_17
+                      , SUM(CASE WHEN CONN_DAY = '18' THEN CONN_CNT ELSE 0 END ) as DAY_18
+                      , SUM(CASE WHEN CONN_DAY = '19' THEN CONN_CNT ELSE 0 END ) as DAY_19
+                      , SUM(CASE WHEN CONN_DAY = '20' THEN CONN_CNT ELSE 0 END ) as DAY_20
+                      , SUM(CASE WHEN CONN_DAY = '21' THEN CONN_CNT ELSE 0 END ) as DAY_21
+                      , SUM(CASE WHEN CONN_DAY = '22' THEN CONN_CNT ELSE 0 END ) as DAY_22
+                      , SUM(CASE WHEN CONN_DAY = '23' THEN CONN_CNT ELSE 0 END ) as DAY_23
+                      , SUM(CASE WHEN CONN_DAY = '24' THEN CONN_CNT ELSE 0 END ) as DAY_24
+                      , SUM(CASE WHEN CONN_DAY = '25' THEN CONN_CNT ELSE 0 END ) as DAY_25
+                      , SUM(CASE WHEN CONN_DAY = '26' THEN CONN_CNT ELSE 0 END ) as DAY_26
+                      , SUM(CASE WHEN CONN_DAY = '27' THEN CONN_CNT ELSE 0 END ) as DAY_27
+                      , SUM(CASE WHEN CONN_DAY = '28' THEN CONN_CNT ELSE 0 END ) as DAY_28
+                      , SUM(CASE WHEN CONN_DAY = '29' THEN CONN_CNT ELSE 0 END ) as DAY_29
+                      , SUM(CASE WHEN CONN_DAY = '30' THEN CONN_CNT ELSE 0 END ) as DAY_30
+                      , SUM(CASE WHEN CONN_DAY = '31' THEN CONN_CNT ELSE 0 END ) as DAY_31
+                      , SUM(CASE WHEN CONN_DAY IS NULL THEN CONN_CNT ELSE 0 END ) as DAY_TT
+                   from ( select TO_CHAR(A.CONN_DATE, 'DD') as CONN_DAY, A.FCLT_ID, COUNT(A.FCLT_ID) as CONN_CNT
+                            from UM_CCTV_VIEW_LOG A
+                            join VW_USER VU ON A.USER_ID = VU.USER_ID and A.DSTRT_CD = VU.DSTRT_CD and VU.TEST_YN = 'N'
+                             <if test='searchCctvNm != ""'>
+                            join CM_FACILITY CF ON A.FCLT_ID = CF.FCLT_ID and FCLT_LBL_NM LIKE concat('%' , #{searchCctvNm} , '%')
+                             </if>
+                           where 1 = 1
+                             and A.CONN_DATE between TO_TIMESTAMP(#{searchYear} || #{searchMonth} || '01', 'YYYYMMDD')+'1 seconds'
+                                                 and TO_TIMESTAMP(#{searchYear} || #{searchMonth} || '01', 'YYYYMMDD')+'1 months -1 seconds'
+                        group by rollup(TO_CHAR(A.CONN_DATE, 'DD'), A.FCLT_ID)
+                       union all
+                        select null as CONN_DAY                           , A.FCLT_ID, COUNT(A.FCLT_ID) as CONN_CNT
+                            from UM_CCTV_VIEW_LOG A
+                            join VW_USER VU ON A.USER_ID = VU.USER_ID and A.DSTRT_CD = VU.DSTRT_CD and VU.TEST_YN = 'N'
+                             <if test='searchCctvNm != ""'>
+                            join CM_FACILITY CF ON A.FCLT_ID = CF.FCLT_ID and FCLT_LBL_NM LIKE concat('%' , #{searchCctvNm} , '%')
+                             </if>
+                           where 1 = 1
+                             and A.CONN_DATE between TO_TIMESTAMP(#{searchYear} || #{searchMonth} || '01', 'YYYYMMDD')+'1 seconds'
+                                                 and TO_TIMESTAMP(#{searchYear} || #{searchMonth} || '01', 'YYYYMMDD')+'1 months -1 seconds'
+                        group by A.FCLT_ID
+                        ) A
+               group by FCLT_ID
+               ) A
+    </sql>
+
+    <select id="selectDayList" parameterType="map" resultType="egovMap">
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingHeader"/>
+        <include refid="selectDaySql"/>
+        order by FCLT_LBL_NM ASC
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingBottom"/>
+    </select>
+
+    <select id="selectDayExcel" parameterType="map" resultType="egovMap">
+        <include refid="selectDaySql"/>
+        order by FCLT_LBL_NM ASC
+    </select>
+    
+</mapper>

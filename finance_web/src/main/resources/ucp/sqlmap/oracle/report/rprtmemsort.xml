@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ucp.report.service.RprtmemsortMapper">
+
+    <select id="selectRprtMemsort" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectRprtMemsort */
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingHeader"/>
+        select MAMON.MONEY_AMT
+             , decode( MAMON.ID_EXIST,'Y'
+                     , decode( MAMON.member_id
+                             , '888888',nvl(MAMON.member_name,MEM.member_name)
+                             , '999999',nvl(MAMON.member_name,MEM.member_name)
+                             , MEM.MEMBER_NAME
+                             )
+                     , MAMON.MEMBER_NAME
+                     ) MEMBER_NAME
+             , TO_CHAR(TO_DATE(MAMON.STAN_YMD, 'YYYYMMDD'), 'YYYY-MM-DD') STAN_YMD
+             , MAMON.MEMBER_ID    , MEM.MEMBER_NO       , MEM.SORT_ORDER       , MAMON.ID_EXIST
+             , MEM.POSITION_CODE  , MEM.POSITION_NAME   , MEM.POSITION_ORDER
+          from ( select STAN_YMD, MEMBER_ID, ID_EXIST, MEMBER_NAME, SUM(MONEY_AMT) MONEY_AMT 
+                   from TB_MAST_MONEY
+                  where STAN_YMD       = #{stanYmd}
+                  /* 
+                    AND MEMBER_NAME NOT LIKE '%구역%'
+                    AND MEMBER_NAME NOT LIKE '%합산분%'
+                  */
+                    <if test="moneyCode   != null and moneyCode   != '' "> and MONEY_CODE   = #{moneyCode}   </if>
+                    <if test="worshipCode != null and worshipCode != '' "> and WORSHIP_CODE = #{worshipCode} </if>
+                    <if test="idExist     != null and idExist     != '' "> and ID_EXIST     = #{idExist}     </if>
+               group by STAN_YMD, MEMBER_ID, ID_EXIST, MEMBER_NAME
+               ) MAMON
+             , ( select MEM.MEMBER_ID, MEM.MEMBER_NO, MEM.MEMBER_NAME
+                      , MEM.POSITION_CODE, p.POSITION_NAME, p.SORT_ORDER POSITION_ORDER
+                      , MEM.SORT_ORDER
+                   from TB_MEMBER MEM
+              left join TB_POSITION p ON p.POSITION_CODE = MEM.POSITION_CODE
+               ) MEM
+         where NVL(MAMON.MEMBER_ID, 'X') = MEM.MEMBER_ID(+)
+      order by ${sidx} ${sord}
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingBottom"/>
+    </select>
+
+    <select id="selectRprtMemsortTotalAmnt" parameterType="java.util.HashMap" resultType="String">
+    /* selectRprtMemsortTotalAmnt */
+        select nvl(sum(MAMON.MONEY_AMT),'0') MONEY_AMT
+          from ( select STAN_YMD, MEMBER_ID, ID_EXIST, MEMBER_NAME, SUM(MONEY_AMT) MONEY_AMT 
+                   from TB_MAST_MONEY
+                  where STAN_YMD       = #{stanYmd}
+                  /* 
+                    AND MEMBER_NAME NOT LIKE '%구역%'
+                    AND MEMBER_NAME NOT LIKE '%합산분%'
+                  */
+                    <if test="moneyCode   != null and moneyCode   != '' "> and MONEY_CODE   = #{moneyCode}   </if>
+                    <if test="worshipCode != null and worshipCode != '' "> and WORSHIP_CODE = #{worshipCode} </if>
+                    <if test="idExist     != null and idExist     != '' "> and ID_EXIST     = #{idExist}     </if>
+               group by STAN_YMD, MEMBER_ID, ID_EXIST, MEMBER_NAME
+               ) MAMON
+             , ( select MEM.MEMBER_ID, MEM.MEMBER_NO, MEM.MEMBER_NAME
+                      , MEM.POSITION_CODE, p.POSITION_NAME, p.SORT_ORDER POSITION_ORDER
+                   from TB_MEMBER MEM
+              left join TB_POSITION p ON p.POSITION_CODE = MEM.POSITION_CODE
+               ) MEM
+         where NVL(MAMON.MEMBER_ID, 'X') = MEM.MEMBER_ID(+)
+    </select>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <select id="selectRprtMemsorthigh" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectRprtMemsorthigh */
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingHeader"/>
+        select TO_CHAR(TO_DATE(MAMON.STAN_YMD, 'YYYYMMDD'), 'YYYY-MM-DD') STAN_YMD
+             , MAMON.MONEY_CODE
+             , (SELECT MONEY_NAME from TB_MONEY M where M.MONEY_CODE = MAMON.MONEY_CODE) MONEY_NAME
+             , MEM.MEMBER_ORDER   , MEM.MEMBER_TYPE
+             , MEM.POSITION_CODE  , MEM.POSITION_NAME  , MEM.POSITION_ORDER
+             , decode( MAMON.ID_EXIST,'Y'
+                     , decode( MAMON.member_id
+                             , '888888',nvl(MAMON.member_name,MEM.member_name)
+                             , '999999',nvl(MAMON.member_name,MEM.member_name)
+                             , MEM.MEMBER_NAME
+                             )
+                     , MAMON.MEMBER_NAME
+                     ) MEMBER_NAME
+             , MAMON.MEMBER_ID       , MEM.MEMBER_NO      , MAMON.ID_EXIST        , MAMON.MONEY_AMT
+          from ( select STAN_YMD, MONEY_CODE, MEMBER_ID, ID_EXIST, MEMBER_NAME, SUM(MONEY_AMT) MONEY_AMT 
+                   from TB_MAST_MONEY
+                  where MEMBER_NAME NOT LIKE '%합산%'
+                    and ( STAN_YMD <![CDATA[>=]]> #{startDate} and STAN_YMD <![CDATA[<=]]> #{endDate} )
+                    <if test="moneyCode   != null and moneyCode   != '' "> and MONEY_CODE   = #{moneyCode}   </if>
+                    <if test="worshipCode != null and worshipCode != '' "> and WORSHIP_CODE = #{worshipCode} </if>
+                    <if test="idExist     != null and idExist     != '' "> and ID_EXIST     = #{idExist}     </if>
+               group by STAN_YMD, MONEY_CODE, MEMBER_ID, ID_EXIST, MEMBER_NAME
+               ) MAMON
+             , ( select MEM.MEMBER_ID, MEM.MEMBER_NO, MEM.MEMBER_NAME
+                      , MEM.SORT_ORDER MEMBER_ORDER
+                      , DECODE(MEMBER_NO,'000000',0,'111111',1,'888888',3,'999999',4,2) MEMBER_TYPE
+                      , MEM.POSITION_CODE   , POS.POSITION_NAME  , POS.SORT_ORDER POSITION_ORDER
+                   from TB_MEMBER MEM
+              left join TB_POSITION POS ON POS.POSITION_CODE = MEM.POSITION_CODE
+               ) MEM
+         where NVL(MAMON.MEMBER_ID, 'X') = MEM.MEMBER_ID(+)
+           and NVL(MEM.MEMBER_NO, 'X') NOT IN ('888888', '999999')
+           <if test="moneyAmt     != null and moneyAmt     != '' ">
+           and ( MEM.MEMBER_NO IN ('000000', '111111') OR MAMON.MONEY_AMT <![CDATA[>=]]> #{moneyAmt}
+                 OR MEM.MEMBER_NO = '740628' /* 김주나 항상 포함 */
+                  )
+           </if>
+      order by ${sidx} ${sord}
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingBottom"/>
+    </select>
+
+</mapper>

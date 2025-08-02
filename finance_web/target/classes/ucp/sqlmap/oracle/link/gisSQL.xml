@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ucp.gis.service.GisMapper" >
+
+	<!-- 
+    <select id="getGisProjection" resultType="String">
+		SELECT PRPRTS_VAL
+		  from CM_PRPRTS_GIS
+		 where GIS_ENGINE = (
+			select prprts_val from cm_prprts where prprts_id = (
+				select prprts_val from cm_prprts where prprts_id = 'COM' and prprts_key = 'DSTRT_CD'
+				) and  prprts_key = 'GIS_ENGINE'
+		    )
+		  and PRPRTS_KEY = 'GIS_PROJECTION'
+    </select>
+	 -->
+    <select id="getGisProjection" parameterType="String" resultType="String">
+    /* getGisProjection */
+        select PRPRTS_VAL AS PROJECTION
+          from CM_PRPRTS
+         where PRPRTS_TY  = 'CM_PRPRTS_GIS'
+           and PRPRTS_KEY = 'GIS_PROJECTION'
+           and PRPRTS_ID  = #{value}
+    </select>
+    
+    <select id="selectFcltPointList"  parameterType="hMap" resultType="cmlMap2">
+        select VF.FCLT_ID
+             , VF.POINT_X
+             , VF.POINT_Y
+             , VF.POINT_X_PRJCTN
+			 , VF.POINT_Y_PRJCTN
+         from VW_FACILITY VF
+        where 1 =1
+          and VF.POINT_X > 0
+          and VF.POINT_Y > 0
+		<if test="dstrtCd != null and dstrtCd != ''">
+		  and DSTRT_CD 		= #{dstrtCd}
+		</if>
+    </select>
+    
+	<update id="updateFcltPointProjection"  parameterType="map">
+		UPDATE CM_FACILITY
+		   SET POINT_X_PRJCTN = #{pointXPrjctn}::double precision
+		     , POINT_Y_PRJCTN = #{pointYPrjctn}::double precision
+		 where FCLT_ID = #{fcltId}
+		   and (
+		          POINT_X_PRJCTN != #{pointXPrjctn}::double precision
+		       or POINT_Y_PRJCTN != #{pointYPrjctn}::double precision
+		        )
+	</update>
+
+</mapper>

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.co.ucp.link.job.user.service.JobUserWideMapper">
+
+    <select id="selectUserList" resultType="cmlMap2">
+    /* selectUserList */
+        select A.USER_ID
+             , A.USER_NM_KO     AS USER_NM
+             , A.DEPT_NM        AS PART_NM
+             , A.RANK_NM        AS PSTN_NM
+             , A.MOBL_NO        AS TEL_NO
+             , A.EMAIL          AS E_MAIL
+             , A.USE_TY_CD      AS USE_YN
+             , A.GRP_ID
+             , A.AUTH_LVL       AS GRP_AUTH_LVL
+             , A.DSTRT_CD
+             , A.RPSB_WORK      AS RPSB_WORK
+          from VW_USER A
+         where A.USE_TY_CD = 'Y'
+           and A.USER_ID not in
+               ( select CD_ID AS USER_ID
+                   from CM_TC_CODE
+                  where CD_GRP_ID = 'TEST_ID'
+                    and CD_TY = 'C'
+                    and USE_TY_CD = 'Y'
+               )
+           and A.GRP_ID != 'COM'
+           and A.USER_ID != 'admin'
+           and A.email != 'test@test.com'
+           and A.DSTRT_CD = #{dstrtCd}
+    </select>
+    
+</mapper>

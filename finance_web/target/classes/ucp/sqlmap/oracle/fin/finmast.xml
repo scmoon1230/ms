@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ucp.fin.service.FinmastMapper">
+
+    <select id="selectFinmastList" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectFinmastList */
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingHeader"/>
+        select FM.ASSET_CODE       , FI.ASSET_NAME 
+             , FI.ASSET_GB 
+             , CASE WHEN FI.ASSET_GB = '1' THEN '정기예적금'
+                    WHEN FI.ASSET_GB = '2' THEN '일반예금'
+                    WHEN FI.ASSET_GB = '3' THEN '대여금'
+                    WHEN FI.ASSET_GB = '9' THEN '기타'
+                    ELSE '-'
+                END AS ASSET_GB_NAME
+             , FI.ACCT_GB          , AG.ACCT_GB_NAME         , FI.BANK_NAME        , FI.ACCOUNT_NO
+             , TO_CHAR(TO_DATE(FI.ISSUE_YMD, 'YYYYMMDD'), 'YYYY-MM-DD') ISSUE_YMD
+             , SUBSTR(FI.MTY_YMD,0,4) ||'-'|| SUBSTR(FI.MTY_YMD,5,2) ||'-'|| SUBSTR(FI.MTY_YMD,7,2) MTY_YMD
+             , FI.REMARK   , FI.USE_YN
+             , FM.INIT_AMT , FM.ADD_AMT , NVL(FM.INIT_AMT+FM.ADD_AMT,0) TOTAL_AMT  
+          FROM TB_FINANCE_MAST FM
+     LEFT JOIN TB_FINANCE_INFO FI ON FI.ASSET_CODE = FM.ASSET_CODE 
+     left join TB_ACCT_GB      AG ON AG.ACCT_GB    = FI.ACCT_GB
+         WHERE 1 = 1
+           AND FM.STAN_YMD = #{stanYmd}
+           <if test="assetName != null and assetName != '' "> and FI.ASSET_NAME LIKE '%' || #{assetName} || '%' </if>
+           <if test="accountNo != null and accountNo != '' "> and FI.ACCOUNT_NO LIKE '%' || #{accountNo} || '%' </if>
+           <if test="assetCode != null and assetCode != '' "> and FI.ASSET_CODE = #{assetCode} </if>
+           <if test="assetGb   != null and assetGb   != '' "> and FI.ASSET_GB   = #{assetGb}   </if>
+           <if test="acctGb    != null and acctGb    != '' "> and FI.ACCT_GB    = #{acctGb}    </if>
+           <!-- <if test="useYn     != null and useYn     != '' "> and FI.USE_YN     = #{useYn}     </if> -->
+           <if test='showYn    != null and showYn    == "Y" '>
+           AND ( FI.ACCT_GB <![CDATA[<>]]> '5' OR (FI.ACCT_GB = '5' AND FI.USE_YN = 'Y') )	/*5재정은 사용중인것만*/
+           AND 0 <![CDATA[<]]> NVL(FM.INIT_AMT+FM.ADD_AMT,0)
+           </if>
+      order by ${sidx} ${sord}
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingBottom"/>
+    </select>
+
+
+    <!--
+    <select id="selectFinmast" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectFinmastList */
+        SELECT FM.STAN_YMD , FM.ASSET_CODE
+             , FM.INIT_AMT , FM.ADD_AMT    , (FM.INIT_AMT + FM.ADD_AMT) TOTAL_AMT
+          FROM TB_FINANCE_MAST FM
+         WHERE FM.STAN_YMD = #{stanYmd}
+    </select>
+     -->
+    <select id="selectFinmastOne" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectFinmastOne */
+        SELECT STAN_YMD             , ASSET_CODE
+             , INIT_AMT             , ADD_AMT        , (INIT_AMT + ADD_AMT) TOTAL_AMT
+          FROM TB_FINANCE_MAST
+         WHERE STAN_YMD   = #{stanYmd}
+           AND ASSET_CODE = #{assetCode}
+    </select>
+    
+    <insert id="insertFinmast" parameterType="java.util.HashMap">
+    /* insertFinmast */
+        insert into TB_FINANCE_MAST
+             ( STAN_YMD   , ASSET_CODE   , INIT_AMT   , ADD_AMT   )
+        values
+             ( #{stanYmd} , #{assetCode} , #{initAmt} , #{addAmt} )
+    </insert>
+
+    <update id="updateFinmast" parameterType="java.util.HashMap">
+    /* updateFinmast */
+        update TB_FINANCE_MAST
+           set STAN_YMD   = #{stanYmd}
+             , ASSET_CODE = #{assetCode}
+           <if test="initAmt != null "> , INIT_AMT = #{initAmt} </if>
+           <if test="addAmt  != null "> , ADD_AMT  = #{addAmt} </if>
+         WHERE STAN_YMD   = #{stanYmd}
+           AND ASSET_CODE = #{assetCode}
+    </update>
+
+    <delete id="deleteFinmast" parameterType="java.util.HashMap">
+    /* deleteFinmast */
+        delete from TB_FINANCE_MAST
+         where STAN_YMD   = #{stanYmd}
+    </delete>
+    
+    
+
+    <select id="selectFinmastLastStanYmd" resultType="String">
+    /* selectFinmastLastStanYmd */
+        SELECT MAX(STAN_YMD)
+          FROM TB_FINANCE_MAST
+    </select>
+    
+    
+    
+    
+</mapper>

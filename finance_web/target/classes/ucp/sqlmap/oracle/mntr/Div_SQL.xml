@@ -1,0 +1,275 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ucp.mntr.main.service.DivMapper">
+
+    <resultMap id="divVO" type="kr.co.ucp.mntr.main.service.DivVO">
+        <result property="divId"      column="DIV_ID" />
+        <result property="divTitle"   column="DIV_TITLE" />
+        <result property="divTyCd"    column="DIV_TY_CD" />
+        <result property="divFileNm"  column="DIV_FILE_NM" />
+        <result property="updUserId"  column="UPD_USER_ID" />
+        <result property="updDate"    column="UPD_DATE" />
+        <result property="rgsUserId"  column="RGS_USER_ID" />
+        <result property="rgsDate"    column="RGS_DATE" />
+        <result property="evtId"      column="EVT_ID" />
+        <result property="divLc"      column="DIV_LC" />
+        <result property="divLcSrlNo" column="DIV_LC_SRL_NO" />
+        <result property="userId"     column="USER_ID" />
+        <result property="mntrTyId"   column="MNTR_TY_ID" />
+        <result property="divConts"   column="DIV_CONTS" />
+    </resultMap>
+
+    <sql id="selectEventListSql">
+        select DISTINCT CE.EVT_ID
+                      , CE.EVT_NM
+                      , CE.SYS_CD
+                      , CSC.SYS_NM_KO
+                      , CE.USVC_GRP_CD
+                      , FN_GET_TC_CODE('USVC_GRP', CE.USVC_GRP_CD) as USVC_GRP_NM
+                      , CE.SORT_ORDR
+          from CM_EVENT       CE
+          join CM_GRP_LVL_EVT CGLE on CE.EVT_ID   = CGLE.EVT_ID and CGLE.USE_YN = 'Y'
+          join CM_SYS_CODE    CSC  on CE.SYS_CD   = CSC.SYS_CD
+          join CM_GROUP       CG   on CGLE.GRP_ID = CG.GRP_ID
+         where CE.USE_TY_CD = 'Y'
+           <if test='grpId   != null and grpId   != ""'> and CGLE.GRP_ID   = #{grpId}   </if>
+           <if test='authLvl != null and authLvl != ""'> and CGLE.AUTH_LVL = #{authLvl} </if>
+    </sql>
+
+
+    <!-- 이벤트 목록 조회 -->
+    <select id="selectEventList" parameterType="fcltSrchVO" resultType="egovMap">
+        select *
+          from ( select ROW_NUMBER() OVER() RNUM
+                      , COUNT(*) OVER() as ROWCNT
+                      , I.*
+                   from (
+                            <include refid="selectEventListSql"/>
+                         order by CE.SORT_ORDR, CE.EVT_ID
+                        ) I
+                  limit #{lastIndex}
+               ) O
+         where RNUM >= #{firstIndex}
+    </select>
+
+    <select id="selectDivList" resultMap="divVO">
+        select DISTINCT UDL.DIV_ID
+                      , UDL.DIV_TITLE
+                      , UDL.DIV_FILE_NM
+                      , UDL.DIV_TY_CD
+                      , UDL.DIV_CONTS
+          from UM_DIV_LIST UDL
+         where 1 =1
+           and UDL.USE_TY_CD = 'Y'
+      order by DIV_TY_CD, DIV_ID
+    </select>
+
+    <delete id="deleteDivEvt" parameterType="div">
+        delete from UM_DIV_EVT
+         where EVT_ID = #{evtId}
+           and DIV_ID = #{divId}
+    </delete>
+
+    <delete id="deleteDivEvtGrpLvl" parameterType="div">
+        delete from UM_DIV_EVT_GRP_LVL
+         where EVT_ID = #{evtId}
+           and DIV_ID = #{divId}
+    </delete>
+
+    <update id="mergeDivNormalPosition" parameterType="div">
+        insert into UM_DIV_EVT
+             ( EVT_ID        , DIV_ID    , DIV_LC        , DIV_LC_SRL_NO
+             , RGS_USER_ID   , RGS_DATE  , UPD_USER_ID   , UPD_DATE    )
+        values
+             ( #{evtId}      , #{divId}  , #{divLc}      , #{divLcSrlNo}
+             , #{userId}     , NOW()     , #{userId}     , NOW()       )
+   on CONFLICT
+             ( EVT_ID        , DIV_ID   )
+     DO update
+           set DIV_LC           = #{divLc}
+             , DIV_LC_SRL_NO    = #{divLcSrlNo}
+             , UPD_USER_ID      = #{userId}
+             , UPD_DATE         = NOW()
+    </update>
+
+    <update id="mergeDivSituationPosition" parameterType="div">
+        insert into UM_DIV_EVT
+             ( EVT_ID        , DIV_ID    , DIV_LC        , DIV_LC_SRL_NO
+             , RGS_USER_ID   , RGS_DATE  , UPD_USER_ID   , UPD_DATE    )
+        values
+             ( #{evtId}      , #{divId}  , #{divLc}      , #{divLcSrlNo}
+             , #{userId}     , NOW()     , #{userId}     , NOW()       )
+   on CONFLICT
+             ( EVT_ID        , DIV_ID    )
+     DO update
+           set DIV_LC           = #{divLc}
+             , DIV_LC_SRL_NO    = #{divLcSrlNo}
+             , UPD_USER_ID      = #{userId}
+             , UPD_DATE         = NOW()
+    </update>
+
+    <update id="mergeDivSituationPositionGrpAuthLvl" parameterType="div">
+        insert into UM_DIV_EVT_GRP_LVL
+             ( GRP_ID       , AUTH_LVL
+             , EVT_ID       , DIV_ID      , DIV_LC        , DIV_LC_SRL_NO
+             , RGS_USER_ID  , RGS_DATE    , UPD_USER_ID   , UPD_DATE    )
+        values
+             ( #{grpId}   , #{authLvl}::numeric
+             , #{evtId}   , #{divId}     , #{divLc}    , #{divLcSrlNo}
+             , #{userId}  , NOW()        , #{userId}   , NOW()       )
+   on CONFLICT
+             ( GRP_ID     , AUTH_LVL     , EVT_ID      , DIV_ID      )
+     DO update
+           set DIV_LC               = #{divLc}
+             , DIV_LC_SRL_NO        = #{divLcSrlNo}
+             , UPD_USER_ID          = #{userId}
+             , UPD_DATE             = NOW()
+    </update>
+
+    <select id="selectGrpAuthLvlList" resultType="egovMap">
+        select CGAL.GRP_ID
+             , CG.GRP_NM_KO
+             , AUTH_LVL
+             , AUTH_LVL_NM
+          from CM_GRP_AUTH_LVL CGAL
+          join CM_GROUP        CG   on CG.GRP_ID = CGAL.GRP_ID and CG.USE_TY_CD = 'Y'
+         where CGAL.USE_TY_CD = 'Y'
+           and CGAL.GRP_ID   != 'COM'
+      order by CGAL.GRP_ID, AUTH_LVL
+    </select>
+
+    <delete id="deleteGrpAuthLvl">
+        DELETE
+          from UM_DIV_EVT_GRP_LVL
+         where GRP_ID   = #{grpId}
+           and AUTH_LVL = #{authLvl}::numeric
+           and EVT_ID   = #{evtId}
+    </delete>
+
+    <select id="selectGeneralDivList" resultType="egovMap">
+        select UDL.DIV_ID
+             , UDL.DIV_TITLE
+             , UDL.DIV_FILE_NM
+             , UDL.DIV_TY_CD
+             , UDL.DIV_DIS_TY
+             , UDL.DIV_CONTS
+          from UM_DIV_LIST UDL
+         where 1 = 1
+           and UDL.USE_TY_CD = 'Y'
+           and UDL.DIV_TY_CD = 'GENERAL'
+    </select>
+
+    <select id="selectGeneralDivLcList" resultType="egovMap">
+        select UDL.DIV_ID
+             , UDL.DIV_TITLE
+             , UDL.DIV_TY_CD
+             , UDL.USE_TY_CD
+             , UDE.EVT_ID                            as MNTR_TY_ID
+             , COALESCE(NULLIF(UDE.DIV_LC, ''), 'N') as DIV_LC
+             , UDE.DIV_LC_SRL_NO                     as DIV_LC_SRL_NO
+             , UDL.DIV_CONTS
+          from UM_DIV_LIST UDL
+          join UM_DIV_EVT  UDE on UDL.DIV_ID = UDE.DIV_ID and UDE.EVT_ID = 'GENERAL'
+         where USE_TY_CD = 'Y'
+           and DIV_LC != 'N'
+           and DIV_TY_CD LIKE CONCAT('GENERAL', '%')
+      order by UDE.DIV_LC, UDE.DIV_LC_SRL_NO
+    </select>
+
+    <select id="selectEventBaseDivList" resultType="egovMap">
+        select UDL.DIV_ID
+             , UDL.DIV_TITLE
+             , UDL.DIV_TY_CD
+             , UDL.USE_TY_CD
+             , UDL.DIV_CONTS
+          from UM_DIV_LIST UDL
+         where USE_TY_CD = 'Y'
+           and DIV_TY_CD LIKE 'EVENTBASE%'
+         UNION
+        select UDL.DIV_ID
+             , UDL.DIV_TITLE
+             , UDL.DIV_TY_CD
+             , UDL.USE_TY_CD
+             , UDL.DIV_CONTS
+          from UM_DIV_LIST   UDL
+          join UM_DIV_EVT_EX UDEE on UDL.DIV_ID = UDEE.DIV_ID
+         where UDL.USE_TY_CD = 'Y'
+           and UDL.DIV_TY_CD = 'EVENTEX'
+           and UDEE.EVT_ID = #{evtId}
+      order by DIV_TY_CD, DIV_ID
+    </select>
+
+    <select id="selectEventBaseDivLcList" resultType="egovMap">
+        select UDE.DIV_ID
+             , UDE.DIV_LC
+             , UDE.DIV_LC_SRL_NO
+             , UDL.DIV_TITLE
+             , UDL.DIV_TY_CD
+             , UDL.DIV_DIS_TY
+             , UDL.DIV_CONTS
+          from UM_DIV_LIST UDL
+          join UM_DIV_EVT  UDE on UDE.DIV_ID = UDL.DIV_ID
+         where 1 = 1
+           and UDL.USE_TY_CD = 'Y'
+           and UDE.EVT_ID = 'EVENT'
+         UNION
+        select UDL.DIV_ID
+             , UDEE.DIV_LC
+             , UDEE.DIV_LC_SRL_NO
+             , UDL.DIV_TITLE
+             , UDL.DIV_TY_CD
+             , UDL.DIV_DIS_TY
+             , UDL.DIV_CONTS
+          from UM_DIV_LIST   UDL
+          join UM_DIV_EVT_EX UDEE on UDL.DIV_ID = UDEE.DIV_ID
+         where UDL.USE_TY_CD = 'Y'
+           and UDL.DIV_TY_CD = 'EVENTEX'
+           and UDEE.EVT_ID   = #{evtId}
+      order by DIV_LC, DIV_LC_SRL_NO
+    </select>
+
+    <select id="selectEventDivList" resultType="egovMap">
+        select UDL.DIV_ID
+             , UDL.DIV_TITLE
+             , UDL.DIV_TY_CD
+             , UDL.USE_TY_CD
+             , UDL.DIV_CONTS
+          from UM_DIV_LIST UDL
+         where USE_TY_CD = 'Y'
+           and DIV_TY_CD LIKE 'EVENT'
+    </select>
+
+    <select id="selectEventDivLcList" resultType="egovMap">
+        select UDE.DIV_ID
+             , UDE.DIV_LC
+             , UDE.DIV_LC_SRL_NO
+             , UDL.DIV_TITLE
+             , UDL.DIV_TY_CD
+             , UDL.DIV_DIS_TY
+             , UDL.DIV_CONTS
+             , 'N' as GRP_AUTH_LVL_YN
+          from UM_DIV_EVT  UDE
+          join UM_DIV_LIST UDL on UDE.DIV_ID = UDL.DIV_ID and UDL.USE_TY_CD = 'Y'
+         where 1 = 1
+           and UDE.EVT_ID = #{evtId}
+      order by UDE.DIV_LC, UDE.DIV_LC_SRL_NO
+    </select>
+
+    <select id="selectEventDivEvtGrpLvlLcList" resultType="egovMap">
+        select UDE.DIV_ID
+             , UDE.DIV_LC
+             , UDE.DIV_LC_SRL_NO
+             , UDL.DIV_TITLE
+             , UDL.DIV_TY_CD
+             , UDL.DIV_DIS_TY
+             , UDL.DIV_CONTS
+             , 'Y' as GRP_AUTH_LVL_YN
+          from UM_DIV_EVT_GRP_LVL UDE
+          join UM_DIV_LIST        UDL on UDE.DIV_ID = UDL.DIV_ID and UDL.USE_TY_CD = 'Y'
+         where 1 = 1
+           and UDE.GRP_ID   = #{grpId}
+           and UDE.AUTH_LVL = #{authLvl}::numeric
+           and UDE.EVT_ID   = #{evtId}
+      order by DIV_LC, DIV_LC_SRL_NO
+    </select>
+</mapper>

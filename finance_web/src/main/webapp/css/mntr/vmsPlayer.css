@@ -1,0 +1,44 @@
+body {
+	position: absolute;
+	top: 0px;
+	right: 0px;
+	bottom: 0px;
+	left: 0px;
+}
+
+div#view-vms {
+	position: inherit;
+	top: 0px;
+	left: 0px;
+	right: 0px;
+	bottom: 45px;
+}
+
+div#handle-vms {
+	position: inherit;
+	left: 0px;
+	right: 0px;
+	bottom: 0px;
+	padding: 10px;
+	height: 50px;
+}
+
+span#play-deck {
+	display: none;
+}
+
+span#search-deck {
+	display: none;
+}
+
+span#search-span2 {
+	display: none;
+}
+
+#toggle-audio {
+	color: gray;
+}
+
+#toggle-mic {
+	color: gray;
+}

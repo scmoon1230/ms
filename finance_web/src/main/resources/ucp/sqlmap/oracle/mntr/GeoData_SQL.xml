@@ -1,0 +1,681 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.co.ucp.mntr.gis.service.GeoDataMapper">
+    <!-- 시설물 목록 -->
+    <select id="selectFcltGeoData" parameterType="fclt" resultType="egovMap">
+   	/* selectFcltGeoData */
+        select *
+          from ( select CF.FCLT_ID                , CF.FCLT_ID as CCTV_ID
+                      , CF.FCLT_LBL_NM            , CF.FCLT_LBL_NM as CCTV_NM
+                      , CF.FCLT_KND_CD            , FN_GET_TC_CODE('FCLT_KND', CF.FCLT_KND_CD) as FCLT_KND_NM
+                      , CF.FCLT_KND_DTL_CD        , FN_GET_TC_CODE(CF.FCLT_KND_CD, CF.FCLT_KND_DTL_CD) as FCLT_KND_DTL_NM
+                      , CF.FCLT_USED_TY_CD        , ( select CU.FCLT_USED_TY_NM from CM_TC_FCLT_USED CU where CF.FCLT_USED_TY_CD = CU.FCLT_USED_TY_CD ) as FCLT_USED_TY_NM
+                      , CF.DSTRT_CD
+                      , CF.ROAD_ADRES_NM                              , CF.LOTNO_ADRES_NM
+                      , CF.ROAD_ADRES_NM as NEW_ADDR                  , CF.LOTNO_ADRES_NM as OLD_ADDR
+                      , CF.POINT_X                                                              , CF.POINT_Y
+                      , COALESCE(CF.CCTV_OSVT_X, 0) as CCTV_OSVT_X                              , COALESCE(CF.CCTV_OSVT_Y, 0) as CCTV_OSVT_Y
+                      , ( ATAN2( ( CF.CCTV_OSVT_X - CF.POINT_X ), ( CF.CCTV_OSVT_Y - CF.POINT_Y ) ) * 180 / 3.141592653589 ) as CCTV_OSVT_AG
+                      , COALESCE(CF.CCTV_DUE_NT_AG, 0) as CCTV_DUE_NT_AG
+                      , COALESCE(CF.FCLT_STTUS, '2')                               as FCLT_STTUS
+                      , FN_GET_TC_CODE('FCLT_STTUS', COALESCE(CF.FCLT_STTUS, '2')) as FCLT_STTUS_NM
+                 <!-- , CFA.AREA_CD -->
+                      , CF.CONN_IP                                     , CF.PREset_BDW_START_NUM
+                      , CF.CCTV_CHANNEL                                , CF.LINK_VMS_UID
+                      , CF.FCLT_UID                                    , CF.LINK_VMS_UID as GW_VMS_UID
+                      , COALESCE(W.NETWORK_MP_IP, CDCM.VRS_WEBRTC_ADDR) as VRS_WEBRTC_ADDR
+                      , COALESCE(R.NETWORK_MP_IP, CDCM.VRS_RTSP_ADDR)   as VRS_RTSP_ADDR
+                      , CF.GATE_WAY
+                      , CF.SVR_CONN_IP                                      , CF.SVR_CONN_PORT
+                      , CF.PRNT_FCLT_ID                                     , CF.DVC_SEE_CCTV_IP
+                      , CF.PLC_PTR_DIV_CD                                   , CF.CCTV_AG_YN
+                      , FN_GET_TC_CODE('PLC_PTR_DIV', CF.PLC_PTR_DIV_CD) as PLC_PTR_DIV_NM
+                      , CF.LPR_CCTV_YN                                      , CF.MNG_SN                  , CF.FCLT_GDSDT_TY
+                      , CF.SYS_CD                                           , CSC.VIEWER_TY_CD           , CSC.VIEWER_PTZ_YN
+                      , CF.SVR_CONN_IP || '/' || CF.FCLT_UID as RTSP_URL
+                      , CF.ETC                                              , CF.DONG_NM                 , CF.LG_DONG_NM
+                    <if test="radius != null and radius != 0">
+                      , FN_DISTANCE_WGS84(#{lon}::numeric, #{lat}::numeric, CF.POINT_X::numeric, CF.POINT_Y::numeric) as DISTANCE
+                    </if>
+                   from CM_FACILITY CF
+                   join ( select FCLT_USED_TY_CD from CM_CCTV_CTL_USED_TY
+                           where GRP_ID = #{grpId} and AUTH_LVL = CAST(#{authLvl} AS INTEGER)
+                        ) FUCD on CF.FCLT_USED_TY_CD = FUCD.FCLT_USED_TY_CD       /* 그룹레벨에 접근권한이 있는 CCTV */
+              left join CM_SYS_CODE CSC      on CF.SYS_CD   = CSC.SYS_CD
+              left join CM_DSTRT_CD_MNG CDCM on CF.DSTRT_CD = CDCM.DSTRT_CD
+              left join ( select A.NETWORK_MP_IP, A.DSTRT_CD from CM_MP_NETWORK_IP A, CM_MP_CONN_IP B
+                           where '${networkIp}' LIKE REPLACE(B.CONN_IP, 'X', '%')
+                             and A.NETWORK_ID = B.NETWORK_ID and A.NETWORK_TY = 'VRS_WEBRTC'
+                        ) W on CF.DSTRT_CD = W.DSTRT_CD
+              left join ( select DISTINCT NETWORK_MP_IP, A.DSTRT_CD from CM_MP_NETWORK_IP A, CM_MP_CONN_IP B
+                           where '${networkIp}' LIKE REPLACE(B.CONN_IP, 'X', '%')
+                             and A.NETWORK_ID = B.NETWORK_ID and A.NETWORK_TY = 'VRS_RTSP'
+                        ) R on CF.DSTRT_CD = R.DSTRT_CD
+                  where 1 = 1
+                    and CF.USE_TY_CD    = 'Y'
+                    and ( CF.POINT_X IS NOT NULL and CF.POINT_X != 0 )
+                    and ( CF.POINT_Y IS NOT NULL and CF.POINT_Y != 0 )
+                    <if test='searchIgnoreLayerMngYn != "Y"'>
+                    and EXISTS ( select FCLT_USED_TY_CD
+                                   from CM_CCTV_CTL_USED_TY CCCUT
+                                   join UM_LAYER_MNG ULM on CCCUT.FCLT_USED_TY_CD = ULM.LAYER_ID
+                                                        and USER_ID = #{userId} and DSTRT_CD = #{dstrtCd} and CHECK_YN = 'Y'
+                                  where CCCUT.GRP_ID   = #{grpId}
+                                    and CCCUT.AUTH_LVL = CAST(#{authLvl} AS INTEGER)
+                                    and ULM.LAYER_ID   = CF.FCLT_USED_TY_CD
+                               )
+                    </if>
+                 <if test='searchTvoTrgtYn == "Y"'                      > and CF.RECORDING_YN = 'Y' /* 영상저장 */ and CF.TVO_TRGT_YN = 'Y' /* 영상반출 */          </if>
+                 <if test='searchIgnoreIconGisDspYn != "Y"'                                                   > and CF.ICON_GIS_DSP_YN = 'Y'                   </if>
+                 <if test="searchFcltKndCd                 != null and searchFcltKndCd                 != ''" > and CF.FCLT_KND_CD     = #{searchFcltKndCd}    </if>
+                 <if test="searchFcltUsedTyCd              != null and searchFcltUsedTyCd              != ''" > and CF.FCLT_USED_TY_CD = #{searchFcltUsedTyCd} </if>
+                 <if test="searchFcltSttus                 != null and searchFcltSttus                 != ''" > and CF.FCLT_STTUS      = #{searchFcltSttus}    </if>
+                 <if test="searchPlcPtrDiv                 != null and searchPlcPtrDiv                 != ''" > and CF.PLC_PTR_DIV_CD  = #{searchPlcPtrDiv}    </if>
+                 <if test='searchIncludeMissingPlcPtrDivYn != null and searchIncludeMissingPlcPtrDivYn == "N"'> and CF.PLC_PTR_DIV_CD IS NOT NULL              </if>
+            <!-- <if test="searchAreaCd != null and searchAreaCd != ''"> and CFA.AREA_CD = #{searchAreaCd}                   </if>
+                 <if test='searchLprOnlyYn                      == "Y"'> and CF.LPR_CCTV_YN = 'Y' and CF.FCLT_KND_CD = 'CTV' </if>
+                 <if test="searchFcltId != null and searchFcltId != ''"> and REGEXP_LIKE(CF.FCLT_ID || FCLT_LBL_NM || LOTNO_ADRES_NM || ROAD_ADRES_NM, #{searchFcltId})
+                                                                                                     || MNG_SN, #{searchFcltId})
+                 </if> -->
+                 <if test="searchFcltId != null and searchFcltId != ''"> and ( (FCLT_LBL_NM like concat('%',#{searchFcltId},'%'))
+                                                                            or (LOTNO_ADRES_NM like concat('%',#{searchFcltId},'%')) 
+                                                                            or (ROAD_ADRES_NM like concat('%',#{searchFcltId},'%'))
+                                                                             )
+                 </if>
+                 <if test="bbox != ''"> and CF.POINT_X::numeric between #{minX}::numeric and #{maxX}::numeric
+                                        and CF.POINT_Y::numeric between #{minY}::numeric and #{maxY}::numeric
+                 </if>
+               order by CASE WHEN CF.FCLT_KND_CD = 'CTV' THEN 0 ELSE 99 END
+                      , CF.FCLT_GDSDT_TY
+                      , CF.FCLT_LBL_NM
+                      , CF.POINT_X
+                      , CF.POINT_Y
+               ) FCLT
+           where 1 = 1
+             <if test="radius != null and radius != ''">        <![CDATA[ and FCLT.DISTANCE <= #{radius}::numeric ]]>        </if>
+    </select>
+
+    <!-- 카메라 방향각 -->
+    <select id="selectFcltAngleGeoData" parameterType="fclt" resultType="egovMap">
+    /* selectFcltAngleGeoData */
+        select CF.FCLT_ID
+             , CF.FCLT_LBL_NM
+             , CF.MNG_SN
+             , CF.POINT_X
+             , CF.POINT_Y
+             , COALESCE(CF.CCTV_OSVT_X, 0) as CCTV_OSVT_X
+             , COALESCE(CF.CCTV_OSVT_Y, 0) as CCTV_OSVT_Y
+             , ( ATAN2( ( CCTV_OSVT_X - POINT_X ), ( CCTV_OSVT_Y - POINT_Y ) ) * 180 / 3.141592653589 ) as CCTV_OSVT_AG
+             , COALESCE(CF.CCTV_DUE_NT_AG, 0) as CCTV_DUE_NT_AG
+          from CM_FACILITY CF
+         where ( CCTV_OSVT_X IS NOT NULL and CCTV_OSVT_X != 0 )
+           and ( CCTV_OSVT_Y IS NOT NULL and CCTV_OSVT_Y != 0 )
+           <if test="bbox != ''">
+           and POINT_X between #{minX} and #{maxX}
+           and POINT_Y between #{minY} and #{maxY}
+           </if>
+           and USE_TY_CD = 'Y'
+           and EXISTS ( select FCLT_USED_TY_CD
+                          from CM_CCTV_CTL_USED_TY
+                         where GRP_ID          = #{grpId}
+                           and AUTH_LVL        = CAST(#{authLvl} AS INTEGER)
+                           and FCLT_USED_TY_CD = CF.FCLT_USED_TY_CD
+                      )
+           <if test='searchIncludeFcltUsedTyCdYn == "Y"'>
+           and EXISTS ( select 1
+                          from UM_LAYER_MNG LM
+                left join CM_TC_FCLT_USED FU
+                            on LM.LAYER_ID      = FU.FCLT_USED_TY_CD
+                           and FU.USE_TY_CD     = 'Y'
+                         where LM.USER_ID          = #{userId}
+                           and LM.DSTRT_CD         = #{dstrtCd}
+                           and LM.CHECK_YN         = 'Y'
+                           and FU.FCLT_KND_CD      = 'CTV'
+                           and LM.LAYER_ID         = CF.FCLT_USED_TY_CD
+                      )
+        </if>
+    </select>
+
+    <!-- 시설물 정보 (FcltId) -->
+    <select id="selectFcltById" parameterType="fclt" resultType="egovMap">
+    /* selectFcltById */
+        select CF.FCLT_ID            , CF.FCLT_LBL_NM
+             , CF.FCLT_KND_CD        , FN_GET_TC_CODE('FCLT_KND', CF.FCLT_KND_CD) as FCLT_KND_NM
+             , CF.FCLT_KND_DTL_CD    , FN_GET_TC_CODE(CF.FCLT_KND_CD, CF.FCLT_KND_DTL_CD) as FCLT_KND_DTL_NM
+             , CF.FCLT_USED_TY_CD    , (select CU.FCLT_USED_TY_NM from CM_TC_FCLT_USED CU where CF.FCLT_USED_TY_CD = CU.FCLT_USED_TY_CD ) as FCLT_USED_TY_NM
+             , CF.DSTRT_CD           , (select DSTRT_NM from CM_DSTRT_CD_MNG where USE_TY_CD = 'Y' and DSTRT_CD  = CF.DSTRT_CD ) as DSTRT_NM
+             , CF.ROAD_ADRES_NM      , CF.LOTNO_ADRES_NM
+             , CF.POINT_X            , CF.POINT_Y
+             , CF.USE_TY_CD          , FN_GET_TC_CODE('USE_TY', CF.USE_TY_CD) as USE_TY_NM
+             , COALESCE(CF.CCTV_OSVT_X, 0) as CCTV_OSVT_X           , COALESCE(CF.CCTV_OSVT_Y, 0) as CCTV_OSVT_Y
+             , ( ATAN2( ( CF.CCTV_OSVT_X - CF.POINT_X ), ( CF.CCTV_OSVT_Y - CF.POINT_Y ) ) * 180 / 3.141592653589 ) as CCTV_OSVT_AG
+             , COALESCE(CF.FCLT_STTUS, '2')                               as FCLT_STTUS
+             , FN_GET_TC_CODE('FCLT_STTUS', COALESCE(CF.FCLT_STTUS, '2')) as FCLT_STTUS_NM
+             , CF.CONN_IP
+             , CF.FCLT_UID
+             , CF.LINK_VMS_UID
+             , CF.LINK_VMS_UID as GW_VMS_UID
+             , COALESCE(W.NETWORK_MP_IP, CDCM.VRS_WEBRTC_ADDR) as VRS_WEBRTC_ADDR
+             , COALESCE(R.NETWORK_MP_IP, CDCM.VRS_RTSP_ADDR)   as VRS_RTSP_ADDR
+             , CF.PREset_BDW_START_NUM
+             , CF.CCTV_CHANNEL
+             , CF.PRNT_FCLT_ID
+             , CF.FCLT_INSTL_YMD
+             , CF.FCLT_MNGR_TEL_NO
+             , CF.GATE_WAY
+             , CF.SVR_CONN_IP         , CF.SVR_CONN_PORT          , CF.SVR_CONN_ID           , CF.SVR_CONN_PW
+             , CF.DVC_SEE_CCTV_IP
+             , CF.SYS_CD
+             , CF.MNG_SN
+             , CSC.SYS_NM_KO as SYS_NM
+             , CSC.VIEWER_TY_CD
+             , CSC.VIEWER_PTZ_YN
+             , CONCAT(CF.SVR_CONN_IP, '/', CF.FCLT_UID) as RTSP_URL
+             , CF.RECORDING_YN /* 영상저장 */
+             , CF.TVO_TRGT_YN  /* 영상반출 */
+          from CM_FACILITY CF
+     left join CM_SYS_CODE CSC on CF.SYS_CD = CSC.SYS_CD
+     left join CM_DSTRT_CD_MNG CDCM on CF.DSTRT_CD = CDCM.DSTRT_CD
+     left join ( select A.NETWORK_MP_IP, A.DSTRT_CD from CM_MP_NETWORK_IP A, CM_MP_CONN_IP B
+                  where '${networkIp}' LIKE REPLACE(B.CONN_IP, 'X', '%') and A.NETWORK_ID = B.NETWORK_ID and A.NETWORK_TY = 'VRS_WEBRTC'
+               ) W on CF.DSTRT_CD = W.DSTRT_CD
+     left join ( select DISTINCT NETWORK_MP_IP, A.DSTRT_CD from CM_MP_NETWORK_IP A, CM_MP_CONN_IP B
+                  where '${networkIp}' LIKE REPLACE(B.CONN_IP, 'X', '%') and A.NETWORK_ID = B.NETWORK_ID and A.NETWORK_TY = 'VRS_RTSP'
+               ) R on CF.DSTRT_CD = R.DSTRT_CD
+         where FCLT_ID = #{fcltId}
+    </select>
+
+    <select id="selectFcltByUid" parameterType="map" resultType="egovMap">
+        select CF.FCLT_ID
+             , CF.MNG_SN
+             , CF.FCLT_LBL_NM
+             , CF.FCLT_KND_CD
+             , FN_GET_TC_CODE('FCLT_KND', CF.FCLT_KND_CD) as FCLT_KND_NM
+             , CF.FCLT_KND_DTL_CD
+             , FN_GET_TC_CODE(CF.FCLT_KND_CD, CF.FCLT_KND_DTL_CD) as FCLT_KND_DTL_NM
+             , CF.FCLT_USED_TY_CD
+             , (select CU.FCLT_USED_TY_NM from    CM_TC_FCLT_USED CU where   CF.FCLT_USED_TY_CD = CU.FCLT_USED_TY_CD ) as FCLT_USED_TY_NM
+             , CF.ROAD_ADRES_NM
+             , CF.DSTRT_CD
+             , CF.LOTNO_ADRES_NM
+             , CF.POINT_X
+             , CF.POINT_Y
+             , COALESCE(CF.CCTV_OSVT_X, 0) as CCTV_OSVT_X
+             , COALESCE(CF.CCTV_OSVT_Y, 0) as CCTV_OSVT_Y
+             , ( ATAN2( ( CF.CCTV_OSVT_X - CF.POINT_X ), ( CF.CCTV_OSVT_Y - CF.POINT_Y ) ) * 180 / 3.141592653589 ) as CCTV_OSVT_AG
+             , COALESCE(CF.FCLT_STTUS, '2')                               as FCLT_STTUS
+             , FN_GET_TC_CODE('FCLT_STTUS', COALESCE(CF.FCLT_STTUS, '2')) as FCLT_STTUS_NM
+             , CF.LINK_VMS_UID
+             , CF.FCLT_UID
+             , CF.LINK_VMS_UID as GW_VMS_UID
+             , COALESCE(W.NETWORK_MP_IP, CDCM.VRS_WEBRTC_ADDR) as VRS_WEBRTC_ADDR
+             , COALESCE(R.NETWORK_MP_IP, CDCM.VRS_RTSP_ADDR)   as VRS_RTSP_ADDR
+             , CF.PREset_BDW_START_NUM
+             , CF.CCTV_CHANNEL
+             , CF.GATE_WAY
+             , CF.SVR_CONN_IP
+             , CF.SVR_CONN_PORT
+             , COALESCE(CF.CCTV_DUE_NT_AG , 0) as CCTV_DUE_NT_AG
+             , CF.CCTV_AG_YN
+             , CF.FCLT_GDSDT_TY
+             , CSC.SYS_CD
+             , CSC.VIEWER_TY_CD
+             , CSC.VIEWER_PTZ_YN
+             , CONCAT(CF.SVR_CONN_IP, '/', CF.FCLT_UID) as RTSP_URL
+          from CM_FACILITY CF
+     left join CM_SYS_CODE CSC on CF.SYS_CD = CSC.SYS_CD
+     left join CM_DSTRT_CD_MNG CDCM on CF.DSTRT_CD = CDCM.DSTRT_CD
+     left join ( select A.NETWORK_MP_IP, A.DSTRT_CD from CM_MP_NETWORK_IP A, CM_MP_CONN_IP B where '${networkIp}' LIKE REPLACE(B.CONN_IP, 'X', '%') and A.NETWORK_ID = B.NETWORK_ID and A.NETWORK_TY = 'VRS_WEBRTC' ) W on CF.DSTRT_CD = W.DSTRT_CD
+     left join ( select DISTINCT NETWORK_MP_IP, A.DSTRT_CD from CM_MP_NETWORK_IP A, CM_MP_CONN_IP B where '${networkIp}' LIKE REPLACE(B.CONN_IP, 'X', '%') and A.NETWORK_ID = B.NETWORK_ID and A.NETWORK_TY = 'VRS_RTSP') R on CF.DSTRT_CD = R.DSTRT_CD
+         where 1 = 1
+        <choose>
+          <when test='vmsLinkYn == "Y"'>  and       CF.LINK_VMS_UID = #{fcltUid}    </when>
+          <otherwise>                     and       CF.FCLT_UID = #{fcltUid}        </otherwise>
+        </choose>
+    </select>
+
+    <select id="selectFcltByMngSn" parameterType="fclt" resultType="egovMap">
+        select CF.FCLT_ID
+             , CF.FCLT_LBL_NM
+             , CF.FCLT_KND_CD
+             , FN_GET_TC_CODE('FCLT_KND', CF.FCLT_KND_CD) as FCLT_KND_NM
+             , CF.FCLT_KND_DTL_CD
+             , FN_GET_TC_CODE(CF.FCLT_KND_CD, CF.FCLT_KND_DTL_CD) as FCLT_KND_DTL_NM
+             , CF.FCLT_USED_TY_CD
+             , (select CU.FCLT_USED_TY_NM from CM_TC_FCLT_USED CU where CF.FCLT_USED_TY_CD = CU.FCLT_USED_TY_CD ) as FCLT_USED_TY_NM
+             , CF.ROAD_ADRES_NM
+             , CF.DSTRT_CD
+             , CF.LOTNO_ADRES_NM
+             , CF.POINT_X
+             , CF.POINT_Y
+             , COALESCE(CF.FCLT_STTUS, '2') as FCLT_STTUS
+             , FN_GET_TC_CODE('FCLT_STTUS', COALESCE(CF.FCLT_STTUS, '2')) as FCLT_STTUS_NM
+             , CF.CONN_IP
+             , CF.LINK_VMS_UID
+             , CF.FCLT_UID
+             , CF.LINK_VMS_UID as GW_VMS_UID
+             , COALESCE(W.NETWORK_MP_IP, CDCM.VRS_WEBRTC_ADDR) as VRS_WEBRTC_ADDR
+             , COALESCE(R.NETWORK_MP_IP, CDCM.VRS_RTSP_ADDR)   as VRS_RTSP_ADDR
+             , CF.GATE_WAY
+             , CF.SVR_CONN_IP
+             , CF.SVR_CONN_ID
+             , CF.SVR_CONN_PW
+             , CF.SVR_CONN_PORT
+             , CF.PREset_BDW_START_NUM
+             , CF.CCTV_CHANNEL
+             , CF.PRNT_FCLT_ID
+             , CF.FCLT_INSTL_YMD
+             , CF.FCLT_MNGR_TEL_NO
+             , CF.DVC_SEE_CCTV_IP
+             , CF.PLC_PTR_DIV_CD
+             , COALESCE(CF.CCTV_DUE_NT_AG , 0) as CCTV_DUE_NT_AG
+             , CF.CCTV_AG_YN
+             , VT_POINT_TEL_NO
+             , VT_CENTER_TEL_NO
+             , CF.FCLT_GDSDT_TY
+             , CONCAT(CF.SVR_CONN_IP, '/', CF.FCLT_UID) as RTSP_URL
+          from CM_FACILITY CF
+             , ( select FCLT_ID, MNG_SN from CM_FACILITY where 1 = 1 and FCLT_ID = #{fcltId} ) MS
+         where 1 = 1
+           and CF.MNG_SN = MS.MNG_SN
+     left join CM_DSTRT_CD_MNG CDCM on CF.DSTRT_CD = CDCM.DSTRT_CD
+     left join ( select A.NETWORK_MP_IP, A.DSTRT_CD from CM_MP_NETWORK_IP A, CM_MP_CONN_IP B
+                  where '${networkIp}' LIKE REPLACE(B.CONN_IP, 'X', '%') and A.NETWORK_ID = B.NETWORK_ID and A.NETWORK_TY = 'VRS_WEBRTC'
+               ) W on CF.DSTRT_CD = W.DSTRT_CD
+     left join ( select DISTINCT NETWORK_MP_IP, A.DSTRT_CD from CM_MP_NETWORK_IP A, CM_MP_CONN_IP B
+                  where '${networkIp}' LIKE REPLACE(B.CONN_IP, 'X', '%') and A.NETWORK_ID = B.NETWORK_ID and A.NETWORK_TY = 'VRS_RTSP'
+               ) R on CF.DSTRT_CD = R.DSTRT_CD
+    </select>
+
+    <!-- 현좌표에서 근접한 CCTV 1개 -->
+    <select id="selectNearestCctv" parameterType="fclt" resultType="egovMap">
+    /* selectNearestCctv */
+        select *
+          from ( select CF.FCLT_ID
+                      , CF.FCLT_LBL_NM
+                      , CF.POINT_X                          as POINT_X
+                      , CF.POINT_Y                          as POINT_Y
+                      <!-- , ( 6371 * ACOS( TRUNCATE( COS( ( ASIN(1) * 2 ) / 180 * #{pointY} ) * COS( ( ASIN(1) * 2 ) / 180 * ( CF.POINT_Y ) ) * COS( ( ( ASIN(1) * 2 ) / 180 * #{pointX} ) - ( ( ASIN(1) * 2 ) / 180 * CF.POINT_X ) ) + SIN( ( ASIN(1) * 2 ) / 180 * #{pointY} ) * SIN( ( ASIN(1) * 2 ) / 180 * ( CF.POINT_Y ) ) ,16) ) ) as DISTANCE -->
+                      , FN_DISTANCE_WGS84(#{pointX}::numeric, #{pointY}::numeric, CF.POINT_X::numeric, CF.POINT_Y::numeric) as DISTANCE
+                      , CF.LINK_VMS_UID
+                      , CF.FCLT_UID
+                      , CF.LINK_VMS_UID as GW_VMS_UID
+                      , COALESCE(W.NETWORK_MP_IP, CDCM.VRS_WEBRTC_ADDR) as VRS_WEBRTC_ADDR
+                      , COALESCE(R.NETWORK_MP_IP, CDCM.VRS_RTSP_ADDR)   as VRS_RTSP_ADDR
+                      , CF.PREset_BDW_START_NUM
+                      , CF.CCTV_CHANNEL
+                      , CF.GATE_WAY
+                      , CF.SVR_CONN_IP
+                      , CF.SVR_CONN_PORT
+                      , CF.SVR_CONN_ID
+                      , CF.SVR_CONN_PW
+                      , CF.DVC_SEE_CCTV_IP
+                      , CF.FCLT_USED_TY_CD
+                      , CF.SYS_CD
+                      , CSC.VIEWER_TY_CD
+                      , CSC.VIEWER_PTZ_YN
+                      , CONCAT(CF.SVR_CONN_IP, '/', CF.FCLT_UID) as RTSP_URL
+                   from CM_FACILITY CF
+              left join CM_SYS_CODE CSC on CF.SYS_CD = CSC.SYS_CD
+              left join CM_DSTRT_CD_MNG CDCM on CF.DSTRT_CD = CDCM.DSTRT_CD
+              left join ( select A.NETWORK_MP_IP, A.DSTRT_CD from CM_MP_NETWORK_IP A, CM_MP_CONN_IP B
+                           where '${networkIp}' LIKE REPLACE(B.CONN_IP, 'X', '%') and A.NETWORK_ID = B.NETWORK_ID and A.NETWORK_TY = 'VRS_WEBRTC'
+                        ) W on CF.DSTRT_CD = W.DSTRT_CD
+              left join ( select DISTINCT NETWORK_MP_IP, A.DSTRT_CD from CM_MP_NETWORK_IP A, CM_MP_CONN_IP B
+                           where '${networkIp}' LIKE REPLACE(B.CONN_IP, 'X', '%') and A.NETWORK_ID = B.NETWORK_ID and A.NETWORK_TY = 'VRS_RTSP'
+                        ) R on CF.DSTRT_CD = R.DSTRT_CD
+                  where 1 = 1
+                    and CF.USE_TY_CD        = 'Y'
+                    and CF.FCLT_STTUS       = '0'
+                    and CF.FCLT_USED_TY_CD != 'TEST'
+                    and ( CF.POINT_X != 0 and CF.POINT_X IS NOT NULL )
+                    and ( CF.POINT_Y != 0 and CF.POINT_Y IS NOT NULL )
+                    and CF.FCLT_KND_CD = 'CTV'
+                    and EXISTS ( select FCLT_USED_TY_CD
+                                   from CM_CCTV_CTL_USED_TY
+                                  where GRP_ID          = #{grpId}
+                                    and AUTH_LVL        = CAST(#{authLvl} AS INTEGER)
+                                    and FCLT_USED_TY_CD = CF.FCLT_USED_TY_CD
+                               )
+               <if test="searchFcltViewerType != null and searchFcltViewerType != ''"> and CSC.VIEWER_TY_CD = #{searchFcltViewerType} </if>
+               order by DISTANCE asc
+        )
+        where ROWNUM = 1
+    </select>
+
+    <!-- 현좌표에서 근접한 CCTV 목록 -->
+    <select id="selectNearestCctvList" parameterType="fclt" resultType="egovMap">
+    /* selectNearestCctvList */
+        select  @ROWNUM := @ROWNUM + 1 as RNUM
+                , INN.*
+        from   (
+            select  CF.FCLT_ID
+                  , CF.FCLT_LBL_NM
+                  , COALESCE(CF.ROAD_ADRES_NM, '-') as ROAD_ADRES_NM
+                  , COALESCE(CF.LOTNO_ADRES_NM, '-') as LOTNO_ADRES_NM
+                  , CONCAT(COALESCE(CF.ROAD_ADRES_NM, '-'), '(', COALESCE(CF.LOTNO_ADRES_NM, '-'), ')') as PORTAL_ADRES
+                  , (select CU.FCLT_USED_TY_NM from CM_TC_FCLT_USED CU where CF.FCLT_USED_TY_CD = CU.FCLT_USED_TY_CD ) as FCLT_USED_TY_NM
+                  , CF.POINT_X as POINT_X
+                  , CF.POINT_Y as POINT_Y
+                  <!-- , ( 6371 * ACOS( TRUNCATE( COS( ( ASIN(1) * 2 ) / 180 * #{pointY} ) * COS( ( ASIN(1) * 2 ) / 180 * ( CF.POINT_Y ) ) * COS( ( ( ASIN(1) * 2 ) / 180 * #{pointX} ) - ( ( ASIN(1) * 2 ) / 180 * CF.POINT_X ) ) + SIN( ( ASIN(1) * 2 ) / 180 * #{pointY} ) * SIN( ( ASIN(1) * 2 ) / 180 * ( CF.POINT_Y ) ) ,16) ) ) as DISTANCE -->
+                  , FN_DISTANCE_WGS84(#{pointX}::numeric, #{pointY}::numeric, CF.POINT_X::numeric, CF.POINT_Y::numeric) as DISTANCE
+                  , CF.LINK_VMS_UID
+                  , CF.FCLT_UID
+                  , CF.LINK_VMS_UID as GW_VMS_UID
+                  , COALESCE(W.NETWORK_MP_IP, CDCM.VRS_WEBRTC_ADDR) as VRS_WEBRTC_ADDR
+                  , COALESCE(R.NETWORK_MP_IP, CDCM.VRS_RTSP_ADDR)   as VRS_RTSP_ADDR
+                  , CF.PREset_BDW_START_NUM
+                  , CF.CCTV_CHANNEL
+                  , CF.GATE_WAY
+                  , CF.SVR_CONN_IP
+                  , CF.SVR_CONN_PORT
+                  , CF.FCLT_USED_TY_CD
+                     , CONCAT(CF.SVR_CONN_IP, '/', CF.FCLT_UID) as RTSP_URL
+            from     CM_FACILITY CF
+               left join CM_SYS_CODE CSC on CF.SYS_CD = CSC.SYS_CD
+                 left join CM_DSTRT_CD_MNG CDCM on CF.DSTRT_CD = CDCM.DSTRT_CD
+                 left join ( select A.NETWORK_MP_IP, A.DSTRT_CD from CM_MP_NETWORK_IP A, CM_MP_CONN_IP B where '${networkIp}' LIKE REPLACE(B.CONN_IP, 'X', '%') and A.NETWORK_ID = B.NETWORK_ID and A.NETWORK_TY = 'VRS_WEBRTC' ) W on CF.DSTRT_CD = W.DSTRT_CD
+                 left join ( select DISTINCT NETWORK_MP_IP, A.DSTRT_CD from CM_MP_NETWORK_IP A, CM_MP_CONN_IP B where '${networkIp}' LIKE REPLACE(B.CONN_IP, 'X', '%') and A.NETWORK_ID = B.NETWORK_ID and A.NETWORK_TY = 'VRS_RTSP') R on CF.DSTRT_CD = R.DSTRT_CD
+            where     1 = 1
+            and     CF.USE_TY_CD = 'Y'
+            and        CF.FCLT_STTUS = '0'
+            and     CF.FCLT_USED_TY_CD != 'TEST'
+            and     CF.FCLT_KND_CD = 'CTV'
+            and     EXISTS
+                    ( select FCLT_USED_TY_CD
+                    from    CM_CCTV_CTL_USED_TY
+                    where   GRP_ID          = #{grpId}
+                    and     AUTH_LVL        = CAST(#{authLvl} AS INTEGER)
+                    and     FCLT_USED_TY_CD = CF.FCLT_USED_TY_CD
+                    )
+            <if test="searchFcltUsedTyCd != null and searchFcltUsedTyCd != '' "> and CF.FCLT_USED_TY_CD = #{searchFcltUsedTyCd}     </if>
+            <if test="searchFcltLblNm    != null and searchFcltLblNm    != '' "> and CF.FCLT_LBL_NM LIKE '%${searchFcltLblNm}%'     </if>
+        ) INN
+        join ( select @ROWNUM := #{firstRecordIndex} ) A
+        where 1 = 1
+        <if test="searchRadius != null and searchRadius != '' ">        <![CDATA[        and INN.DISTANCE <= #{searchRadius}        ]]>        </if>
+        order by INN.DISTANCE asc
+        offset #{firstRecordIndex} limit #{recordCountPerPage}
+    </select>
+
+    <!-- 현좌표에서 근접한 CCTV 목록 카운트 -->
+    <select id="selectNearestCctvListTotCnt" parameterType="fclt" resultType="int">
+    /* selectNearestCctvListTotCnt */
+        select COUNT(*) as TOTCNT
+        from (
+            select
+                  CF.FCLT_ID
+                  , CF.FCLT_LBL_NM
+                  , CF.POINT_X as POINT_X
+                  , CF.POINT_Y as POINT_Y
+                  <!-- , ( 6371 * ACOS( TRUNCATE( COS( ( ASIN(1) * 2 ) / 180 * #{pointY} ) * COS( ( ASIN(1) * 2 ) / 180 * ( CF.POINT_Y ) ) * COS( ( ( ASIN(1) * 2 ) / 180 * #{pointX} ) - ( ( ASIN(1) * 2 ) / 180 * CF.POINT_X ) ) + SIN( ( ASIN(1) * 2 ) / 180 * #{pointY} ) * SIN( ( ASIN(1) * 2 ) / 180 * ( CF.POINT_Y ) ) ,16) ) ) as DISTANCE -->
+                  , FN_DISTANCE_WGS84(#{pointX}::numeric, #{pointY}::numeric, CF.POINT_X::numeric, CF.POINT_Y::numeric) as DISTANCE
+                  , CF.LINK_VMS_UID
+                  , CF.FCLT_UID
+                  , CF.LINK_VMS_UID as GW_VMS_UID
+                  , COALESCE(W.NETWORK_MP_IP, CDCM.VRS_WEBRTC_ADDR) as VRS_WEBRTC_ADDR
+                  , COALESCE(R.NETWORK_MP_IP, CDCM.VRS_RTSP_ADDR)   as VRS_RTSP_ADDR
+                  , CF.PREset_BDW_START_NUM
+                  , CF.CCTV_CHANNEL
+                  , CF.GATE_WAY
+                  , CF.SVR_CONN_IP
+                  , CF.SVR_CONN_PORT
+                  , CF.FCLT_USED_TY_CD
+            from    CM_FACILITY CF
+                 left join CM_SYS_CODE CSC on CF.SYS_CD = CSC.SYS_CD
+                 left join CM_DSTRT_CD_MNG CDCM on CF.DSTRT_CD = CDCM.DSTRT_CD
+                 left join ( select A.NETWORK_MP_IP, A.DSTRT_CD from CM_MP_NETWORK_IP A, CM_MP_CONN_IP B where '${networkIp}' LIKE REPLACE(B.CONN_IP, 'X', '%') and A.NETWORK_ID = B.NETWORK_ID and A.NETWORK_TY = 'VRS_WEBRTC' ) W on CF.DSTRT_CD = W.DSTRT_CD
+                 left join ( select DISTINCT NETWORK_MP_IP, A.DSTRT_CD from CM_MP_NETWORK_IP A, CM_MP_CONN_IP B where '${networkIp}' LIKE REPLACE(B.CONN_IP, 'X', '%') and A.NETWORK_ID = B.NETWORK_ID and A.NETWORK_TY = 'VRS_RTSP') R on CF.DSTRT_CD = R.DSTRT_CD
+            where     1 = 1
+            and     CF.USE_TY_CD = 'Y'
+            and        CF.FCLT_STTUS = '0'
+            and     CF.FCLT_USED_TY_CD != 'TEST'
+            and     CF.FCLT_KND_CD = 'CTV'
+            and     EXISTS
+                    ( select FCLT_USED_TY_CD
+                    from    CM_CCTV_CTL_USED_TY
+                    where   GRP_ID          = #{grpId}
+                    and     AUTH_LVL        = CAST(#{authLvl} AS INTEGER)
+                    and     FCLT_USED_TY_CD = CF.FCLT_USED_TY_CD
+                    )
+            <if test="searchFcltUsedTyCd != null and searchFcltUsedTyCd != '' ">
+            and CF.FCLT_USED_TY_CD = #{searchFcltUsedTyCd}
+            </if>
+            <if test="searchFcltLblNm != null and searchFcltLblNm != '' ">
+            and CF.FCLT_LBL_NM LIKE '%${searchFcltLblNm}%'
+            </if>
+        ) INN
+        where 1 = 1
+        <if test="searchRadius != null and searchRadius != '' ">
+            <![CDATA[
+            and INN.DISTANCE <= #{searchRadius}
+            ]]>
+        </if>
+    </select>
+
+    <!-- 현좌표에서 근접한 프리셋 5개 -->
+    <select id="selectNearestPresetForCastNet" parameterType="fclt" resultType="egovMap">
+    /* selectNearestPresetForCastNet */
+        select UPI.FCLT_ID
+             , CF.FCLT_LBL_NM
+             , UPI.PREset_NUM
+             , CF.POINT_X
+             , CF.POINT_Y
+             , CF.LINK_VMS_UID
+             , CF.FCLT_UID
+             , CF.LINK_VMS_UID as GW_VMS_UID
+             , COALESCE(W.NETWORK_MP_IP, CDCM.VRS_WEBRTC_ADDR) as VRS_WEBRTC_ADDR
+             , COALESCE(R.NETWORK_MP_IP, CDCM.VRS_RTSP_ADDR)   as VRS_RTSP_ADDR
+             , CF.PREset_BDW_START_NUM
+             , CF.CCTV_CHANNEL
+             , CF.GATE_WAY
+             , CF.SVR_CONN_IP
+             , CF.SVR_CONN_PORT
+             , CF.FCLT_USED_TY_CD
+             , (select CU.FCLT_USED_TY_NM from CM_TC_FCLT_USED CU where CF.FCLT_USED_TY_CD = CU.FCLT_USED_TY_CD ) as FCLT_USED_TY_NM
+             , CF.ROAD_ADRES_NM
+             , CF.LOTNO_ADRES_NM
+             , CONCAT(COALESCE(CF.ROAD_ADRES_NM, '-'), '(', COALESCE(CF.LOTNO_ADRES_NM, '-'), ')') as PORTAL_ADRES
+             , '1' as FCLT_PRIORITY
+             , UPI.DISTANCE
+             , CF.SYS_CD
+             , CSC.VIEWER_TY_CD
+             , CSC.VIEWER_PTZ_YN
+             , CONCAT(CF.SVR_CONN_IP, '/', CF.FCLT_UID) as RTSP_URL
+          from ( select FCLT_ID, PREset_NUM, POINT_X, POINT_Y, DISTANCE
+                      , ROW_NUMBER() OVER ( PARTITION BY FCLT_ID order by  DISTANCE) as RANK
+                   from ( select A.CCTV_ID as FCLT_ID, A.PREset_NUM, A.POINT_X, A.POINT_Y
+                               <!-- , ( 6371 * ACOS( TRUNCATE( COS( ( ASIN(1) * 2 ) / 180 * #{pointY} ) * COS( ( ASIN(1) * 2 ) / 180 * A.POINT_Y ) * COS( ( ( ASIN(1) * 2 ) / 180 * #{pointX} ) - ( ( ASIN(1) * 2 ) / 180 * A.POINT_X ) ) + SIN( ( ASIN(1) * 2 ) / 180 * #{pointY} ) * SIN( ( ASIN(1) * 2 ) / 180 * A.POINT_Y ) ,16) ) ) as DISTANCE -->
+                               , FN_DISTANCE_WGS84(#{lon}::numeric, #{lat}::numeric, CF.POINT_X::numeric, CF.POINT_Y::numeric) as DISTANCE
+                            from UM_PREset_INFO A
+                            join CM_FACILITY B on A.CCTV_ID = B.FCLT_ID
+                           where PREset_NUM NOT LIKE '%0'
+                             and PREset_NUM between B.PREset_BDW_START_NUM and B.PREset_BDW_START_NUM + 9
+                        ) PS
+                 <![CDATA[            where DISTANCE <= #{radius}        ]]>
+                  order by DISTANCE
+               ) UPI
+             , CM_FACILITY CF
+     left join CM_SYS_CODE CSC on CF.SYS_CD = CSC.SYS_CD and CSC.VIEWER_TY_CD = 'VMS'
+     left join CM_DSTRT_CD_MNG CDCM on CF.DSTRT_CD = CDCM.DSTRT_CD
+     left join ( select A.NETWORK_MP_IP, A.DSTRT_CD from CM_MP_NETWORK_IP A, CM_MP_CONN_IP B
+                  where '${networkIp}' LIKE REPLACE(B.CONN_IP, 'X', '%') and A.NETWORK_ID = B.NETWORK_ID and A.NETWORK_TY = 'VRS_WEBRTC'
+               ) W on CF.DSTRT_CD = W.DSTRT_CD
+     left join ( select DISTINCT NETWORK_MP_IP, A.DSTRT_CD from CM_MP_NETWORK_IP A, CM_MP_CONN_IP B
+                  where '${networkIp}' LIKE REPLACE(B.CONN_IP, 'X', '%') and A.NETWORK_ID = B.NETWORK_ID and A.NETWORK_TY = 'VRS_RTSP'
+               ) R on CF.DSTRT_CD = R.DSTRT_CD
+         where UPI.RANK = 1
+           and UPI.FCLT_ID = CF.FCLT_ID
+           and CF.USE_TY_CD = 'Y'
+           and    CF.FCLT_STTUS = '0'
+           and CF.FCLT_KND_CD = 'CTV'
+           and EXISTS ( select FCLT_USED_TY_CD
+                          from    CM_CCTV_CTL_USED_TY
+                         where   GRP_ID          = #{grpId}
+                           and     AUTH_LVL        = CAST(#{authLvl} AS INTEGER)
+                           and     FCLT_USED_TY_CD = CF.FCLT_USED_TY_CD
+                      )
+        <![CDATA[
+        and CF.FCLT_UID IS NOT NULL
+        and ( CF.POINT_X != 0 and CF.POINT_X IS NOT NULL )
+        and ( CF.POINT_Y != 0 and CF.POINT_Y IS NOT NULL )
+        limit 5
+        ]]>
+    </select>
+
+    <!-- 선택된 프리셋 정보 -->
+    <select id="selectNearestPresetListForCastNet" parameterType="fclt" resultType="egovMap">
+        select FCLT_ID, PREset_NUM, POINT_X, POINT_Y, CCTV_X, CCTV_Y
+             , ROW_NUMBER() OVER ( PARTITION BY FCLT_ID order by  DISTANCE) as RANK
+         from (
+            select
+               UPI.CCTV_ID as FCLT_ID, UPI.PREset_NUM, UPI.POINT_X, UPI.POINT_Y, CF.POINT_X as CCTV_X, CF.POINT_Y as CCTV_Y
+               <!-- ,( 6371 * ACOS( TRUNCATE( COS( ( ASIN(1) * 2 ) / 180 * #{pointY} ) * COS( ( ASIN(1) * 2 ) / 180 * UPI.POINT_Y ) * COS( ( ( ASIN(1) * 2 ) / 180 * #{pointX} ) - ( ( ASIN(1) * 2 ) / 180 * UPI.POINT_X ) ) + SIN( ( ASIN(1) * 2 ) / 180 * #{pointY} ) * SIN( ( ASIN(1) * 2 ) / 180 * UPI.POINT_Y ) ,16) ) )  as DISTANCE -->
+               , FN_DISTANCE_WGS84(#{lon}::numeric, #{lat}::numeric, CF.POINT_X::numeric, CF.POINT_Y::numeric) as DISTANCE
+            , CSC.SYS_CD
+            , CSC.VIEWER_TY_CD
+            , CSC.VIEWER_PTZ_YN
+            from UM_PREset_INFO UPI, CM_FACILITY CF
+       left join CM_SYS_CODE CSC
+                   on     CF.SYS_CD        = CSC.SYS_CD
+                   and    CSC.VIEWER_TY_CD = 'VMS'
+            where UPI.CCTV_ID = CF.FCLT_ID
+            and UPI.PREset_NUM NOT LIKE '%0'
+            and UPI.PREset_NUM between CF.PREset_BDW_START_NUM and    CF.PREset_BDW_START_NUM + 9
+            and EXISTS
+                 ( select FCLT_USED_TY_CD
+                     from CM_CCTV_CTL_USED_TY
+                    where GRP_ID          = #{grpId}
+                      and AUTH_LVL        = CAST(#{authLvl} AS INTEGER)
+                      and FCLT_USED_TY_CD = CF.FCLT_USED_TY_CD
+                )
+        ) T
+        <if test="presetList != null">
+        where FCLT_ID IN (
+            <foreach collection="presetList" item="preset" separator=",">#{preset.fcltId}</foreach>
+        )
+        </if>
+        order by FCLT_ID, RANK
+    </select>
+
+    <!-- 현좌표에서 근접한 CCTV 5개 -->
+    <select id="selectNearestCctvForCastNet" parameterType="fclt" resultType="egovMap">
+    /* selectNearestCctvForCastNet */
+        select *
+          from ( select CF.FCLT_ID
+                      , CF.FCLT_LBL_NM
+                      , '0' as PREset_NUM
+                      , CF.POINT_X as POINT_X
+                      , CF.POINT_Y as POINT_Y
+                      , CF.LINK_VMS_UID
+                      , CF.FCLT_UID
+                      , CF.LINK_VMS_UID as GW_VMS_UID
+                      , COALESCE(W.NETWORK_MP_IP, CDCM.VRS_WEBRTC_ADDR) as VRS_WEBRTC_ADDR
+                      , COALESCE(R.NETWORK_MP_IP, CDCM.VRS_RTSP_ADDR)   as VRS_RTSP_ADDR
+                      , CF.PREset_BDW_START_NUM
+                      , CF.CCTV_CHANNEL
+                      , CF.GATE_WAY
+                      , CF.SVR_CONN_IP
+                      , CF.SVR_CONN_PORT
+                      , CF.FCLT_USED_TY_CD
+                      , (select CU.FCLT_USED_TY_NM from CM_TC_FCLT_USED CU where CF.FCLT_USED_TY_CD = CU.FCLT_USED_TY_CD ) as FCLT_USED_TY_NM
+                      , CF.ROAD_ADRES_NM
+                      , CF.LOTNO_ADRES_NM
+                      , CONCAT(COALESCE(CF.ROAD_ADRES_NM, '-'), '(', COALESCE(CF.LOTNO_ADRES_NM, '-'), ')') as PORTAL_ADRES
+                      , (ROW_NUMBER() OVER(PARTITION BY CF.POINT_X,  CF.POINT_Y order by  CF.FCLT_LBL_NM  asc )) as FCLT_PRIORITY
+                      <!-- , ( 6371 * ACOS( TRUNCATE( COS( ( ASIN(1) * 2 ) / 180 * #{pointY} ) * COS( ( ASIN(1) * 2 ) / 180 * CF.POINT_Y ) * COS( ( ( ASIN(1) * 2 ) / 180 * #{pointX} ) - ( ( ASIN(1) * 2 ) / 180 * CF.POINT_X ) ) + SIN( ( ASIN(1) * 2 ) / 180 * #{pointY} ) * SIN( ( ASIN(1) * 2 ) / 180 * CF.POINT_Y ) ,16) ) ) as DISTANCE -->
+                      , FN_DISTANCE_WGS84(#{lon}::numeric, #{lat}::numeric, CF.POINT_X::numeric, CF.POINT_Y::numeric) as DISTANCE
+                      , CF.SYS_CD
+                      , CSC.VIEWER_TY_CD
+                      , CSC.VIEWER_PTZ_YN
+                      , CONCAT(CF.SVR_CONN_IP, '/', CF.FCLT_UID) as RTSP_URL
+                   from CM_FACILITY CF
+              left join CM_SYS_CODE CSC on CF.SYS_CD = CSC.SYS_CD and CSC.VIEWER_TY_CD = 'VMS'
+              left join CM_DSTRT_CD_MNG CDCM on CF.DSTRT_CD = CDCM.DSTRT_CD
+              left join ( select A.NETWORK_MP_IP, A.DSTRT_CD from CM_MP_NETWORK_IP A, CM_MP_CONN_IP B
+                          where '${networkIp}' LIKE REPLACE(B.CONN_IP, 'X', '%') and A.NETWORK_ID = B.NETWORK_ID and A.NETWORK_TY = 'VRS_WEBRTC'
+                        ) W on CF.DSTRT_CD = W.DSTRT_CD
+              left join ( select DISTINCT NETWORK_MP_IP, A.DSTRT_CD from CM_MP_NETWORK_IP A, CM_MP_CONN_IP B
+                          where '${networkIp}' LIKE REPLACE(B.CONN_IP, 'X', '%') and A.NETWORK_ID = B.NETWORK_ID and A.NETWORK_TY = 'VRS_RTSP'
+                        ) R on CF.DSTRT_CD = R.DSTRT_CD
+                  where 1 = 1
+                    and CF.USE_TY_CD = 'Y'
+                    and CF.FCLT_STTUS = '0'
+                    and CF.FCLT_KND_CD = 'CTV'
+                    and EXISTS ( select FCLT_USED_TY_CD
+                                   from CM_CCTV_CTL_USED_TY
+                                  where GRP_ID          = #{grpId}
+                                    and AUTH_LVL        = CAST(#{authLvl} AS INTEGER)
+                                    and FCLT_USED_TY_CD = CF.FCLT_USED_TY_CD
+                               )
+                  <if test='vmsLinkYn == "Y"'>              and CF.LINK_VMS_UID IS NOT NULL              </if>
+                  and CF.FCLT_GDSDT_TY = '0'
+                  and CF.FCLT_UID IS NOT NULL
+                  and ( CF.POINT_X != 0 and CF.POINT_X IS NOT NULL )
+                  and ( CF.POINT_Y != 0 and CF.POINT_Y IS NOT NULL )
+             order by DISTANCE asc
+               ) T
+        <![CDATA[        where DISTANCE <= #{radius}        and DISTANCE > 0.001        limit 5        ]]>
+    </select>
+
+    <select id="selectLcInfoGeoData" parameterType="map" resultType="egovMap">
+        select ROWNUM as ROW_NUM
+             , CCLI.EVT_OCR_NO
+             , CCLI.CAR_NUM
+             , CCLI.POINT_YMD_HMS
+             , CCLI.TRACE_ID
+             , CCLI.POINT_X
+             , CCLI.POINT_Y
+             , CCLI.POINT_Z
+             , CCLI.ROUTE_ID
+             , CEO.EVT_PLACE
+             , CEO.EVT_GRAD_CD
+             , CEO.EVT_PRGRS_CD
+             , CEO.EVT_DTL
+          from CM_EVT_OCR CEO
+          join CM_CAR_LC_INFO CCLI on CEO.EVT_OCR_NO = CCLI.EVT_OCR_NO
+         where 1 = 1
+           <if test="evtOcrNo == null or evtOcrNo == ''">        and 1=2        </if>
+           <if test="evtOcrNo != null and evtOcrNo != ''">        and CCLI.EVT_OCR_NO = #{evtOcrNo}        </if>
+           <if test="rowNum != null and rowNum != ''">        <![CDATA[        and ROWNUM <= #{rowNum}        ]]>        </if>
+           and ( CCLI.POINT_X != 0 and CCLI.POINT_X IS NOT NULL )
+           and ( CCLI.POINT_Y != 0 and CCLI.POINT_Y IS NOT NULL )
+      order by CEO.EVT_OCR_NO, CCLI.CAR_NUM, CCLI.POINT_YMD_HMS DESC
+    </select>
+    
+    <select id="getGisProjection" parameterType="String" resultType="String">
+    /* getGisProjection */
+        select PRPRTS_VAL AS PROJECTION
+          from CM_PRPRTS
+         where PRPRTS_TY  = 'CM_PRPRTS_GIS'
+           and PRPRTS_KEY = 'GIS_PROJECTION'
+           and PRPRTS_ID  = #{value}
+   <!-- select PRPRTS_VAL AS PROJECTION
+          from CM_PRPRTS_GIS
+         where PRPRTS_KEY = 'GIS_PROJECTION'
+           and GIS_ENGINE = #{value} -->
+    </select>
+
+    <select id="selectFcltPointList"  resultType="egovMap">
+    /* selectFcltPointList */
+        select VF.FCLT_ID
+             , VF.POINT_X
+             , VF.POINT_Y
+             , VF.POINT_X_PRJCTN
+			 , VF.POINT_Y_PRJCTN
+         from CM_FACILITY VF
+        where 1 =1
+          and VF.POINT_X > 0
+          and VF.POINT_Y > 0
+    </select>
+    
+	<update id="updateFcltPointProjection"  parameterType="map">
+    /* updateFcltPointProjection */
+		UPDATE CM_FACILITY
+		   SET POINT_X_PRJCTN = #{pointXPrjctn}::double precision
+		     , POINT_Y_PRJCTN = #{pointYPrjctn}::double precision
+		 where FCLT_ID = #{fcltId}
+	</update>
+    
+</mapper>

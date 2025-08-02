@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ucp.plan.service.PlanmngMapper">
+
+    <select id="selectDurationYear" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectDurationYear */
+        select FROM_YMD
+             , TO_CHAR(TO_DATE(FROM_YMD,'YYYYMMDD'),'YYYY-MM-DD')
+               || ' ~ ' ||
+               TO_CHAR(TO_DATE(END_YMD,'YYYYMMDD'),'YYYY-MM-DD') DURATION
+          from TB_ACCTYEAR ta
+         where ta.STAN_YY = #{stanYy}
+    </select>
+
+    <select id="selectPlanmng" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectPlanmng */
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingHeader"/>
+        select MAP.STAN_YY
+             , MAP.ACCT_GB      , (SELECT ACCT_GB_NAME from TB_ACCT_GB AG where AG.ACCT_GB = MAP.ACCT_GB) ACCT_GB_NAME
+             , MAP.ACCT_CODE
+             , AC.ACCT_NAME     , AC.PRINT_NAME , AC.ACCT_LEVEL , AC.INOUT_GB
+             , MAP.PLAN_AMT
+          from TB_MAST_ACCTPLAN MAP
+     left join TB_ACCTCODE AC
+            ON AC.ACCT_GB  = MAP.ACCT_GB  and AC.ACCT_CODE = MAP.ACCT_CODE and AC.STAN_YY = #{stanYy}
+         where MAP.STAN_YY = #{stanYy}
+           <if test="acctGb   != null and acctGb   != '' "> and MAP.ACCT_GB  = #{acctGb} </if>
+      order by ${sidx} ${sord}
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingBottom"/>
+    </select>
+
+    <insert id="insertPlan" parameterType="java.util.HashMap">
+    /* insertPlan */
+        insert into TB_MEMBER
+             ( MEMBER_ID       , MEMBER_NO       , MEMBER_NAME
+             , SEX_TYPE        , TEL_NO          , HPHONE_NO 
+             , POSITION_CODE   , DEPT_CODE       , REGION_CODE
+             , ADDR            , FAMILY_REMARK   , USE_YN        , REG_TIME )
+        values
+             ( #{memberId}     , #{memberNo}     , #{memberName}  
+             , #{sexType}      , #{telNo}        , #{hphoneNo}  
+             , #{positionCode} , #{deptCode}     , #{regionCode}
+             , #{addr}         , #{familyRemark} , #{useYn}      , SYSDATE  )
+    </insert>
+    
+    <update id="updatePlan" parameterType="java.util.HashMap">
+    /* updatePlan */
+        update TB_MEMBER
+           set MEMBER_ID     = #{memberId}
+             , MEMBER_NO     = #{memberNo}
+             , MEMBER_NAME   = #{memberName}
+             , SEX_TYPE      = #{sexType}
+             , TEL_NO        = #{telNo}
+             , HPHONE_NO     = #{hphoneNo}
+             , POSITION_CODE = #{positionCode}
+             , DEPT_CODE     = #{deptCode}
+             , REGION_CODE   = #{regionCode}
+             , ADDR          = #{addr}
+             , FAMILY_REMARK = #{familyRemark}
+             , USE_YN        = #{useYn}
+         where MEMBER_ID = #{memberId}
+    </update>
+
+    <delete id="deletePlan" parameterType="java.util.HashMap">
+    /* deletePlan */
+        delete from TB_MEMBER
+         where MEMBER_ID = #{memberId}
+           and MEMBER_NO = #{memberNo}
+    </delete>
+    
+</mapper>

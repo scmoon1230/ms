@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.co.ucp.mntr.mng.service.impl.MngPresetMapper">
+	<!--
+    ==================================================================
+      # 설명  : 시설물 목록 조회 include
+      # 기능  : select
+      # TABLE : CM_FACILITY
+    ==================================================================
+    -->
+	<sql id="selectMngPresetDataListSql">
+		select *
+		from (
+		    select CF.FCLT_ID
+	             , CF.FCLT_LBL_NM
+	             , CF.POINT_X
+	             , CF.POINT_Y
+	             , CF.LOTNO_ADRES_NM
+	             , CF.ROAD_ADRES_NM
+	             , CF.FCLT_USED_TY_CD
+				 , (select FCLT_USED_TY_NM from CM_TC_FCLT_USED where FCLT_KND_CD = CF.FCLT_KND_CD and FCLT_USED_TY_CD = CF.FCLT_USED_TY_CD ) as FCLT_USED_TY_NM
+	             , CF.FCLT_KND_DTL_CD
+				 , FN_GET_TC_CODE(CF.FCLT_KND_CD, CF.FCLT_KND_DTL_CD) as FCLT_KND_DTL_NM
+	             , CF.FCLT_GDSDT_TY
+				 , FN_GET_TC_CODE('FCLT_GDSDT_TY', CF.FCLT_GDSDT_TY) as FCLT_GDSDT_TY_NM
+	             , CASE WHEN ( COALESCE(NULLIF(CCTV_OSVT_X, 0), 0) > 0 and COALESCE(NULLIF(CCTV_OSVT_Y, 0), 0) > 0)
+	                 	THEN 'Y'
+	                 	ELSE 'N'
+	               END as CCTV_OSVT_YN
+	             , CF.PREset_BDW_START_NUM
+	             , COALESCE(NULLIF(PI.PREset_BDW_START_CNT, 0), 0) as PREset_BDW_START_CNT
+			from CM_FACILITY CF
+			left join CM_SYS_CODE CSC on CF.SYS_CD = CSC.SYS_CD and CSC.VIEWER_TY_CD = 'VMS'
+		    left join (
+		        select	A.*
+		 			  , COUNT(*) as PREset_BDW_START_CNT
+		 		from (
+		 		    select CCTV_ID as FCLT_ID
+		 				 , SUBSTR(PREset_NUM, 1, 1) || '0' as PREset_BDW_START_NUM
+		 			from UM_PREset_INFO
+		 			where 1 = 1
+		 		) A
+		 		group by FCLT_ID
+		 			   , PREset_BDW_START_NUM
+		 	) PI
+		    	ON CF.FCLT_ID = PI.FCLT_ID
+		    	and CF.PREset_BDW_START_NUM = PI.PREset_BDW_START_NUM
+		    where 1 =1
+			and CSC.VIEWER_TY_CD = 'VMS'
+		    and CF.USE_TY_CD = 'Y'
+		    and CF.FCLT_KND_CD = 'CTV'
+		    and CF.FCLT_STTUS = '0'
+		    and CF.LINK_VMS_UID IS NOT NULL
+		    and CF.POINT_X != 0
+		    and CF.POINT_Y != 0
+		) I
+		where  1 =1
+		<if test='searchFcltUsedTyCd != null and searchFcltUsedTyCd != ""'>
+		and FCLT_USED_TY_CD = #{searchFcltUsedTyCd}
+		</if>
+		<if test='searchFcltGdsdtTy != null and searchFcltGdsdtTy != ""'>
+		and FCLT_GDSDT_TY = #{searchFcltGdsdtTy}
+		</if>
+		<if test='searchFcltKndDtlCd != null and searchFcltKndDtlCd != ""'>
+		and FCLT_KND_DTL_CD = #{searchFcltKndDtlCd}
+		</if>
+		<if test='searchPresetYn != null and searchPresetYn == "Y"'>
+		and ((FCLT_KND_DTL_CD = 'RT' and PREset_BDW_START_CNT != 0) or (FCLT_KND_DTL_CD = 'FT' and CCTV_OSVT_YN = 'Y'))
+		</if>
+		<if test='searchPresetYn != null and searchPresetYn == "N"'>
+		and ((FCLT_KND_DTL_CD = 'RT' and PREset_BDW_START_CNT = 0) or (FCLT_KND_DTL_CD = 'FT' and CCTV_OSVT_YN = 'N'))
+		</if>
+		<if test='searchKeyword != null and searchKeyword != ""'>
+			<choose>
+				<when test='searchGbn != null and searchGbn == "NM"'>
+		and FCLT_LBL_NM LIKE CONCAT('%', #{searchKeyword}, '%')
+				</when>
+				<when test='searchGbn != null and searchGbn == "ID"'>
+		and FCLT_ID LIKE CONCAT('%', #{searchKeyword}, '%')
+				</when>
+				<when test='searchGbn != null and searchGbn == "ADDR"'>
+		and (LOTNO_ADRES_NM LIKE CONCAT('%', #{searchKeyword}, '%') or ROAD_ADRES_NM LIKE CONCAT('%', #{searchKeyword}, '%'))
+				</when>
+			</choose>
+		</if>
+	</sql>
+
+	<!--
+    ==================================================================
+      # 설명  : 시설물 프리셋 목록 조회
+      # 기능  : select
+      # TABLE : CM_FACILITY , UM_PREset_INFO, CM_SYS_CODE
+    ==================================================================
+    -->
+	<select id="selectMngPresetDataList" parameterType="mngSrchVO" resultType="egovMap">
+		<include refid="selectMngPresetDataListSql"/>
+		order by FCLT_LBL_NM DESC, FCLT_GDSDT_TY
+		offset #{firstRecordIndex} limit #{recordCountPerPage}
+	</select>
+
+	<!--
+    ==================================================================
+      # 설명  : 프리셋 리스트
+      # 기능  : select
+      # TABLE : CM_FACILITY , UM_PREset_INFO
+    ==================================================================
+    -->
+	<select id="selectPresetList" parameterType="map" resultType="egovMap">
+		select P.CCTV_ID as FCLT_ID
+		     , P.PREset_NUM
+		     , P.POINT_X
+		     , P.POINT_Y
+		from   UM_PREset_INFO P
+		       join CM_FACILITY C
+		       on     P.CCTV_ID = C.FCLT_ID
+		where  1                =1
+		and    P.CCTV_ID        = #{fcltId}
+		and    P.PREset_NUM between C.PREset_BDW_START_NUM and    C.PREset_BDW_START_NUM + 9
+	</select>
+
+	<!--
+    ==================================================================
+      # 설명  : 프리셋 저장
+      # 기능  : MERGE
+      # TABLE : UM_PREset_INFO
+    ==================================================================
+    -->
+	<update id="mergePreset" parameterType="map">
+		MERGE
+		INTO UM_PREset_INFO
+		USING DUAL
+		ON (
+			  CCTV_ID = #{fcltId}
+			  and PREset_NUM = #{presetNum}
+		  )
+		WHEN MATCHED THEN
+		  update
+		  set POINT_X = #{pointX}
+			, POINT_Y = #{pointY}
+		WHEN NOT MATCHED THEN
+		  INSERT (CCTV_ID, PREset_NUM, POINT_X, POINT_Y, RGS_USER_ID, RGS_DATE)
+		  values ( #{fcltId}
+				 , #{presetNum}
+				 , #{pointX}
+				 , #{pointY}
+				 , #{userId}
+				 , NOW())
+	</update>
+
+	<!--
+    ==================================================================
+      # 설명  : 프리셋 삭제
+      # 기능  : DELETE
+      # TABLE : UM_PREset_INFO
+    ==================================================================
+    -->
+	<delete id="deletePreset" parameterType="map">
+		DELETE from UM_PREset_INFO where CCTV_ID = #{fcltId} and PREset_NUM = #{presetNum}
+	</delete>
+
+	<!--
+    ==================================================================
+      # 설명  : 시설물 OSVT 수정
+      # 기능  : update
+      # TABLE : CM_FACILITY
+    ==================================================================
+    -->
+	<update id="updateFcltOsvt" parameterType="map">
+		update	CM_FACILITY
+		set 	CCTV_OSVT_X = #{pointX}
+				, CCTV_OSVT_Y = #{pointY}
+				, UPD_USER_ID = #{userId}
+				, UPD_DATE = NOW()
+		where	FCLT_ID = #{fcltId}
+	</update>
+</mapper>

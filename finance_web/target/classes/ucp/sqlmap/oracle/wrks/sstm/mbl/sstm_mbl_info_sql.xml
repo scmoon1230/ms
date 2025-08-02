@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.co.ucp.wrks.sstm.mbl.service.MblInfoMapper">
+
+    <!-- 모바일 계정정보 조회 -->
+    <select id="list" parameterType="java.util.HashMap" resultType="egovMap">
+    /* list */
+        select A.*
+             , ( select COUNT(*)
+                   from CM_MOBILE A
+                  where 1 = 1
+                    <if test="MOBL_NO   != null and MOBL_NO   != ''"> and A.MOBL_NO LIKE CONCAT('%', #{MOBL_NO}, '%') </if>
+                    <if test="moblKndCd != null and moblKndCd != ''"> and A.MOBL_KND_CD = #{moblKndCd} </if>
+                    <if test="userNm    != null and userNm    != ''"> and A.USER_NM LIKE CONCAT('%', #{userNm}, '%') </if>
+                    <if test="useTyCd   != null and useTyCd   != ''"> and A.USE_TY_CD = #{useTyCd} </if>
+               ) as ROWCNT
+          from ( select A.*
+                      , B.CD_NM_KO as MOBL_KND_NM
+                      , C.CD_NM_KO as MOBL_OS_TY_NM
+                      , D.CD_NM_KO as USE_TY_NM
+                      , ROW_NUMBER() OVER (order by ${sidx} ${sord}) as RK
+                   from CM_MOBILE A
+              left join ( select CD_ID, CD_NM_KO from CM_TC_CODE where CD_GRP_ID = 'MOBL' and CD_TY = 'C' ) B
+                     ON A.MOBL_KND_CD = B.CD_ID
+              left join ( select CD_ID, CD_NM_KO from CM_TC_CODE where CD_GRP_ID = 'MOBL_OS' and CD_TY = 'C' ) C
+                     ON A.MOBL_OS_TY_CD = C.CD_ID
+              left join ( select CD_ID, CD_NM_KO from CM_TC_CODE where CD_GRP_ID = 'USE_TY' and CD_TY = 'C' ) D
+                     ON A.USE_TY_CD = D.CD_ID
+                  where 1 = 1
+                    <if test="MOBL_NO   != null and MOBL_NO   != ''"> and A.MOBL_NO LIKE CONCAT('%', #{MOBL_NO}, '%') </if>
+                    <if test="moblKndCd != null and moblKndCd != ''"> and A.MOBL_KND_CD = #{moblKndCd} </if>
+                    <if test="userNm    != null and userNm    != ''"> and A.USER_NM LIKE CONCAT('%', #{userNm}, '%') </if>
+                    <if test="useTyCd   != null and useTyCd   != ''"> and A.USE_TY_CD = #{useTyCd} </if>
+               ) A
+        OFFSET ((#{pageNo}::integer - 1) * #{rowsPerPage}::integer)
+         LIMIT #{rowsPerPage}::integer
+    </select>
+
+    <!-- 모바일 계정정보 입력 -->
+    <insert id="insert" parameterType="java.util.HashMap">
+    /* insert */
+        insert into CM_MOBILE
+             ( MOBL_ID            , MOBL_NO           , MOBL_KND_CD       , MOBL_OS_TY_CD
+             , USER_NM            , USER_PSITN_NM     , USE_TY_CD         , USER_EMAIL
+             , PUSH_ID            , MOBL_UUID         , ETC_INFO
+             , RGS_USER_ID        , RGS_DATE          , UPD_USER_ID       , UPD_DATE     )
+        values
+             ( #{moblId}          , #{moblNo}         , #{moblKndCd}      , #{moblOsTyCd}
+             , #{userNm}          , #{userPsitnNm}    , #{useTyCd}        , #{userEmail}
+             , #{pushId}          , #{moblUuid}       , #{etcInfo}
+             , #{rgsUserId}       , NOW()             , #{updUserId}      , NOW()        )
+    </insert>
+
+    <!-- 모바일 계정정보 수정 -->
+    <update id="update" parameterType="java.util.HashMap" >
+        update CM_MOBILE
+         set    MOBL_NO         = #{moblNo}
+                , MOBL_KND_CD   = #{moblKndCd}
+                , MOBL_OS_TY_CD = #{moblOsTyCd}
+                , USER_NM       = #{userNm}
+                , USER_PSITN_NM = #{userPsitnNm}
+                , USE_TY_CD     = #{useTyCd}
+                , USER_EMAIL    = #{userEmail}
+                , PUSH_ID       = #{pushId}
+                , MOBL_UUID     = #{moblUuid}
+                , ETC_INFO      = #{etcInfo}
+                , UPD_USER_ID   = #{updUserId}
+                , UPD_DATE      = NOW()
+        where    MOBL_ID = #{moblId}
+    </update>
+
+    <!-- 모바일 계정정보 삭제 -->
+    <delete id="delete" parameterType="java.util.HashMap">
+        update CM_MOBILE
+           set USE_TY_CD = 'D'
+             , UPD_USER_ID = #{updUserId}
+             , UPD_DATE = NOW()
+         where MOBL_ID = #{moblIdBak}
+    </delete>
+    <delete id="delete_bak" parameterType="java.util.HashMap">
+        delete from CM_MOBILE
+         where MOBL_ID = #{moblIdBak}
+    </delete>
+
+    <!-- 모바일 수신시간 조회 -->
+<!-- , LPAD(RCV_START_HH, '2', '0') as RCV_START_HH -->
+<!-- , LPAD(RCV_END_HH, '2', '0') as RCV_END_HH -->
+    <select id="rcvTimeList" parameterType="java.util.HashMap" resultType="egovMap">
+        select A.CD_GRP_ID            , A.CD_ID            , A.CD_NM_KO as DAY_TY
+             , B.DAY_TY_CD        , A.CD_DSCRT        , B.MOBL_ID
+             , B.DAY_TY_CD        , B.RCV_START_HH    , B.RCV_END_HH
+             , CASE WHEN B.RCVTIME IS NULL THEN '00 ~ 00' ELSE B.RCVTIME END as RCVTIME
+          from CM_TC_CODE A
+LEFT OUTER join ( select MOBL_ID            , DAY_TY_CD            , RCV_START_HH        , RCV_END_HH
+                       , CONCAT(LPAD(RCV_START_HH::text, '2', '0'), ' ~ ', LPAD(RCV_END_HH::text, '2', '0')) as RCVTIME
+                       , RGS_USER_ID    , RGS_DATE            , UPD_USER_ID        , UPD_DATE
+                       , CONCAT(RCV_START_HH, RCV_END_HH) as CKTIME
+                    from CM_MOBL_RCV_TIME
+                   where MOBL_ID = #{MOBL_ID}
+                ) B ON B.DAY_TY_CD = A.CD_ID
+          where CD_GRP_ID = 'DAY_TY_CD'
+            and CD_TY = 'C'
+            <if test="div != null and div != '' "> and CKTIME != '00' </if>
+       order by CD_ID asc
+    </select>
+
+    <insert id="insertRcvTime" parameterType="java.util.HashMap">
+        insert into CM_MOBL_RCV_TIME
+             ( MOBL_ID        , DAY_TY_CD     , RCV_START_HH              , RCV_END_HH
+             , RGS_USER_ID    , RGS_DATE      , UPD_USER_ID               , UPD_DATE         )
+        values
+             ( #{moblId}      , #{dayTyCd}    , #{rcvStartHh}::numeric    , #{rcvEndHh}::numeric
+             , #{rgsUserId}   , NOW()         , #{rgsUserId}              , NOW()            )
+    </insert>
+
+    <delete id="deleteRcvTime" parameterType="java.util.HashMap">
+        delete from CM_MOBL_RCV_TIME
+         where MOBL_ID = #{moblIdBak}
+    </delete>
+
+    <update id="updateRcvTime" parameterType="java.util.HashMap">
+    /* updateRcvTime */
+        update CM_MOBL_RCV_TIME
+           set RCV_START_HH = #{RCV_START_HH}::numeric
+             , RCV_END_HH   = #{RCV_END_HH}::numeric
+             , UPD_USER_ID  = #{UPD_USER_ID}
+             , UPD_DATE     = NOW()
+         where MOBL_ID   = #{MOBL_ID}
+           and DAY_TY_CD = #{DAY_TY_CD}
+    </update>
+
+    <insert id="mobileExcelInsert" parameterType="java.util.HashMap">
+    /* mobileExcelInsert */
+        insert into CM_MOBILE
+             ( MOBL_ID          , MOBL_NO       , MOBL_KND_CD    , MOBL_OS_TY_CD  , USER_NM
+             , USER_PSITN_NM    , USER_EMAIL    , USE_TY_CD      , PUSH_ID        , MOBL_UUID
+             , RGS_USER_ID      , RGS_DATE      , UPD_USER_ID    , UPD_DATE       )
+        values
+             ( #{moblId}        , #{moblNo}     , #{moblKndCd}   , #{moblOsTyCd}  , #{userNm}
+             , #{userPsitnNm}   , #{userEmail}  , #{useTyCd}     , #{pushId}      , #{moblUuid}
+             , #{rgsUserId}     , NOW()         , #{updUserId}   , NOW()          )
+   ON CONFLICT ( MOBL_ID )
+     DO UPDATE
+           set MOBL_KND_CD   = #{moblKndCd}
+             , MOBL_OS_TY_CD = #{moblOsTyCd}
+             , USER_PSITN_NM = #{userPsitnNm}
+             , USER_EMAIL    = #{userEmail}
+             , USE_TY_CD     = #{useTyCd}
+             , PUSH_ID       = #{pushId}
+             , MOBL_UUID     = #{moblUuid}
+             , UPD_USER_ID   = #{updUserId}
+             , UPD_DATE      = NOW()
+    </insert>
+    
+    <select id="getUserList" parameterType="java.util.HashMap" resultType="cmlMap">
+    /* getUserList */
+        select USER_ID
+           <if test="saltText == null ">
+             , USER_NM
+             , MOBL_NO
+             , EMAIL
+           </if>
+           <if test="saltText != null ">
+             , convert_from(decrypt(decode(USER_NM,'hex')::bytea,#{saltText}::bytea,'aes'),'utf8') USER_NM
+             , convert_from(decrypt(decode(MOBL_NO,'hex')::bytea,#{saltText}::bytea,'aes'),'utf8') MOBL_NO
+             , convert_from(decrypt(decode(EMAIL,'hex')::bytea,#{saltText}::bytea,'aes'),'utf8')   EMAIL
+           </if>        
+             , GRP_NM
+             , AUTH_LVL_NM
+             , CONCAT(INSTT_NM, ' ', DEPT_NM) AS INSTT_NM
+          from VW_USER
+         where USE_TY_CD = 'Y'
+           and USER_ID != 'sys'
+           <if test='userId != null and userId != ""'>
+            <!-- and (USER_ID ILIKE '%' || #{userId} || '%' OR USER_NM ILIKE '%' || #{userId} || '%') -->
+            and (USER_ID ILIKE '%' || #{userId} || '%')
+           </if>
+           <if test='grpId != null and grpId != ""'>
+           and (GRP_ID ILIKE '%' || #{grpId} || '%' OR GRP_NM ILIKE '%' || #{grpId} || '%')
+           </if>
+    </select>
+    
+</mapper>
+
+
+
+

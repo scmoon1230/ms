@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.co.ucp.link.base.user.service.BaseUserBaseMapper">
+
+    <select id="selectUserList" resultType="cmlMap">
+    /* selectUserList */
+        select A.USER_ID
+             , A.USER_NM_KO  AS USER_NM
+             , A.DEPT_NM     AS PART_NM
+             , A.RANK_NM     AS PSTN_NM
+             , A.MOBL_NO     AS TEL_NO
+             , A.EMAIL       AS E_MAIL
+             , A.USE_TY_CD   AS USE_YN
+             , A.GRP_ID
+             , A.AUTH_LVL    AS GRP_AUTH_LVL
+             , A.DSTRT_CD
+             , 'D'           AS USE_TY_CD
+          from VW_USER A
+         where DSTRT_CD = #{dstrtCd}
+    </select>
+    
+</mapper>

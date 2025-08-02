@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ucp.wrks.evtctl.stats.service.TvoOutListMapper">
+
+	<!-- 영상접속목록 -->
+    <sql id="tvoOutListSql">
+    select A.*
+      from (
+        select A.VIEW_RQST_NO
+             , A.OUT_RQST_NO
+             , TO_CHAR(TO_TIMESTAMP(A.OUT_RQST_YMDHMS, 'YYYYMMDDHH24MISS'), 'YYYY-MM-DD HH24:MI') OUT_RQST_YMDHMS                                                    
+             , A.OUT_RQST_USER_ID
+           <if test="saltText == null ">
+             , COALESCE(FN_USER_NM(A.OUT_RQST_USER_ID), A.OUT_RQST_USER_ID) as OUT_RQST_USER_NM
+           </if>
+           <if test="saltText != null ">
+             , COALESCE(FN_USER_NM_DEC(A.OUT_RQST_USER_ID, #{saltText}::bytea), A.OUT_RQST_USER_ID) as OUT_RQST_USER_NM
+           </if>
+             , B.EVT_NO
+             , B.EVT_NM
+             , B.RQST_RSN_TY_CD
+             , FN_GET_TC_CODE('RQST_RSN_TY', COALESCE(B.RQST_RSN_TY_CD, '')) as RQST_RSN_TY_NM
+             , B.RQST_RSN_DTL
+             , CASE WHEN COALESCE(B.PAPER_NO,'') = '' THEN B.PAPER_NM
+                    WHEN COALESCE(B.PAPER_NM,'') = '' THEN B.PAPER_NO
+                    ELSE CONCAT(B.PAPER_NM,'/',B.PAPER_NO)
+                    END AS PAPER_NO
+             , A.CCTV_ID
+             , ( select F.FCLT_LBL_NM from CM_FACILITY F where F.FCLT_ID = A.CCTV_ID) as CCTV_NM
+             , CONCAT( TO_CHAR(TO_TIMESTAMP(A.VDO_YMDHMS_FR, 'YYYYMMDDHH24MISS'), 'YYYY-MM-DD HH24:MI')
+                     , '~'
+                     , TO_CHAR(TO_TIMESTAMP(A.VDO_YMDHMS_TO, 'YYYYMMDDHH24MISS'), 'YYYY-MM-DD HH24:MI')
+                     ) as VDO_YMDHMS_FR_TO
+             , A.MASKING_YN            
+             , CASE WHEN COALESCE(A.PLAY_END_YMDHMS,'') = ''              THEN '' 
+                    ELSE TO_CHAR(TO_TIMESTAMP(A.PLAY_END_YMDHMS, 'YYYYMMDDHH24MISS'), 'YYYY-MM-DD HH24:MI')
+               END AS PLAY_END_YMDHMS
+             , CASE WHEN COALESCE(A.TVO_PRGRS_DTL,'') = ''
+                    THEN FN_GET_TC_CODE('OUT_PRGRS', COALESCE(A.TVO_PRGRS_CD, ''))
+                    ELSE CONCAT(FN_GET_TC_CODE('OUT_PRGRS', COALESCE(A.TVO_PRGRS_CD, '')), ' (', A.TVO_PRGRS_DTL, ')')
+               END as TVO_PRGRS_NM
+          from TVO_OUT_RQST A
+    INNER join TVO_VIEW_RQST B on A.VIEW_RQST_NO = B.VIEW_RQST_NO
+         where CONCAT(#{searchStartDate}, '000000') <![CDATA[ <= ]]> A.OUT_RQST_YMDHMS
+           and A.OUT_RQST_YMDHMS <![CDATA[ <= ]]> CONCAT(#{searchEndDate}, '235959')
+           <if test='searchEvtNo  != null and searchEvtNo  != ""'> and B.EVT_NO like '%' || #{searchEvtNo}  || '%' </if>
+           ) A
+     where 1 = 1
+           <if test='searchUserNm  != null and searchUserNm  != ""'> and OUT_RQST_USER_NM like '%' || #{searchUserNm}  || '%' </if>
+           <if test='searchPaperNo  != null and searchPaperNo  != ""'> and PAPER_NO like '%' || #{searchPaperNo}  || '%' </if>
+           <if test='searchCctvNm  != null and searchCctvNm  != ""'> and CCTV_NO like '%' || #{searchCctvNm}  || '%' </if>
+    </sql>
+    
+    <select id="tvoOutList" parameterType="java.util.HashMap" resultType="egovMap">
+    /* tvoOutList */
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingHeader"/>
+            <include refid="tvoOutListSql"/>
+        order by OUT_RQST_YMDHMS desc
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingBottom"/>
+    </select>
+
+    <select id="tvoOutListExcel" parameterType="java.util.HashMap" resultType="egovMap">
+    /* tvoOutListExcel */
+        <include refid="tvoOutListSql"/>
+        order by OUT_RQST_YMDHMS desc
+    </select>
+    
+</mapper>

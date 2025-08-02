@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ucp.main.service.DashboardMapper">
+
+    <!-- 금일 열람 현황 -->
+    <select id="selectTvoViewState" resultType="egovMap">
+    /* selectTvoViewState */
+        select count(view_rqst_no)             as CNT_RQST
+             , coalesce (sum(TVO_PRGRS_10), 0) as CNT_PRGRS_10
+          from (
+                 select view_rqst_no
+                      , case when TVO_PRGRS_CD='10' then 1 else 0 end  as TVO_PRGRS_10 
+                      , TVO_PRGRS_CD, view_rqst_ymdhms , left(view_rqst_ymdhms,8) , TO_CHAR(now(), 'YYYYMMDD')
+                   from tvo_view_rqst tvr
+                  where left(view_rqst_ymdhms,8) = TO_CHAR(now(), 'YYYYMMDD')
+               ) T
+    </select>
+
+    <!-- 금일 열람연장 현황 -->
+    <select id="selectTvoViewExtnState" resultType="egovMap">
+    /* selectTvoViewExtnState */
+        select count(view_rqst_no)             as CNT_RQST
+             , coalesce (sum(TVO_PRGRS_10), 0) as CNT_PRGRS_10
+          from (
+                 select view_rqst_no
+                      , case when TVO_PRGRS_CD='10' then 1 else 0 end  as TVO_PRGRS_10 
+                      , TVO_PRGRS_CD, VIEW_EXTN_RQST_YMDHMS , left(VIEW_EXTN_RQST_YMDHMS,8) , TO_CHAR(now(), 'YYYYMMDD')
+                   from tvo_view_rqst_extn tvre 
+                  where left(VIEW_EXTN_RQST_YMDHMS,8) = TO_CHAR(now(), 'YYYYMMDD')
+               ) T
+    </select>
+
+    <!-- 금일 반출 현황 -->
+    <select id="selectTvoOutState" resultType="egovMap">
+    /* selectTvoOutState */
+        select count(out_rqst_no)             as CNT_RQST
+             , coalesce (sum(TVO_PRGRS_10), 0) as CNT_PRGRS_10
+          from (
+                 select OUT_RQST_NO
+                      , case when TVO_PRGRS_CD='10' then 1 else 0 end  as TVO_PRGRS_10 
+                      , TVO_PRGRS_CD, out_rqst_ymdhms , left(out_rqst_ymdhms,8) , TO_CHAR(now(), 'YYYYMMDD')
+                   from tvo_out_rqst tor 
+                  where left(out_rqst_ymdhms,8) = TO_CHAR(now(), 'YYYYMMDD')
+               ) T
+    </select>
+               
+    <!-- 금일 반출연장 현황 -->
+    <select id="selectTvoOutExtnState" resultType="egovMap">
+    /* selectTvoOutExtnState */
+        select count(out_rqst_no)             as CNT_RQST
+             , coalesce (sum(TVO_PRGRS_10), 0) as CNT_PRGRS_10
+          from (
+                 select OUT_RQST_NO
+                      , case when TVO_PRGRS_CD='10' then 1 else 0 end  as TVO_PRGRS_10 
+                      , TVO_PRGRS_CD, OUT_EXTN_RQST_YMDHMS , left(OUT_EXTN_RQST_YMDHMS,8) , TO_CHAR(now(), 'YYYYMMDD')
+                   from tvo_out_rqst_extn tore  
+                  where left(OUT_EXTN_RQST_YMDHMS,8) = TO_CHAR(now(), 'YYYYMMDD')
+               ) T
+    </select>
+
+    <!-- CCTV 현황 -->
+    <select id="selectTvoCctvState" resultType="egovMap">
+    /* selectTvoCctvState */
+        select count(FCLT_ID)                  as CNT_CCTV
+             , coalesce (sum(RECORDING_YN), 0) as CNT_IVA_TY_1
+             , coalesce (sum(TVO_TRGT_YN), 0)  as CNT_IVA_TY_2
+          from ( select FCLT_ID
+                      , case when RECORDING_YN='Y' then 1 else 0 end as RECORDING_YN
+                      , case when RECORDING_YN='Y' and TVO_TRGT_YN='Y' then 1 else 0 end  as TVO_TRGT_YN 
+                   from cm_facility cf 
+                  where USE_TY_CD ='Y' and FCLT_KND_CD ='CTV'
+               ) T
+    </select>
+
+    <!-- 금월 영상 열람승인 현황 -->
+    <select id="selectTvoViewAprvStateMonthly" resultType="egovMap">
+    /* selectTvoViewAprvStateMonthly */
+        select coalesce (sum(VIEW_RQST), 0) as CNT_VIEW_RQST
+             , coalesce (sum(EXTN_RQST), 0) as CNT_EXTN_RQST
+          from ( select case when (TVO_PRGRS_CD='50' or TVO_PRGRS_CD='51')
+                             then 1 else 0 end  as VIEW_RQST
+                      , 0 as EXTN_RQST
+                      , TVO_PRGRS_CD, left(VIEW_RQST_YMDHMS,6) RQST_YMDHMS, TO_CHAR(now(), 'YYYYMM') MON
+                   from tvo_view_rqst tvr 
+                  where (TVO_PRGRS_CD ='50' or TVO_PRGRS_CD ='51')
+                    and left(VIEW_RQST_YMDHMS,6) = TO_CHAR(now(), 'YYYYMM')
+                  union all
+                 select 0 as VIEW_RQST
+                      , case when (TVO_PRGRS_CD='50' or TVO_PRGRS_CD='51')
+                             then 1 else 0 end  as EXTN_RQST
+                      , TVO_PRGRS_CD, left(VIEW_EXTN_RQST_YMDHMS,6) RQST_YMDHMS, TO_CHAR(now(), 'YYYYMM') MON
+                   from tvo_view_rqst_extn tvre
+                  where (TVO_PRGRS_CD ='50' or TVO_PRGRS_CD ='51')
+                    and left(VIEW_EXTN_RQST_YMDHMS,6) = TO_CHAR(now(), 'YYYYMM')
+               ) T
+    </select>
+
+    <!-- 금월 영상 반출승인 현황 -->
+    <select id="selectTvoOutAprvStateMonthly" resultType="egovMap">
+    /* selectTvoOutAprvStateMonthly */
+        select coalesce (sum(OUT_RQST), 0) as CNT_OUT_RQST
+             , coalesce (sum(EXTN_RQST), 0) as CNT_EXTN_RQST
+          from ( select case when (TVO_PRGRS_CD='70' or TVO_PRGRS_CD='71')
+                             then 1 else 0 end  as OUT_RQST
+                      , 0 as EXTN_RQST
+                      , TVO_PRGRS_CD, left(OUT_RQST_YMDHMS,6) RQST_YMDHMS, TO_CHAR(now(), 'YYYYMM') MON
+                   from tvo_out_rqst tvr 
+                  where (TVO_PRGRS_CD ='70' or TVO_PRGRS_CD ='71')
+                    and left(OUT_RQST_YMDHMS,6) = TO_CHAR(now(), 'YYYYMM')
+                  union all
+                 select 0 as OUT_RQST
+                      , case when (TVO_PRGRS_CD='50' or TVO_PRGRS_CD='51')
+                             then 1 else 0 end  as EXTN_RQST
+                      , TVO_PRGRS_CD, left(OUT_EXTN_RQST_YMDHMS,6) RQST_YMDHMS, TO_CHAR(now(), 'YYYYMM') MON
+                   from tvo_out_rqst_extn tvre
+                  where (TVO_PRGRS_CD ='50' or TVO_PRGRS_CD ='51')
+                    and left(OUT_EXTN_RQST_YMDHMS,6) = TO_CHAR(now(), 'YYYYMM')
+               ) T
+    </select>
+
+    <!-- 금월 영상 열람승인 현황 -->
+    <select id="selectTvoViewAprvStateDaily" resultType="egovMap">
+    /* selectTvoViewAprvStateDaily */
+        select TO_CHAR(T.YMD, 'YYYYMMDD')   as YMD
+             , COALESCE(SUM(TT.VIEW_RQST), 0) AS CNT_VIEW_RQST
+             , COALESCE(SUM(TT.EXTN_RQST), 0) AS CNT_EXTN_RQST
+        from ( WITH RECURSIVE T_TEMP_DATES
+                 AS ( select cast(date_trunc('MONTH',current_date) as date) AS YMD
+                       UNION
+                      select (T_TEMP_DATES.YMD + INTERVAL '1 DAY')::date from T_TEMP_DATES
+                       <![CDATA[
+                      where (T_TEMP_DATES.YMD + INTERVAL '1 DAY') <=  (date_trunc('MONTH', current_date) + INTERVAL '1 MONTH - 1 DAY')::date
+                      ]]>
+                    )
+               select YMD from T_TEMP_DATES
+             ) T
+     left join ( select left(VIEW_RQST_YMDHMS,8) YMD
+                      , case when (TVO_PRGRS_CD='50' or TVO_PRGRS_CD='51')
+                             then 1 else 0 end  as VIEW_RQST
+                      , 0 as EXTN_RQST
+                      , TVO_PRGRS_CD
+                   from tvo_view_rqst tvr 
+                  where (TVO_PRGRS_CD ='50' or TVO_PRGRS_CD ='51')
+                    and left(VIEW_RQST_YMDHMS,6) = TO_CHAR(now(), 'YYYYMM')
+                  union all
+                 select left(VIEW_EXTN_RQST_YMDHMS,8) YMD
+                      , 0 as VIEW_RQST
+                      , case when (TVO_PRGRS_CD='50' or TVO_PRGRS_CD='51')
+                             then 1 else 0 end  as EXTN_RQST
+                      , TVO_PRGRS_CD
+                   from tvo_view_rqst_extn tvre
+                  where (TVO_PRGRS_CD ='50' or TVO_PRGRS_CD ='51')
+                    and left(VIEW_EXTN_RQST_YMDHMS,6) = TO_CHAR(now(), 'YYYYMM')
+               ) TT
+            ON TO_CHAR(T.YMD, 'YYYYMMDD') = TT.YMD
+         group by T.YMD
+         order by T.YMD
+    </select>
+
+    <!-- 금월 영상 반출승인 현황 -->
+    <select id="selectTvoOutAprvStateDaily" resultType="egovMap">
+    /* selectTvoOutAprvStateDaily */
+        select TO_CHAR(T.YMD, 'YYYYMMDD')   as YMD
+             , COALESCE(SUM(TT.OUT_RQST), 0) AS CNT_OUT_RQST
+             , COALESCE(SUM(TT.EXTN_RQST), 0) AS CNT_EXTN_RQST
+        from ( WITH RECURSIVE T_TEMP_DATES
+                 AS ( select cast(date_trunc('MONTH',current_date) as date) AS YMD
+                       UNION
+                      select (T_TEMP_DATES.YMD + INTERVAL '1 DAY')::date from T_TEMP_DATES
+                       <![CDATA[
+                      where (T_TEMP_DATES.YMD + INTERVAL '1 DAY') <=  (date_trunc('MONTH', current_date) + INTERVAL '1 MONTH - 1 DAY')::date
+                      ]]>
+                    )
+               select YMD from T_TEMP_DATES
+             ) T
+     left join ( select left(OUT_RQST_YMDHMS,8) YMD
+                      , case when (TVO_PRGRS_CD='70' or TVO_PRGRS_CD='71')
+                             then 1 else 0 end  as OUT_RQST
+                      , 0 as EXTN_RQST
+                      , TVO_PRGRS_CD
+                   from tvo_out_rqst tor  
+                  where (TVO_PRGRS_CD ='70' or TVO_PRGRS_CD ='71')
+                    and left(OUT_RQST_YMDHMS,6) = TO_CHAR(now(), 'YYYYMM')
+                  union all
+                 select left(OUT_EXTN_RQST_YMDHMS,8) YMD
+                      , 0 as OUT_RQST
+                      , case when (TVO_PRGRS_CD='50' or TVO_PRGRS_CD='51')
+                             then 1 else 0 end  as EXTN_RQST
+                      , TVO_PRGRS_CD
+                   from tvo_out_rqst_extn tore 
+                  where (TVO_PRGRS_CD ='50' or TVO_PRGRS_CD ='51')
+                    and left(OUT_EXTN_RQST_YMDHMS,6) = TO_CHAR(now(), 'YYYYMM')
+               ) TT
+            ON TO_CHAR(T.YMD, 'YYYYMMDD') = TT.YMD
+         group by T.YMD
+         order by T.YMD
+    </select>
+
+</mapper>

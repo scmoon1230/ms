@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+	<mapper namespace="kr.co.ucp.wrks.sstm.process.service.ProcessCheckMapper">
+
+	<select id="list" parameterType="java.util.HashMap" resultType="egovMap">
+			select
+				A.*
+				, (
+					select  COUNT(*)
+					from SM_PRCS_INFO X
+				     where X.USE_YN = 'Y'
+					<if test="rcvPrcsId != null and rcvPrcsId != '' "> and X.PRCS_ID LIKE CONCAT('%' , #{rcvPrcsId} , '%') </if>
+					<if test="rcvPrcsNm != null and rcvPrcsNm != '' "> and X.PRCS_NM LIKE CONCAT('%' , #{rcvPrcsNm} , '%') </if>
+					<if test="rcvSvrIp != null and rcvSvrIp != '' "> and X.PRCS_IP LIKE CONCAT('%' , #{rcvSvrIp}  , '%') </if>
+					<if test="rcvTrmsYn != null and rcvTrmsYn != '' "> and X.TRMS_YN = #{rcvTrmsYn} </if>
+				  ) ROWCNT
+			from(
+				select
+					B.*
+					 ,	ROW_NUMBER() OVER (order by B.PRCS_ID asc ) RK
+			from
+				(select   X.PRCS_ID
+						, X.PRCS_NM
+						, X.PRCS_IP
+						, CASE WHEN X.TRMS_YN = 'N' THEN '정상' ELSE '확인필요' END as TRMS_YN
+						, X.CHECK_CYCLE
+						, (select ICH_USER_NM from SM_PRCS_USER Y where  X.PRCS_ID = Y.PRCS_ID limit 1) as ICH_USER_NM
+					from SM_PRCS_INFO X
+				     where X.USE_YN = 'Y'
+					<if test="rcvPrcsId != null and rcvPrcsId != '' "> and X.PRCS_ID LIKE CONCAT('%' , #{rcvPrcsId} , '%') </if>
+					<if test="rcvPrcsNm != null and rcvPrcsNm != '' "> and X.PRCS_NM LIKE CONCAT('%' , #{rcvPrcsNm} , '%') </if>
+					<if test="rcvSvrIp != null and rcvSvrIp != '' "> and X.PRCS_IP LIKE CONCAT('%' , #{rcvSvrIp}  , '%') </if>
+					<if test="rcvTrmsYn != null and rcvTrmsYn != '' "> and X.TRMS_YN = #{rcvTrmsYn} </if>
+		       ) B
+			) A
+		<![CDATA[
+			 OFFSET ((#{pageNo}::integer - 1) * #{rowsPerPage}::integer)
+			 LIMIT #{rowsPerPage}::integer
+	]]>
+	</select>
+</mapper>

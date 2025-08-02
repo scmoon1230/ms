@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.co.ucp.wrks.sstm.mbl.service.MblEvtMapper">
+
+    <select id="getEventList" parameterType="java.util.HashMap" resultType="cmlMap">
+        select A.EVT_ID
+             , A.EVT_NM
+             , A.USE_TY_CD
+             , FN_GET_TC_CODE('USE_TY', A.USE_TY_CD) AS USE_TY_NM
+             , S.SYS_NM_KO
+          from CM_EVENT A
+     left join CM_SYS_CODE S      ON A.SYS_CD = S.SYS_CD
+        where 1 = 1
+          and A.USE_TY_CD = 'Y'
+          <if test='evtId != null and evtId != ""'>
+          and UPPER(A.EVT_ID) LIKE '%' || UPPER(#{evtId}) || '%'
+          </if>
+          <if test='evtNm != null and evtNm != ""'>
+          and UPPER(A.EVT_NM) LIKE '%' || UPPER(#{evtNm}) || '%'
+          </if>
+        order by ${sidx} ${sord}
+    </select>
+
+    <select id="getEventNmList" parameterType="java.util.HashMap" resultType="cmlMap">
+        select A.EVT_ID
+             , A.MOBL_ID
+             , B.MOBL_NO
+             , B.USER_NM
+             , B.USER_PSITN_NM
+             , A.PUSH_SEND_TY_CD
+             , A.SMS_SEND_TY_CD
+             , A.USE_YN
+          from CM_GRP_EVT_MOBL_LVL A
+          JOIN CM_MOBILE B       ON A.MOBL_ID = B.MOBL_ID
+         where 1 = 1
+           and A.EVT_ID = #{evtId}
+      order by ${sidx} ${sord}
+    </select>
+
+    <select id="getEventNmListPopup" parameterType="java.util.HashMap" resultType="cmlMap">
+        select A.MOBL_ID
+             , A.MOBL_NO
+             , A.USER_NM
+             , A.USER_PSITN_NM
+             , FN_GET_TC_CODE('USE_TY', A.USE_TY_CD) AS USE_TY_NM
+          from CM_MOBILE A
+         where 1 = 1
+           and A.USE_TY_CD = 'Y'
+           <if test='evtId != null and evtId != ""'>
+           and MOBL_ID NOT IN ( select MOBl_ID
+                                  from CM_GRP_EVT_MOBL_LVL
+                                 where EVT_ID = #{evtId}
+                              )
+           </if>
+      order by ${sidx} ${sord}
+    </select>
+
+    <update id="updateMbl" parameterType="java.util.HashMap">
+        UPDATE CM_GRP_EVT_MOBL_LVL
+        SET   PUSH_SEND_TY_CD     = #{pushSendTyCd}
+            , SMS_SEND_TY_CD     = #{smsSendTyCd}
+            , USE_YN             = #{useYn}
+        where MOBL_ID = #{moblId}
+        and EVT_ID = #{evtId}
+    </update>
+
+    <delete id="deleteMbl" parameterType="java.util.HashMap">
+        delete from CM_GRP_EVT_MOBL_LVL
+        where EVT_ID      = #{evtId}
+        and MOBL_ID     = #{moblId}
+    </delete>
+
+    <insert id="insertMblUser" parameterType="java.util.HashMap">
+        insert into CM_GRP_EVT_MOBL_LVL
+             ( EVT_ID           , GRP_ID     , MOBL_ID         , PUSH_SEND_TY_CD
+            , SMS_SEND_TY_CD    , USE_YN
+            , UPD_USER_ID       , UPD_DATE   , RGS_USER_ID     , RGS_DATE     )
+       values
+            ( #{evtId}          , '999'      , #{moblId}       , #{pushSendTyCd}
+            , #{smsSendTyCd}    , #{useYn}
+            , #{userId}         , NOW()      , #{userId}       , NOW()        )
+  ON CONFLICT ( EVT_ID , MOBL_ID )
+    DO UPDATE
+          SET PUSH_SEND_TY_CD = #{pushSendTyCd}
+            , SMS_SEND_TY_CD  = #{smsSendTyCd}
+            , USE_YN          = #{useYn}
+            , UPD_USER_ID     = #{userId}
+            , UPD_DATE        = NOW()
+    </insert>
+
+    <select id="checkMblUser" parameterType="java.util.HashMap" resultType="int">
+        select COUNT(*)
+          from CM_GRP_EVT_MOBL_LVL
+         where EVT_ID     = #{evtId}
+           and MOBL_ID    = #{moblId}
+    </select>
+</mapper>

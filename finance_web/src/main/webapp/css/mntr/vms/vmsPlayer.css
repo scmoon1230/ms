@@ -1,0 +1,277 @@
+body {
+    position: absolute;
+    top:0;
+    right:0;
+    bottom:0;
+    left:0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+select[id^="sel-"] {
+    display: inline-block;
+    width: auto;
+    vertical-align: middle;
+}
+
+article#view-vms {
+    position: inherit;
+    top:0;
+    right:0;
+    left:0;
+    bottom: 49px;
+ /* bottom: 99px; */
+    border-bottom: 1px solid #eee;
+}
+
+article#handle-vms {
+    position: inherit;
+    width: 100%;
+    bottom:0; 
+    height: 50px;
+    margin:0;
+    padding: 8px;
+}
+
+div#play-mode {
+    padding: 5px;
+    border: solid 1px #ccc;
+    border-radius: 4px;
+}
+
+.web-rtc-view-container {
+    display: inline-block;
+    height: 100%;
+}
+
+.web-rtc-view-container video {
+    width: 100%;
+    height: 100%;
+    background-color: #000;
+}
+
+.web-rtc-view-title {
+    position: absolute;
+    padding: 5px;
+    background: rgba(0, 0, 0, 0.5);
+    color: #fff;
+}
+
+#custom-handle {
+    width: 20px;
+    padding: 0 3px;
+    height: 1.6em;
+    top: 50%;
+    margin-top: -.8em;
+    text-align: center;
+    line-height: 1.6em;
+}
+
+#wrapper-slider {
+    margin-top: 3px;
+    margin-left: 285px;
+    padding: 10px 10px 10px 10px;
+    border: solid 1px #ccc;
+    border-radius: 4px;
+}
+
+#wrapper-slider > div.pull-left {
+    top: -8px;
+    left: -85px;
+}
+
+#container-video-time {
+    border-top: 1px solid transparent;
+    position: absolute;
+    height: 40px;
+    left: 0;
+    right: 0;
+    bottom: 50px;
+    padding: 0 5px;
+    background: #000;
+    color: #ddd;
+    vertical-align: middle;
+    opacity: 0.5;
+}
+
+#container-video-time:hover {
+    border-top: 1px solid #ddd;
+    opacity: 0.8;
+}
+
+#video-time {
+    margin-left: 35px;
+    line-height: 37px;
+}
+
+#container-step {
+    margin-left: 4px;
+    line-height: 37px;
+}
+
+#container-step > select {
+    display: inline-block;
+    width: 55px;
+}
+
+.web-rtc-view-container .web-rtc-view-container-buttons {
+    display: inline-block;
+    position: absolute;
+    left: 10px;
+    bottom: 10px;
+    z-index: 5;
+    opacity: 0.5;
+}
+
+.web-rtc-view-container .web-rtc-view-container-buttons:hover {
+    opacity: 0.8;
+}
+
+.web-rtc-view-container .web-rtc-view-container-buttons > button {
+    margin-right: 2px;
+}
+
+.padding-zero {
+    padding: 0 !important;
+}
+
+.margin-zero {
+    margin: 0 !important;
+}
+
+.input-xs {
+    height: 22px;
+    padding: 2px 5px;
+    font-size: 12px;
+    line-height: 1.5;
+    /* If Placeholder of the input is moved up, rem/modify this. */
+}
+
+select.input-xs {
+    border-radius: 3px !important;
+    padding: 0 5px;
+}
+
+.modal-header, .modal-body, .modal-footer {
+    padding: 10px;
+}
+
+.modal-dialog:has(img#popup-image) {
+    width: fit-content;
+}
+
+#modal-notice h5#modal-noticeLabel {
+    display: inline-block;
+}
+
+.tooltip-inner {
+    max-width: 400px;
+}
+
+.tooltip.fade.top.in th,
+.tooltip.fade.top.in td {
+    vertical-align: middle;
+}
+
+.datetimepicker input[type="text"] {
+    width: 155px !important;
+}
+
+/* datetimepicker */
+.bootstrap-datetimepicker-widget table thead tr:first-child th {
+    line-height: 12px;
+}
+
+.bootstrap-datetimepicker-widget table tbody tr td {
+    white-space: normal;
+}
+
+.bootstrap-datetimepicker-widget.dropdown-menu .row {
+    margin: 0;
+}
+
+.bootstrap-datetimepicker-widget.dropdown-menu .col-md-6 {
+    padding-left: 5px;
+    padding-right: 5px;
+}
+
+.bootstrap-datetimepicker-widget.dropdown-menu .datepicker-days,
+.bootstrap-datetimepicker-widget.dropdown-menu .datepicker-months,
+.bootstrap-datetimepicker-widget.dropdown-menu .datepicker-years,
+.bootstrap-datetimepicker-widget.dropdown-menu .timepicker-picker,
+.bootstrap-datetimepicker-widget.dropdown-menu .timepicker-hours,
+.bootstrap-datetimepicker-widget.dropdown-menu .timepicker-minutes {
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
+
+.bootstrap-datetimepicker-widget.dropdown-menu th.prev.disabled span,
+.bootstrap-datetimepicker-widget.dropdown-menu th.next.disabled span {
+    color: #fff
+}
+
+
+.bootstrap-datetimepicker-widget.dropdown-menu .datepicker-days th.dow {
+    background-color: #eee;
+    border-radius: 0;
+}
+
+.bootstrap-datetimepicker-widget.dropdown-menu .datepicker-days th.dow:nth-child(1) {
+    color: #d9534f;
+}
+
+.bootstrap-datetimepicker-widget.dropdown-menu .datepicker-days th.dow:nth-child(7) {
+    color: #337ab7;
+}
+
+.bootstrap-datetimepicker-widget table td span.disabled,
+.bootstrap-datetimepicker-widget table td span.disabled:hover,
+.bootstrap-datetimepicker-widget table td.disabled,
+.bootstrap-datetimepicker-widget table td.disabled:hover {
+    text-decoration: line-through;
+}
+
+span.datetimepicker-today:after {
+    content: '[ 현재 ]';
+}
+
+span.datetimepicker-clear:after {
+    content: '[비우기]';
+}
+
+span.datetimepicker-close:after {
+    content: '[ 닫기 ]';
+}
+
+
+
+
+
+/*
+#slider {
+    opacity: 0.5;
+}
+*/

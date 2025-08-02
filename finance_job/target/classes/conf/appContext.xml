@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:p="http://www.springframework.org/schema/p" xmlns:tx="http://www.springframework.org/schema/tx" xmlns:context="http://www.springframework.org/schema/context"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.0.xsd
+	http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.0.xsd
+   	http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+	http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.0.xsd">
+
+ 	<context:property-placeholder location="classpath*:*.prprts" />
+    <context:component-scan base-package="kr.co.ucp" use-default-filters="false">
+        <context:include-filter type="annotation" expression="org.springframework.stereotype.Service" />
+        <context:include-filter type="annotation" expression="org.springframework.stereotype.Component" />
+    	<context:exclude-filter type="annotation" expression="org.springframework.stereotype.Controller" />
+    </context:component-scan>
+
+    <context:annotation-config/>
+
+    <!-- pve -->
+    <alias name="dataSource-${db_type}" alias="dataSource" />
+	<bean id="dataSource-postgresql" class="org.apache.commons.dbcp2.BasicDataSource">
+		<property name="driverClassName"    value="${pve.db.drv}"/>
+		<property name="url"                value="${pve.db.url}" />
+		<property name="username"           value="${pve.db.usr}"/>
+		<property name="password"           value="${pve.db.pwd}"/>
+		<property name="maxWaitMillis"		value="10000" />
+		<property name="maxTotal"			value="10" />
+		<property name="maxIdle"            value="10"/>
+		<property name="minIdle"            value="10"/>
+		<property name="validationQuery"    value="select 1 " />
+		<property name="testWhileIdle"      value="true" />
+		<property name="timeBetweenEvictionRunsMillis" value="3600000" />
+	</bean>
+    <bean id="sqlSession" class="org.mybatis.spring.SqlSessionFactoryBean">
+        <property name="dataSource" 		ref="dataSource" />
+        <property name="configLocation" 	value="classpath:conf/mybatis_config.xml" />
+    	<property name="mapperLocations">
+    		<array>
+    			<value>classpath*:sqlmap/pve/**/*.xml</value>
+    		</array>
+    	</property>
+    </bean>
+    <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+        <property name="basePackage"				value="kr.co.ucp.pve.mapper" />
+        <property name="sqlSessionFactoryBeanName"	value="sqlSession" />
+    </bean>
+    <bean id="trManager"  class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="dataSource" ref="dataSource" />
+    </bean>
+    <tx:annotation-driven transaction-manager="trManager"  proxy-target-class="true"/>
+    <!-- pve -->
+
+    <!-- swip -->
+	<bean id="dataSource_swip" class="org.apache.commons.dbcp2.BasicDataSource">
+		<property name="driverClassName"    value="${swip.db.drv}"/>
+		<property name="url"                value="${swip.db.url}" />
+		<property name="username"           value="${swip.db.usr}"/>
+		<property name="password"           value="${swip.db.pwd}"/>
+	</bean>
+
+    <bean id="sqlSession_swip" class="org.mybatis.spring.SqlSessionFactoryBean">
+        <property name="dataSource" 		ref="dataSource_swip" />
+        <property name="configLocation" 	value="classpath:conf/mybatis_config.xml" />
+    	<property name="mapperLocations" 	value="classpath*:sqlmap/swip/*.*"/>
+    </bean>
+
+    <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+        <property name="basePackage" 				value="kr.co.ucp.swip.mapper" />
+        <property name="sqlSessionFactoryBeanName" 	value="sqlSession_swip" />
+    </bean>
+
+    <bean id="trManager_swip"  class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="dataSource" ref="dataSource_swip" />
+    </bean>
+    <tx:annotation-driven transaction-manager="trManager_swip"  proxy-target-class="true"/>
+    <!-- swip -->
+
+    <!-- gis -->
+	<bean id="dataSource_gis" class="org.apache.commons.dbcp2.BasicDataSource">
+		<property name="driverClassName"    value="${gis.db.drv}"/>
+		<property name="url"                value="${gis.db.url}" />
+		<property name="username"           value="${gis.db.usr}"/>
+		<property name="password"           value="${gis.db.pwd}"/>
+	</bean>
+
+    <bean id="sqlSession_gis" class="org.mybatis.spring.SqlSessionFactoryBean">
+        <property name="dataSource" 		ref="dataSource_gis" />
+        <property name="configLocation" 	value="classpath:conf/mybatis_config.xml" />
+    	<property name="mapperLocations" 	value="classpath*:sqlmap/gis/*.*"/>
+    </bean>
+
+    <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+        <property name="basePackage" 				value="kr.co.ucp.geo.mapper" />
+        <property name="sqlSessionFactoryBeanName" 	value="sqlSession_gis" />
+    </bean>
+
+    <bean id="trManager_gis"  class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="dataSource" ref="dataSource_gis" />
+    </bean>
+    <tx:annotation-driven transaction-manager="trManager_gis"  proxy-target-class="true"/>
+    <!-- gis -->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <!-- fn1 -->
+	<bean id="dataSource_fn1" class="org.apache.commons.dbcp2.BasicDataSource">
+		<property name="driverClassName"    value="${fn.db.drv1}"/>
+		<property name="url"                value="${fn.db.url1}" />
+		<property name="username"           value="${fn.db.usr1}"/>
+		<property name="password"           value="${fn.db.pwd1}"/>
+	</bean>
+
+    <bean id="sqlSession_fn1" class="org.mybatis.spring.SqlSessionFactoryBean">
+        <property name="dataSource" 		ref="dataSource_fn1" />
+        <property name="configLocation" 	value="classpath:conf/mybatis_config.xml" />
+    	<property name="mapperLocations" 	value="classpath*:sqlmap/fn1/*.*"/>
+    </bean>
+
+    <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+        <property name="basePackage" 				value="kr.co.ucp.backup.mapper1" />
+        <property name="sqlSessionFactoryBeanName" 	value="sqlSession_fn1" />
+    </bean>
+
+    <bean id="trManager_fn1"  class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="dataSource" ref="dataSource_fn1" />
+    </bean>
+    <tx:annotation-driven transaction-manager="trManager_fn1"  proxy-target-class="true"/>
+    <!-- fn1 -->
+
+    <!-- fn2 -->
+	<bean id="dataSource_fn2" class="org.apache.commons.dbcp2.BasicDataSource">
+		<property name="driverClassName"    value="${fn.db.drv2}"/>
+		<property name="url"                value="${fn.db.url2}" />
+		<property name="username"           value="${fn.db.usr2}"/>
+		<property name="password"           value="${fn.db.pwd2}"/>
+	</bean>
+
+    <bean id="sqlSession_fn2" class="org.mybatis.spring.SqlSessionFactoryBean">
+        <property name="dataSource" 		ref="dataSource_fn2" />
+        <property name="configLocation" 	value="classpath:conf/mybatis_config.xml" />
+    	<property name="mapperLocations" 	value="classpath*:sqlmap/fn2/*.*"/>
+    </bean>
+
+    <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+        <property name="basePackage" 				value="kr.co.ucp.backup.mapper2" />
+        <property name="sqlSessionFactoryBeanName" 	value="sqlSession_fn2" />
+    </bean>
+
+    <bean id="trManager_fn2"  class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="dataSource" ref="dataSource_fn2" />
+    </bean>
+    <tx:annotation-driven transaction-manager="trManager_fn2"  proxy-target-class="true"/>
+    <!-- fn1 -->
+
+
+
+
+
+
+</beans>

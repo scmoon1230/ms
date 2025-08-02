@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?><!--Converted at: Wed May 11 15:49:38 KST 2016-->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="FileManageDAO">
+
+	<resultMap id="fileList" type="kr.co.ucp.cmm.service.FileVO">
+		<result property="atchFileId" column="ATCH_FILE_ID"/>
+		<result property="fileCn" column="FILE_CN"/>
+		<result property="fileExtsn" column="FILE_EXTSN"/>
+		<result property="fileMg" column="FILE_SIZE"/>
+		<result property="fileSn" column="FILE_SN"/>
+		<result property="fileStreCours" column="FILE_STRE_COURS"/>
+		<result property="orignlFileNm" column="ORIGNL_FILE_NM"/>
+		<result property="streFileNm" column="STRE_FILE_NM"/>
+		<result property="creatDt" column="CREAT_DT"/>
+	</resultMap>
+
+	<resultMap id="fileDetail" type="kr.co.ucp.cmm.service.FileVO">
+		<result property="atchFileId" column="ATCH_FILE_ID"/>
+		<result property="fileCn" column="FILE_CN"/>
+		<result property="fileExtsn" column="FILE_EXTSN"/>
+		<result property="fileMg" column="FILE_SIZE"/>
+		<result property="fileSn" column="FILE_SN"/>
+		<result property="fileStreCours" column="FILE_STRE_COURS"/>
+		<result property="orignlFileNm" column="ORIGNL_FILE_NM"/>
+		<result property="streFileNm" column="STRE_FILE_NM"/>
+	</resultMap>
+
+
+ 	<select id="selectFileList" parameterType="FileVO" resultMap="fileList">
+			select	a.ATCH_FILE_ID, b.FILE_CN, b.FILE_SN, b.FILE_STRE_COURS, b.STRE_FILE_NM,
+					b.FILE_EXTSN, b.ORIGNL_FILE_NM, b.FILE_SIZE, a.CREAT_DT
+			from	COMTNFILE a, COMTNFILEDETAIL b
+			where	a.ATCH_FILE_ID = #{atchFileId}
+			and		a.ATCH_FILE_ID = b.ATCH_FILE_ID
+			and		a.USE_AT = 'Y'
+			order by b.FILE_SN
+ 	</select>
+
+	<insert id="insertFileMaster" parameterType="FileVO">
+			INSERT INTO COMTNFILE
+			(ATCH_FILE_ID, CREAT_DT, USE_AT)
+			VALUES
+			( #{atchFileId}, NOW(), 'Y')
+	</insert>
+
+	<insert id="insertFileDetail" parameterType="FileVO">
+	/* insertFileDetail */
+			INSERT INTO COMTNFILEDETAIL
+			( ATCH_FILE_ID, FILE_SN, FILE_STRE_COURS, STRE_FILE_NM,
+			  ORIGNL_FILE_NM, FILE_EXTSN, FILE_SIZE, FILE_CN )
+			VALUES
+			( #{atchFileId}, #{fileSn}::numeric, #{fileStreCours}, #{streFileNm},
+			  #{orignlFileNm}, #{fileExtsn}, #{fileMg}::numeric, #{fileCn} )
+	</insert>
+
+	<delete id="deleteFileDetail" parameterType="FileVO">
+			DELETE from COMTNFILEDETAIL
+			where	ATCH_FILE_ID = #{atchFileId}
+			and	FILE_SN = #{fileSn}::numeric
+	</delete>
+
+	<select id="getMaxFileSN" parameterType="FileVO" resultType="java.lang.Integer">
+			select COALESCE(MAX(FILE_SN),0)+1 as FILE_SN
+			from COMTNFILEDETAIL
+			where ATCH_FILE_ID =  #{atchFileId}
+	</select>
+
+ 	<select id="selectFileInf" parameterType="FileVO" resultMap="fileDetail">
+ 	/* selectFileInf */
+			select	ATCH_FILE_ID, FILE_CN, FILE_SN, FILE_STRE_COURS, STRE_FILE_NM,
+					FILE_EXTSN, ORIGNL_FILE_NM, FILE_SIZE
+			from	COMTNFILEDETAIL
+			where	ATCH_FILE_ID = #{atchFileId}
+			and		FILE_SN = #{fileSn}::numeric
+ 	</select>
+
+	<update id="deleteCOMTNFILE" parameterType="FileVO">
+
+			update COMTNFILE
+			set USE_AT = 'N'
+			where ATCH_FILE_ID = #{atchFileId}
+
+	</update>
+
+ 	<select id="selectFileListByFileNm" parameterType="FileVO" resultMap="fileList">
+
+			select
+				a.ATCH_FILE_ID, b.FILE_CN, b.FILE_SN, b.FILE_STRE_COURS, b.STRE_FILE_NM,
+				b.FILE_EXTSN, b.ORIGNL_FILE_NM, b.FILE_SIZE, a.CREAT_DT
+			from
+				COMTNFILE a, COMTNFILEDETAIL b
+			where
+				a.ATCH_FILE_ID = b.ATCH_FILE_ID
+			and
+				a.USE_AT = 'Y'
+
+			<if test="searchCnd == 'streFileNm'">and
+					b.STRE_FILE_NM LIKE CONCAT ('%', #{searchWrd},'%')
+			</if>
+			<if test="searchCnd == 'orignlFileNm'">and
+					b.ORIGNL_FILE_NM LIKE CONCAT ('%', #{searchWrd},'%')
+			</if>
+			order by a.ATCH_FILE_ID, b.FILE_SN
+           offset #{firstIndex} limit #{recordCountPerPage}
+
+ 	</select>
+
+ 	<select id="selectFileListCntByFileNm" parameterType="FileVO" resultType="java.lang.Integer">
+
+			select
+				COUNT(a.ATCH_FILE_ID)
+			from
+				COMTNFILE a, COMTNFILEDETAIL b
+			where
+				a.ATCH_FILE_ID = b.ATCH_FILE_ID
+			and
+				a.USE_AT = 'Y'
+
+			<if test="searchCnd == 'streFileNm'">and
+					b.STRE_FILE_NM LIKE CONCAT ('%', #{searchWrd},'%')
+			</if>
+			<if test="searchCnd == 'orignlFileNm'">and
+					b.ORIGNL_FILE_NM LIKE CONCAT ('%', #{searchWrd},'%')
+			</if>
+ 	</select>
+
+  	<select id="selectImageFileList" parameterType="FileVO" resultMap="fileList">
+
+			select
+				a.ATCH_FILE_ID, b.FILE_CN, b.FILE_SN, b.FILE_STRE_COURS, b.STRE_FILE_NM,
+				b.FILE_EXTSN, b.ORIGNL_FILE_NM, b.FILE_SIZE, a.CREAT_DT
+			from
+				COMTNFILE a, COMTNFILEDETAIL b
+			where
+				a.ATCH_FILE_ID = #{atchFileId}
+			and
+				a.ATCH_FILE_ID = b.ATCH_FILE_ID
+			and
+				UPPER(b.FILE_EXTSN) IN ('GIF','JPG','BMP','PNG')
+			and
+				a.USE_AT = 'Y'
+			order by b.FILE_SN
+
+ 	</select>
+
+</mapper>

@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ucp.report.service.RprtsumweekMapper">
+
+    <select id="selectDurationLastWeek" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectDurationLastWeek */
+        select ( select TO_CHAR(TRUNC(TO_DATE(FROM_YMD, 'YYYYMMDD'), 'DD'), 'YYYY-MM-DD')
+                   from TB_ACCTYEAR where FROM_YMD <![CDATA[<=]]> #{stanYmd} and END_YMD <![CDATA[>=]]> #{stanYmd} ) 
+               || ' ~ ' ||
+               TO_CHAR(TRUNC(TO_DATE(#{stanYmd}, 'YYYYMMDD'), 'DD')-1, 'YYYY-MM-DD') DURATION
+          from DUAL
+    </select>
+
+    <select id="selectDurationThisWeek" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectDurationThisWeek */
+        select TO_CHAR(TRUNC(TO_DATE(#{stanYmd}, 'YYYYMMDD'), 'DD'), 'YYYY-MM-DD') 
+               || ' ~ ' ||
+               TO_CHAR(TRUNC(TO_DATE(#{stanYmd}, 'YYYYMMDD'), 'DD')+6, 'YYYY-MM-DD') DURATION
+          from DUAL
+    </select>
+
+    <select id="selectDurationSumm" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectDurationSumm */
+        select ( select TO_CHAR(TRUNC(TO_DATE(FROM_YMD, 'YYYYMMDD'), 'DD'), 'YYYY-MM-DD')
+                   from TB_ACCTYEAR where FROM_YMD <![CDATA[<=]]> #{stanYmd} and END_YMD <![CDATA[>=]]> #{stanYmd} ) 
+               || ' ~ ' ||
+               TO_CHAR(TRUNC(TO_DATE(#{stanYmd}, 'YYYYMMDD'), 'DD')+6, 'YYYY-MM-DD') DURATION
+          from DUAL
+    </select>
+
+
+
+    <select id="selectMoneyLastWeek" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectMoneyLastWeek */
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingHeader"/>
+        select M.ACCT_GB     , AG.ACCT_GB_NAME
+             , MM.MONEY_CODE , M.MONEY_NAME
+             , nvl(sum(MM.MONEY_AMT),0) MONEY_AMT
+          from TB_MAST_MONEY MM
+     left join TB_MONEY   M  ON M.MONEY_CODE = MM.MONEY_CODE
+     left join TB_ACCT_GB AG ON AG.ACCT_GB   = M.ACCT_GB
+         where MM.STAN_YMD BETWEEN ( select FROM_YMD from TB_ACCTYEAR where FROM_YMD <![CDATA[<=]]> #{stanYmd} and END_YMD <![CDATA[>=]]> #{stanYmd} )
+                               and TO_CHAR(TRUNC(TO_DATE(#{stanYmd}, 'YYYYMMDD'), 'DD')-1, 'YYYYMMDD')
+           <if test="acctGb != null and acctGb != '' "> and M.ACCT_GB = #{acctGb} </if>
+      group by MM.MONEY_CODE , M.MONEY_NAME , M.ACCT_GB , AG.ACCT_GB_NAME
+      order by ${sidx} ${sord}
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingBottom"/>
+    </select>
+
+    <select id="selectMoneyThisWeek" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectMoneyThisWeek */
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingHeader"/>
+        select M.ACCT_GB     , AG.ACCT_GB_NAME
+             , MM.MONEY_CODE , M.MONEY_NAME
+             , nvl(sum(MM.MONEY_AMT),0) MONEY_AMT
+          from TB_MAST_MONEY MM
+     left join TB_MONEY   M  ON M.MONEY_CODE = MM.MONEY_CODE
+     left join TB_ACCT_GB AG ON AG.ACCT_GB   = M.ACCT_GB
+         where MM.STAN_YMD BETWEEN TO_CHAR(TRUNC(TO_DATE(#{stanYmd}, 'YYYYMMDD'), 'DD'), 'YYYYMMDD')
+                               and TO_CHAR(TRUNC(TO_DATE(#{stanYmd}, 'YYYYMMDD'), 'DD')+6, 'YYYYMMDD')
+           <if test="acctGb != null and acctGb != '' "> and M.ACCT_GB = #{acctGb} </if>
+      group by MM.MONEY_CODE , M.MONEY_NAME , M.ACCT_GB , AG.ACCT_GB_NAME
+      order by ${sidx} ${sord}
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingBottom"/>
+    </select>
+
+    <select id="selectMoneySumm" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectMoneySumm */
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingHeader"/>
+        select M.ACCT_GB     , AG.ACCT_GB_NAME
+             , MM.MONEY_CODE , M.MONEY_NAME
+             , nvl(sum(MM.MONEY_AMT),0) MONEY_AMT
+          from TB_MAST_MONEY MM
+     left join TB_MONEY   M  ON M.MONEY_CODE = MM.MONEY_CODE
+     left join TB_ACCT_GB AG ON AG.ACCT_GB   = M.ACCT_GB
+         where MM.STAN_YMD BETWEEN ( select FROM_YMD from TB_ACCTYEAR where FROM_YMD <![CDATA[<=]]> #{stanYmd} and END_YMD <![CDATA[>=]]> #{stanYmd} )
+                               and TO_CHAR(TRUNC(TO_DATE(#{stanYmd}, 'YYYYMMDD'), 'DD')+6, 'YYYYMMDD')
+           <if test="acctGb != null and acctGb != '' "> and M.ACCT_GB = #{acctGb} </if>
+      group by MM.MONEY_CODE , M.MONEY_NAME   , M.ACCT_GB     , AG.ACCT_GB_NAME
+      order by ${sidx} ${sord}
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingBottom"/>
+    </select>
+
+
+
+    <select id="selectLastWeekAmnt" parameterType="java.util.HashMap" resultType="String">
+    /* selectLastWeekAmnt */
+        select nvl(sum(MM.MONEY_AMT),0) MONEY_AMT
+          from TB_MAST_MONEY MM
+     left join TB_MONEY   M  ON M.MONEY_CODE = MM.MONEY_CODE
+     left join TB_ACCT_GB AG ON AG.ACCT_GB   = M.ACCT_GB
+         where MM.STAN_YMD BETWEEN ( select FROM_YMD from TB_ACCTYEAR where FROM_YMD <![CDATA[<=]]> #{stanYmd} and END_YMD <![CDATA[>=]]> #{stanYmd} )
+                               and TO_CHAR(TRUNC(TO_DATE(#{stanYmd}, 'YYYYMMDD'), 'DD')-1, 'YYYYMMDD')
+           <if test="acctGb != null and acctGb != '' "> and M.ACCT_GB = #{acctGb} </if>
+    </select>
+
+    <select id="selectThisWeekAmnt" parameterType="java.util.HashMap" resultType="String">
+    /* selectThisWeekAmnt */
+        select nvl(sum(MM.MONEY_AMT),0) MONEY_AMT
+          from TB_MAST_MONEY MM
+     left join TB_MONEY   M  ON M.MONEY_CODE = MM.MONEY_CODE
+     left join TB_ACCT_GB AG ON AG.ACCT_GB   = M.ACCT_GB
+         where MM.STAN_YMD BETWEEN TO_CHAR(TRUNC(TO_DATE(#{stanYmd}, 'YYYYMMDD'), 'DD'), 'YYYYMMDD')
+                               and TO_CHAR(TRUNC(TO_DATE(#{stanYmd}, 'YYYYMMDD'), 'DD')+6, 'YYYYMMDD')
+           <if test="acctGb != null and acctGb != '' "> and M.ACCT_GB = #{acctGb} </if>
+    </select>
+
+    <select id="selectTotalAmnt" parameterType="java.util.HashMap" resultType="String">
+    /* selectTotalAmnt */
+        select nvl(sum(MM.MONEY_AMT),0) MONEY_AMT
+          from TB_MAST_MONEY MM
+     left join TB_MONEY   M  ON M.MONEY_CODE = MM.MONEY_CODE
+     left join TB_ACCT_GB AG ON AG.ACCT_GB   = M.ACCT_GB
+         where MM.STAN_YMD BETWEEN ( select FROM_YMD from TB_ACCTYEAR where FROM_YMD <![CDATA[<=]]> #{stanYmd} and END_YMD <![CDATA[>=]]> #{stanYmd} )
+                               and TO_CHAR(TRUNC(TO_DATE(#{stanYmd}, 'YYYYMMDD'), 'DD')+6, 'YYYYMMDD')
+           <if test="acctGb != null and acctGb != '' "> and M.ACCT_GB = #{acctGb} </if>
+    </select>
+
+</mapper>

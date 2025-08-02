@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.co.ucp.wrks.sstm.code.service.CodeFcltcdMapper">
+
+
+	<select id="fcltcdList" parameterType="java.util.HashMap" resultType="egovMap">
+			select
+				AA.*
+				, (
+					select
+						COUNT(*)
+					from
+						CM_TC_FCLT_USED
+					where
+						1 = 1
+				<if test="fcltKndCd    != null and fcltKndCd    != '' "> and FCLT_KND_CD = #{fcltKndCd} </if>
+				<if test='fcltUsedTyNm != null and fcltUsedTyNm != ""'> and UPPER(FCLT_USED_TY_NM) like concat('%' , #{fcltUsedTyNm} , '%') </if>
+				<if test="useTyCd      != null and useTyCd      != '' "> and USE_TY_CD = #{useTyCd} </if>
+				  ) ROWCNT
+			from(
+				select
+					ROW_NUMBER() OVER(order by ${sidx} ${sord}) RK
+					, A.*
+				from(
+					select
+						FCLT_USED_TY_CD
+						, FCLT_USED_TY_NM
+						, FCLT_KND_CD
+						, C.CD_NM_KO FCLT_KND_NM
+						, USE_TY_CD
+						, B.CD_NM_KO USE_TY_NM
+						, RGS_USER_ID
+						, TO_CHAR(RGS_DATE, 'YYYY-MM-DD') as RGS_DATE
+						, UPD_USER_ID
+						, TO_CHAR(UPD_DATE, 'YYYY-MM-DD') UPD_DATE
+					from
+						CM_TC_FCLT_USED A
+						left join (select CD_ID, CD_NM_KO from CM_TC_CODE where CD_GRP_ID = 'USE_TY' and CD_TY = 'C') B
+						ON A.USE_TY_CD = B.CD_ID
+						left join (select CD_ID, CD_NM_KO from CM_TC_CODE where CD_GRP_ID = 'FCLT_KND' and CD_TY = 'C') C
+						ON A.FCLT_KND_CD = C.CD_ID
+					where
+						1 = 1
+				<if test="fcltKndCd    != null and fcltKndCd    != '' "> and FCLT_KND_CD = #{fcltKndCd} </if>
+				<if test='fcltUsedTyNm != null and fcltUsedTyNm != ""'> and UPPER(FCLT_USED_TY_NM) like concat('%' , #{fcltUsedTyNm} , '%') </if>
+				<if test="useTyCd      != null and useTyCd      != '' "> and USE_TY_CD = #{useTyCd} </if>
+				) A
+			) AA
+			 OFFSET ((#{pageNo}::integer - 1) * #{rowsPerPage}::integer)
+			 LIMIT #{rowsPerPage}::integer
+	</select>
+
+	<insert id="insert" parameterType="java.util.HashMap">
+		<![CDATA[
+			INSERT INTO CM_TC_FCLT_USED
+			(
+				FCLT_USED_TY_CD
+				, FCLT_USED_TY_NM
+				, FCLT_KND_CD
+				, USE_TY_CD
+				, RGS_USER_ID
+				, RGS_DATE
+				, UPD_USER_ID
+				, UPD_DATE
+			)
+			VALUES
+			(
+				#{fcltUsedTyCd}
+				, #{fcltUsedTyNm}
+				, #{fcltKndCd}
+				, #{useTyCd}
+				, #{rgsUserId}
+				, NOW()
+				, #{updUserId}
+				, NOW()
+			)
+		]]>
+	</insert>
+
+	<update id="update" parameterType="java.util.HashMap">
+		<![CDATA[
+			update CM_TC_FCLT_USED
+			 set
+			 	FCLT_USED_TY_NM = #{fcltUsedTyNm}
+			 	, FCLT_KND_CD = #{fcltKndCd}
+			 	, USE_TY_CD = #{useTyCd}
+			 	, UPD_USER_ID = #{updUserId}
+			 	, UPD_DATE = NOW()
+			where
+				FCLT_USED_TY_CD = #{fcltUsedTyCd}
+		]]>
+	</update>
+
+	<delete id="delete" parameterType="java.util.HashMap">
+		<![CDATA[
+			update CM_TC_FCLT_USED
+			set
+				USE_TY_CD = 'D'
+				, UPD_USER_ID = #{updUserId}
+				, UPD_DATE = NOW()
+			where
+				FCLT_USED_TY_CD = #{fcltUsedTyCd}
+		]]>
+	</delete>
+
+</mapper>

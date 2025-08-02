@@ -1,0 +1,281 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ucp.sheet.service.SheetmngMapper">
+	<!-- 전표관리 -->
+    <select id="selectSheetMng" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectSheetMng */
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingHeader"/>
+        select A.SEQ_NO        , TO_CHAR(TO_DATE(A.STAN_YMD, 'YYYYMMDD'), 'YYYY-MM-DD') STAN_YMD
+             , A.ACCT_GB
+             , (SELECT ACCT_GB_NAME from TB_ACCT_GB AG where AG.ACCT_GB = A.ACCT_GB) ACCT_GB_NAME
+             , A.ACCT_CODE , A.MONEY_AMT  , A.ACCT_REMARK , A.ACCT_TYPE, A.CLOSE_YN
+             , B.ACCT_NAME , B.PRINT_NAME , B.INOUT_GB
+             , B.ACCT_UP   , B.UP_NAME    , B.UP_PNAME
+             , D.USER_NAME
+          from TB_MAST_ACCT A
+             , ( select X.STAN_YY              , X.ACCT_GB                , X.ACCT_CODE
+                      , X.ACCT_UP
+                      , X.ACCT_NAME            , X.PRINT_NAME             , X.INOUT_GB
+                      , U.ACCT_NAME AS UP_NAME , U.PRINT_NAME AS UP_PNAME
+                      , Z.FROM_YMD             , Z.END_YMD
+                   from TB_ACCTCODE X
+                      , TB_ACCTCODE U
+                      , TB_ACCTYEAR Z
+                  where X.STAN_YY = U.STAN_YY
+                    and X.ACCT_GB = U.ACCT_GB
+                    and X.ACCT_UP = U.ACCT_CODE
+                    and X.STAN_YY = Z.STAN_YY
+               ) B
+             , TB_USER D
+         where A.ACCT_GB   = B.ACCT_GB
+           and A.ACCT_CODE = B.ACCT_CODE
+           and A.STAN_YMD  BETWEEN B.FROM_YMD and B.END_YMD
+           and A.USER_ID   = D.USER_ID(+)
+           <if test="stanYmd  != null and stanYmd  != '' "> and A.STAN_YMD  = #{stanYmd}   </if>
+           <if test="acctGb   != null and acctGb   != '' "> and A.ACCT_GB   = #{acctGb}    </if>
+           <if test="inoutGb  != null and inoutGb  != '' "> and B.INOUT_GB  = #{inoutGb}   </if>
+      order by ${sidx} ${sord}
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingBottom"/>
+    </select>
+
+    <select id="selectSheetMngTotalAmnt" parameterType="java.util.HashMap" resultType="String">
+    /* selectSheetMngTotalAmnt */
+        select nvl(sum(A.MONEY_AMT),'0') MONEY_AMT
+          from TB_MAST_ACCT A
+             , ( select X.STAN_YY              , X.ACCT_GB                , X.ACCT_CODE
+                      , X.ACCT_NAME            , X.PRINT_NAME             , X.INOUT_GB
+                      , U.ACCT_NAME AS UP_NAME , U.PRINT_NAME AS UP_PNAME
+                      , Z.FROM_YMD             , Z.END_YMD
+                   from TB_ACCTCODE X
+                      , TB_ACCTCODE U
+                      , TB_ACCTYEAR Z
+                  where X.STAN_YY = U.STAN_YY
+                    and X.ACCT_GB = U.ACCT_GB
+                    and X.ACCT_UP = U.ACCT_CODE
+                    and X.STAN_YY = Z.STAN_YY
+               ) B
+             , TB_USER D
+         where A.ACCT_GB   = B.ACCT_GB
+           and A.ACCT_CODE = B.ACCT_CODE
+           and A.STAN_YMD  BETWEEN B.FROM_YMD and B.END_YMD
+           and A.USER_ID   = D.USER_ID(+)
+           <if test="stanYmd  != null and stanYmd  != '' "> and A.STAN_YMD = #{stanYmd}  </if>
+           <if test="acctGb   != null and acctGb   != '' "> and A.ACCT_GB  = #{acctGb}   </if>
+           <if test="inoutGb  != null and inoutGb  != '' "> and B.INOUT_GB = #{inoutGb}  </if>
+    </select>
+    
+    <select id="selectNewSeqNo" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectNewSeqNo */
+        select TO_NUMBER(NVL(MAX(SUBSTR(SEQ_NO,-3)),'0'))+1 SEQ_NO
+          from TB_MAST_ACCT 
+         where STAN_YMD = #{stanYmd}
+    </select>
+
+    <insert id="insertSheetMng" parameterType="java.util.HashMap">
+    /* insertSheetMng */
+        insert into TB_MAST_ACCT
+             ( STAN_YMD    , ACCT_GB     , SEQ_NO
+             , ACCT_CODE   , MONEY_AMT   , ACCT_REMARK 
+             , USER_ID     , ACCT_TYPE   , CLOSE_YN    )
+        values
+             ( #{stanYmd}  , #{acctGb}   , #{seqNo}
+             , #{acctCode} , #{moneyAmt} , #{acctRemark}  
+             , #{userId}   , #{acctType} , 'N'  )
+    </insert>
+    
+    <update id="updateSheetMng" parameterType="java.util.HashMap">
+    /* updateSheetMng */
+        update TB_MAST_ACCT
+           set ACCT_CODE     = #{acctCode}
+             , MONEY_AMT     = #{moneyAmt}
+             , ACCT_REMARK   = #{acctRemark}
+         where SEQ_NO = #{seqNo}
+    </update>
+
+    <update id="updateSheetMngCloseYn" parameterType="java.util.HashMap">
+    /* updateSheetMngCloseYn */
+        update TB_MAST_ACCT
+           set CLOSE_YN     = #{closeYn}
+           <if test="closeYmd  != null "> , CLOSE_YMD = #{closeYmd} </if>
+         where STAN_YMD = #{stanYmd}
+           and ACCT_GB  = #{acctGb}
+    </update>
+
+    <delete id="deleteSheetMng" parameterType="java.util.HashMap">
+    /* deleteSheetMng */
+        delete from TB_MAST_ACCT
+         where SEQ_NO = #{seqNo}
+    </delete>
+
+
+
+
+
+
+
+
+	<!-- 전표마감 주간합계 -->
+    <select id="selectWeekSum" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectWeekSum */
+        select STAN_YMD, ACCT_GB
+          from TB_MAST_WEEKSUM
+         where STAN_YMD = #{stanYmd}
+           and ACCT_GB  = #{acctGb}
+    </select>
+             
+    <select id="selectSheetCloseCnt" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectSheetCloseCnt */
+        select COUNT(CLOSE_YN) CLOSE_CNT
+          from TB_MAST_ACCT
+         where STAN_YMD = #{stanYmd}
+           and ACCT_GB  = #{acctGb} 
+           and CLOSE_YN = #{closeYn}  
+    </select>
+   
+    <select id="selectNewWeekSum" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectNewWeekSum */
+        select WS.STAN_YMD, AG.ACCT_GB
+             , NVL( WS.PRE_AMT ,0) PRE_AMT
+             , NVL( INSUM.MONEY_AMT ,0) IN_AMT
+             , NVL( OUTSUM.MONEY_AMT ,0) OUT_AMT
+          from ( select ACCT_GB from TB_ACCT_GB where ACCT_GB = #{acctGb}
+               ) AG
+     left join ( /*TB_MAST_WEEKSUM-전일잔액*/
+                 select #{stanYmd} STAN_YMD, ACCT_GB
+                       , CASE WHEN ACCT_GB='A' THEN 0 ELSE ( PRE_AMT + IN_AMT - OUT_AMT ) END AS PRE_AMT 
+                    from TB_MAST_WEEKSUM
+                   where STAN_YMD = ( select MAX(STAN_YMD) PRE_STAN_YMD from TB_MAST_ACCT where STAN_YMD <![CDATA[<]]> #{stanYmd} )
+               ) WS ON AG.ACCT_GB = WS.ACCT_GB
+     left join ( /*TB_MAST_WEEKSUM-수입합계*/
+                 select STAN_YMD, ACCT_GB, INOUT_GB, SUM(MONEY_AMT) MONEY_AMT
+                   from ( select MA.STAN_YMD, MA.ACCT_GB, AC.INOUT_GB, MA.MONEY_AMT
+                            from TB_MAST_ACCT MA
+                               , TB_ACCTCODE AC
+                           where AC.ACCT_GB = MA.ACCT_GB and AC.ACCT_CODE = MA.ACCT_CODE and AC.INOUT_GB = '수입'
+                             and AC.STAN_YY = ( select STAN_YY from TB_ACCTYEAR AY
+                                                 where AY.FROM_YMD <![CDATA[<=]]> MA.STAN_YMD and MA.STAN_YMD <![CDATA[<=]]> AY.END_YMD )
+                             and MA.STAN_YMD = #{stanYmd}
+                        ) TB
+               group by STAN_YMD, ACCT_GB, INOUT_GB
+               order by STAN_YMD, ACCT_GB
+               ) INSUM ON AG.ACCT_GB = INSUM.ACCT_GB
+     left join ( /*TB_MAST_WEEKSUM-지출합계*/
+                 select STAN_YMD, ACCT_GB, INOUT_GB, SUM(MONEY_AMT) MONEY_AMT
+                   from ( select MA.STAN_YMD, MA.ACCT_GB, AC.INOUT_GB, MA.MONEY_AMT
+                            from TB_MAST_ACCT MA
+                               , TB_ACCTCODE AC
+                           where AC.ACCT_GB = MA.ACCT_GB and AC.ACCT_CODE = MA.ACCT_CODE and AC.INOUT_GB = '지출'
+                             and AC.STAN_YY = ( select STAN_YY from TB_ACCTYEAR AY
+                                                 where AY.FROM_YMD <![CDATA[<=]]> MA.STAN_YMD and MA.STAN_YMD <![CDATA[<=]]> AY.END_YMD )
+                             and MA.STAN_YMD = #{stanYmd}
+                        ) TB
+               group by STAN_YMD, ACCT_GB, INOUT_GB
+               order by STAN_YMD, ACCT_GB
+               ) OUTSUM ON AG.ACCT_GB = OUTSUM.ACCT_GB
+    </select>
+        
+    <insert id="insertWeekSum" parameterType="java.util.HashMap">
+    /* insertWeekSum */
+        insert into TB_MAST_WEEKSUM
+             ( STAN_YMD   , ACCT_GB   , PRE_AMT   , IN_AMT   , OUT_AMT   , USER_ID   )
+        values
+             ( #{stanYmd} , #{acctGb} , #{preAmt} , #{inAmt} , #{outAmt} , #{userId} )
+    </insert>
+    
+    <delete id="deleteWeekSum" parameterType="java.util.HashMap">
+    /* deleteWeekSum */
+        delete from TB_MAST_WEEKSUM
+         where STAN_YMD = #{stanYmd}
+           and ACCT_GB  = #{acctGb}
+    </delete>
+    
+        
+        
+        
+        
+
+        
+       
+    <!-- 전표마감 월간합계 -->
+    <select id="selectNewMonthSumList" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectNewMonthSumList */
+        select #{stanYm} STAN_YM           , MA.ACCT_GB               , MA.ACCT_CODE
+             , SUM(MA.MONEY_AMT) MONEY_AMT
+          from TB_MAST_ACCT MA
+             , TB_ACCTCODE AC
+         where AC.ACCT_GB   = MA.ACCT_GB
+           and AC.ACCT_CODE = MA.ACCT_CODE
+           and AC.STAN_YY   = ( select STAN_YY from TB_ACCTYEAR AY
+                                 where AY.FROM_YMD <![CDATA[<=]]> MA.STAN_YMD and MA.STAN_YMD <![CDATA[<=]]> AY.END_YMD )
+           and MA.ACCT_GB   = #{acctGb}
+           and ( #{stanYm}||'01' <![CDATA[<=]]> MA.STAN_YMD and MA.STAN_YMD <![CDATA[<=]]> #{stanYmd} )
+      group by MA.ACCT_GB, MA.ACCT_CODE 
+      order by MA.ACCT_GB, MA.ACCT_CODE 
+    </select>
+        
+    <select id="selectNewMonthSum" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectNewMonthSum */
+        select #{stanYm} STAN_YM        , NVL(SUM(MA.MONEY_AMT),0) MONEY_AMT
+          from TB_MAST_ACCT MA
+             , TB_ACCTCODE AC
+         where AC.ACCT_GB   = MA.ACCT_GB
+           and AC.ACCT_CODE = MA.ACCT_CODE
+           and AC.STAN_YY   = ( select STAN_YY from TB_ACCTYEAR AY
+                                 where AY.FROM_YMD <![CDATA[<=]]> MA.STAN_YMD and MA.STAN_YMD <![CDATA[<=]]> AY.END_YMD )
+           and MA.ACCT_GB   = #{acctGb}
+           and ( #{stanYm}||'01' <![CDATA[<=]]> MA.STAN_YMD and MA.STAN_YMD <![CDATA[<=]]> #{stanYmd} )
+           and MA.ACCT_CODE LIKE #{acctUpCode}||'%'
+    </select>
+        
+    <select id="selectSumAcctCodeList" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectSumAcctCodeList */
+        select ACCT_GB, ACCT_CODE, ACCT_LEVEL, AC.SUM_YN
+          from TB_ACCTCODE AC
+         where AC.ACCT_GB = #{acctGb}
+           and AC.STAN_YY = ( select STAN_YY from TB_ACCTYEAR AY
+                      where AY.FROM_YMD <![CDATA[<=]]> #{stanYmd} and #{stanYmd} <![CDATA[<=]]> AY.END_YMD )
+           and AC.SUM_YN = 'Y'
+      order by ACCT_GB DESC, ACCT_CODE DESC, ACCT_LEVEL 
+    </select>
+        
+    <insert id="mergeMonthSum" parameterType="java.util.HashMap">
+    /* mergeMonthSum */
+        MERGE INTO TB_MAST_ACCTSUM MA
+        USING dual
+           ON ( MA.STAN_YM = #{stanYm} and MA.ACCT_GB = #{acctGb} and MA.ACCT_CODE = #{acctCode} )
+         WHEN MATCHED THEN UPDATE
+          SET MA.MONEY_AMT = #{moneyAmt}
+            , MA.USER_ID   = #{userId}
+         WHEN NOT MATCHED THEN
+       INSERT ( MA.STAN_YM , MA.ACCT_GB , MA.ACCT_CODE , MA.MONEY_AMT , MA.USER_ID )
+       values ( #{stanYm}  , #{acctGb}  , #{acctCode}  , #{moneyAmt}  , #{userId}  )
+    </insert>
+    
+    <delete id="deleteMonthSum" parameterType="java.util.HashMap">
+    /* deleteMonthSum */
+        delete from TB_MAST_ACCTSUM
+         where STAN_YM = #{stanYm}
+           and ACCT_GB = #{acctGb}
+    </delete>
+    
+    
+    
+    
+    <!-- 기타 -->
+    <select id="selectPrevStartEndDay" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectPrevStartEndDay */
+    select TO_CHAR(TRUNC(TO_DATE(#{stanYmd},'YYYYMMDD')-7,'iw')  ,'YYYY-MM-DD') START_YMD
+         , TO_CHAR(TRUNC(TO_DATE(#{stanYmd},'YYYYMMDD')-7,'iw')+6,'YYYY-MM-DD') END_YMD
+      from DUAL
+    </select>
+    
+    <select id="selectNextStartEndDay" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectNextStartEndDay */
+    select TO_CHAR(TRUNC(TO_DATE(#{stanYmd},'YYYYMMDD')+7,'iw')  ,'YYYY-MM-DD') START_YMD
+         , TO_CHAR(TRUNC(TO_DATE(#{stanYmd},'YYYYMMDD')+7,'iw')+6,'YYYY-MM-DD') END_YMD
+      from DUAL
+    </select>
+    
+    
+    
+</mapper>

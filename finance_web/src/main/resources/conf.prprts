@@ -1,0 +1,20 @@
+# 명성교회 재정부
+# port 9090
+#=======================================================================
+#Globals.PrprtsId=10000
+#=======================================================================
+Globals.dbType=oracle
+Globals.dbName=MS
+#-----------------------------------------------------------------------
+db.oracle.drv=oracle.jdbc.driver.OracleDriver
+
+db.oracle.url=jdbc:oracle:thin:@127.0.0.1:1521:XE
+#db.oracle.url=jdbc:oracle:thin:@192.168.1.98:1521:MS
+
+db.oracle.usr=MS
+db.oracle.pwd=ms
+
+#db.oracle.usr=MS2
+#db.oracle.pwd=ms2
+
+#=======================================================================

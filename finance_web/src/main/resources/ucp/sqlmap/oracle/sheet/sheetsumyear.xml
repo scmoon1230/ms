@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ucp.sheet.service.SheetsumyearMapper">
+
+    <select id="selectDurationYear" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectDurationYear */
+        select FROM_YMD
+             , TO_CHAR(TO_DATE(FROM_YMD,'YYYYMMDD'),'YYYY-MM-DD')
+               || ' ~ ' ||
+               TO_CHAR(TO_DATE(END_YMD,'YYYYMMDD'),'YYYY-MM-DD') DURATION
+          from TB_ACCTYEAR ta
+         where ta.STAN_YY = #{stanYy}
+    </select>
+
+    <select id="selectSheetSumyear" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectSheetSumyear */
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingHeader"/>
+        select AC.STAN_YY   , AC.ACCT_GB, AC.ACCT_GB_NAME
+             , AC.ACCT_CODE, AC.PRINT_NAME, AC.INOUT_GB, AC.ACCT_LEVEL
+             , CASE WHEN AC.INOUT_GB='수입' THEN SUM(NVL(MAS.MONEY_AMT,0)) ELSE 0 END IN_AMT
+             , CASE WHEN AC.INOUT_GB='지출' THEN SUM(NVL(MAS.MONEY_AMT,0)) ELSE 0 END OUT_AMT
+         from (  select XX.ACCT_GB, (SELECT ACCT_GB_NAME from TB_ACCT_GB AG where AG.ACCT_GB = XX.ACCT_GB) ACCT_GB_NAME
+                      , XX.STAN_YY
+                      , XX.ACCT_CODE  , XX.ACCT_NAME , XX.PRINT_NAME , XX.INOUT_GB, XX.ACCT_LEVEL
+                      , SUBSTR(Z.FROM_YMD,0,6) FROM_YMD , SUBSTR(Z.END_YMD,0,6) END_YMD
+                   from TB_ACCTCODE XX
+                      , TB_ACCTYEAR Z
+                  where XX.STAN_YY = Z.STAN_YY
+                    and #{stanYmd} BETWEEN Z.FROM_YMD and Z.END_YMD
+                    <if test="acctGb   != null and acctGb   != '' "> and XX.ACCT_GB =  #{acctGb}   </if>
+             ) AC
+         left join TB_MAST_ACCTSUM MAS
+         ON AC.ACCT_GB = MAS.ACCT_GB and AC.ACCT_CODE = MAS.ACCT_CODE 
+         and MAS.STAN_YM BETWEEN AC.FROM_YMD and AC.END_YMD
+         group by AC.ACCT_GB, AC.ACCT_GB_NAME , AC.STAN_YY
+                , AC.ACCT_CODE  , AC.PRINT_NAME , AC.INOUT_GB, AC.ACCT_LEVEL
+      order by ${sidx} ${sord}
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingBottom"/>
+    </select>
+
+    <select id="selectTotalAmnt" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectTotalAmnt */
+        select INOUT_GB, SUM(IN_AMT) IN_TOTAL_AMNT, SUM(OUT_AMT) OUT_TOTAL_AMNT
+          from (
+        select AC.STAN_YY   , AC.ACCT_GB, AC.ACCT_GB_NAME
+             , AC.ACCT_CODE, AC.PRINT_NAME, AC.INOUT_GB, AC.ACCT_LEVEL
+             , CASE WHEN AC.INOUT_GB='수입' THEN SUM(NVL(MAS.MONEY_AMT,0)) ELSE 0 END IN_AMT
+             , CASE WHEN AC.INOUT_GB='지출' THEN SUM(NVL(MAS.MONEY_AMT,0)) ELSE 0 END OUT_AMT
+         from (  select XX.ACCT_GB, (SELECT ACCT_GB_NAME from TB_ACCT_GB AG where AG.ACCT_GB = XX.ACCT_GB) ACCT_GB_NAME
+                      , XX.STAN_YY
+                      , XX.ACCT_CODE  , XX.ACCT_NAME , XX.PRINT_NAME , XX.INOUT_GB, XX.ACCT_LEVEL
+                      , SUBSTR(Z.FROM_YMD,0,6) FROM_YMD , SUBSTR(Z.END_YMD,0,6) END_YMD
+                   from TB_ACCTCODE XX
+                      , TB_ACCTYEAR Z
+                  where XX.STAN_YY = Z.STAN_YY
+                    and #{stanYmd} BETWEEN Z.FROM_YMD and Z.END_YMD
+                    and XX.ACCT_LEVEL = '대'
+                    <if test="acctGb   != null and acctGb   != '' "> and XX.ACCT_GB =  #{acctGb}   </if>
+             ) AC
+         left join TB_MAST_ACCTSUM MAS
+         ON AC.ACCT_GB = MAS.ACCT_GB and AC.ACCT_CODE = MAS.ACCT_CODE 
+         and MAS.STAN_YM BETWEEN AC.FROM_YMD and AC.END_YMD
+         group by AC.ACCT_GB, AC.ACCT_GB_NAME , AC.STAN_YY
+                , AC.ACCT_CODE  , AC.PRINT_NAME , AC.INOUT_GB, AC.ACCT_LEVEL
+               ) TB
+      group by INOUT_GB
+    </select>
+
+</mapper>

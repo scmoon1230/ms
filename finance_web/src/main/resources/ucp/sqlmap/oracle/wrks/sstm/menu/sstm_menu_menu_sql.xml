@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.co.ucp.wrks.sstm.menu.service.MenuMenuMapper">    
+    
+    <select id="select_pgm_menu" parameterType="java.util.HashMap" resultType="egovMap">
+    /* select_pgm_menu */
+        select P5.PGM_MENU_ID          , P5.USVC_GRP_CD            , P5.PGM_ID             , P5.SYS_CD
+             , CONCAT(P5.PGM_MENU_NM_KO,'_',P5.SORT_ORDR) as PGM_MENU_TIT
+             , P5.PGM_MENU_NM_KO       , P5.PGM_MENU_NM_EN         , P5.PRNT_PGM_MENU_ID
+             , P5.SORT_ORDR
+             , P5.SORT_ORDR2
+             , P5.PGM_MENU_DSCRT       , P5.PGM_MENU_VISIBLE_YN    , P5.USE_TY_CD
+             , P5.PGM_MENU_ON_IMG_CRS  , P5.PGM_MENU_OFF_IMG_CRS   , P5.PGM_MENU_IMG_CRS
+             , P5.NEW_WDW_YN           , P5.NEW_WIN_WIDTH          , P5.NEW_WIN_HEIGHT
+             , P5.RGS_USER_ID          , P5.RGS_DATE               , P5.UPD_USER_ID        , P5.UPD_DATE
+             , P5.LVL::text as LVL 
+             , ( CASE WHEN ( select COUNT(*) from CM_PROGRAM where P5.PGM_MENU_ID = PRNT_PGM_MENU_ID) > 0 THEN 'false'
+                      ELSE 'true' END
+               ) as ISLF
+             , 'true' as EXPD
+             , C.PGM_URL
+          from (    select P1.*
+                        , P2.USE_TY_CD
+                    from ( WITH RECURSIVE P (PGM_MENU_ID, USVC_GRP_CD, PGM_ID, SYS_CD, PGM_MENU_NM_KO, PGM_MENU_NM_EN, PRNT_PGM_MENU_ID, SORT_ORDR, SORT_ORDR2, PGM_MENU_DSCRT
+                                            , PGM_MENU_VISIBLE_YN, PGM_MENU_ON_IMG_CRS, PGM_MENU_OFF_IMG_CRS, PGM_MENU_IMG_CRS, NEW_WDW_YN, NEW_WIN_WIDTH, NEW_WIN_HEIGHT
+                                            , RGS_USER_ID, RGS_DATE, UPD_USER_ID, UPD_DATE, LVL, RK1, RK2, RK4) AS
+                            (
+                                select PGM_MENU_ID, USVC_GRP_CD, PGM_ID, SYS_CD, PGM_MENU_NM_KO, PGM_MENU_NM_EN, PRNT_PGM_MENU_ID, SORT_ORDR, SORT_ORDR2, PGM_MENU_DSCRT
+                                    , PGM_MENU_VISIBLE_YN, PGM_MENU_ON_IMG_CRS, PGM_MENU_OFF_IMG_CRS, PGM_MENU_IMG_CRS, NEW_WDW_YN, NEW_WIN_WIDTH, NEW_WIN_HEIGHT
+                                    , RGS_USER_ID, TO_CHAR(RGS_DATE, 'YYYY-MM-DD') as RGS_DATE
+                                    , UPD_USER_ID, TO_CHAR(UPD_DATE, 'YYYY-MM-DD') as UPD_DATE
+                                    , 1 LVL
+                                    , PRNT_PGM_MENU_ID as RK1
+                                    , SORT_ORDR as RK2
+                                    , SORT_ORDR2 as RK4
+                                from CM_PGM_MENU
+                                where 1 = 1
+                                and PGM_ID = '500000000'
+                                union all
+                                select c.PGM_MENU_ID, c.USVC_GRP_CD, c.PGM_ID, c.SYS_CD, c.PGM_MENU_NM_KO, c.PGM_MENU_NM_EN, c.PRNT_PGM_MENU_ID, c.SORT_ORDR, c.SORT_ORDR2, c.PGM_MENU_DSCRT
+                                    , c.PGM_MENU_VISIBLE_YN, c.PGM_MENU_ON_IMG_CRS, c.PGM_MENU_OFF_IMG_CRS, c.PGM_MENU_IMG_CRS, c.NEW_WDW_YN, c.NEW_WIN_WIDTH, c.NEW_WIN_HEIGHT
+                                    , c.RGS_USER_ID, TO_CHAR(c.RGS_DATE, 'YYYY-MM-DD') as RGS_DATE
+                                    , c.UPD_USER_ID, TO_CHAR(c.UPD_DATE, 'YYYY-MM-DD') as UPD_DATE
+                                    , p.LVL + 1 as LVL
+                                    , c.PRNT_PGM_MENU_ID as RK1
+                                    , c.SORT_ORDR as RK2
+                                    , c.SORT_ORDR2 as RK4
+                                from CM_PGM_MENU c, P p
+                                where 1 = 1 
+                                and p.PGM_MENU_ID = c.PRNT_PGM_MENU_ID
+                            )
+                            select * from P
+                        ) P1
+                        , CM_PGM_MENU P2
+                        , CM_PGM_MENU P3
+                    where P1.PGM_MENU_ID         = P2.PGM_MENU_ID
+                      and P2.PRNT_PGM_MENU_ID    = P3.PGM_MENU_ID                 
+                ) P5
+                , ( select A.PGM_MENU_ID
+                      from CM_PGM_MENU A
+                      group by A.PGM_MENU_ID
+                    ) B
+                , (select PGM_ID, PGM_URL from CM_PROGRAM) C
+            where P5.PGM_MENU_ID    = B.PGM_MENU_ID
+              and P5.PGM_ID         = C.PGM_ID
+            order by P5.RK2 asc
+    </select>
+    
+    <select id="list_prgm" parameterType="java.util.HashMap" resultType="egovMap">
+    /* list_prgm */
+        select  Q.*            /*, @rownum:=@rownum+1 as RK    */
+          from ( select P5.PGM_ID         , P5.PGM_NM      , P5.PRNT_PGM_ID   , P5.PGM_FNCT_TY_CD
+                      , P5.PGM_URL        , P5.PGM_DSCRT   , P5.USE_TY_CD
+                      , P5.RGS_USER_ID    , P5.RGS_DATE    , P5.UPD_USER_ID   , P5.UPD_DATE
+                      , P5.LVL::text as LVL
+                        <![CDATA[ 
+                      , (CASE WHEN ( select COUNT(*) from CM_PROGRAM 
+                                      where P5.PGM_ID = PRNT_PGM_ID) > 0 THEN 'false' ELSE 'true' END ) as ISLF
+                        ]]>
+                      , 'true' as EXPD
+                   from ( select P1.*
+                               , P2.USE_TY_CD
+                            from ( WITH RECURSIVE P (PGM_ID, PGM_NM, PRNT_PGM_ID, PGM_FNCT_TY_CD, PGM_URL, PGM_DSCRT, RGS_USER_ID, RGS_DATE, UPD_USER_ID, UPD_DATE, LVL) AS
+                                   ( select PGM_ID, PGM_NM, PRNT_PGM_ID, PGM_FNCT_TY_CD, PGM_URL, PGM_DSCRT
+                                          , RGS_USER_ID, TO_CHAR(RGS_DATE, 'YYYY-MM-DD') as RGS_DATE
+                                          , UPD_USER_ID, TO_CHAR(UPD_DATE, 'YYYY-MM-DD') as UPD_DATE
+                                          , 1 LVL
+                                       from CM_PROGRAM
+                                      where PGM_ID = '500000000'
+                                  union all
+                                     select c.PGM_ID, c.PGM_NM, c.PRNT_PGM_ID, c.PGM_FNCT_TY_CD, c.PGM_URL, c.PGM_DSCRT
+                                          , c.RGS_USER_ID, TO_CHAR(c.RGS_DATE, 'YYYY-MM-DD') as RGS_DATE
+                                          , c.UPD_USER_ID, TO_CHAR(c.UPD_DATE, 'YYYY-MM-DD') as UPD_DATE
+                                          , p.LVL + 1 as LVL
+                                       from CM_PROGRAM c, P p
+                                      where p.PGM_ID = c.PRNT_PGM_ID
+                                   )
+                                   select * from P
+                                 ) P1
+                               , CM_PROGRAM P2
+                           where P1.PGM_ID = P2.PGM_ID
+                        ) P5
+                       , ( select A.PGM_ID from CM_PROGRAM A group by A.PGM_ID
+                         ) B
+                   where P5.PGM_ID    = B.PGM_ID
+               ) Q
+             /*    , (select @rownum:=0) C        */
+        order by Q.PGM_ID
+    </select>    
+    <!-- 
+    <select id="list_prgm_bak" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+        <![CDATA[
+            select
+                PGM_ID
+                , PRNT_PGM_ID
+                , PGM_FNCT_TY_CD
+                , PGM_URL
+                , PGM_NM
+                , PGM_DSCRT
+                , USE_TY_CD
+            from
+                CM_PROGRAM
+            where USE_TY_CD = 'Y'
+            and PGM_URL IS NOT NULL
+            order by ${sidx} ${sord}
+        ]]>
+    </select>
+     -->
+    <insert id="insert_pgm_menu" parameterType="java.util.HashMap">
+    /* insert_pgm_menu */
+        insert into CM_PGM_MENU
+             ( PGM_MENU_ID             , USVC_GRP_CD              , PGM_ID              , SYS_CD
+             , PGM_MENU_NM_KO          , PGM_MENU_NM_EN           , PRNT_PGM_MENU_ID    , SORT_ORDR             , SORT_ORDR2
+             , PGM_MENU_DSCRT          , PGM_MENU_VISIBLE_YN      , USE_TY_CD           , PGM_MENU_ON_IMG_CRS
+             , PGM_MENU_OFF_IMG_CRS    , PGM_MENU_IMG_CRS
+             , NEW_WDW_YN              , NEW_WIN_WIDTH            , NEW_WIN_HEIGHT
+             , RGS_USER_ID             , RGS_DATE                 , UPD_USER_ID         , UPD_DATE              )
+        values
+             ( #{PGM_MENU_ID}          , #{USVC_GRP_CD}           , #{PGM_ID}           , #{SYS_CD}
+             , #{PGM_MENU_NM_KO}       , #{PGM_MENU_NM_EN}        , #{PRNT_PGM_MENU_ID} , #{SORT_ORDR}::numeric , #{SORT_ORDR2}::numeric
+             , #{PGM_MENU_DSCRT}       , #{PGM_MENU_VISIBLE_YN}   , #{USE_TY_CD}        , #{PGM_MENU_ON_IMG_CRS}
+             , #{PGM_MENU_OFF_IMG_CRS} , #{PGM_MENU_IMG_CRS}
+             , #{NEW_WDW_YN}           , #{NEW_WIN_WIDTH}::numeric, #{NEW_WIN_HEIGHT}::numeric
+             , #{RGS_USER_ID}          , NOW()                    , #{RGS_USER_ID}      , NOW()                 )
+    </insert>
+    
+    <update id="update_pgm_menu" parameterType="java.util.HashMap">
+    /* update_pgm_menu */
+        update CM_PGM_MENU
+           set USVC_GRP_CD            = #{USVC_GRP_CD}
+             , PGM_ID               = #{PGM_ID}
+             , SYS_CD               = #{SYS_CD}
+             , PGM_MENU_NM_KO       = #{PGM_MENU_NM_KO}
+             , PGM_MENU_NM_EN       = #{PGM_MENU_NM_EN}
+             , PRNT_PGM_MENU_ID     = #{PRNT_PGM_MENU_ID}
+             , SORT_ORDR            = #{SORT_ORDR}::numeric
+             , SORT_ORDR2           = #{SORT_ORDR2}::numeric
+             , PGM_MENU_DSCRT       = #{PGM_MENU_DSCRT}
+             , PGM_MENU_VISIBLE_YN  = #{PGM_MENU_VISIBLE_YN}
+             , USE_TY_CD            = #{USE_TY_CD}
+             , PGM_MENU_ON_IMG_CRS  = #{PGM_MENU_ON_IMG_CRS}
+             , PGM_MENU_OFF_IMG_CRS = #{PGM_MENU_OFF_IMG_CRS}
+             , PGM_MENU_IMG_CRS     = #{PGM_MENU_IMG_CRS}
+             , NEW_WDW_YN           = #{NEW_WDW_YN}
+             , NEW_WIN_WIDTH        = #{NEW_WIN_WIDTH}::numeric
+             , NEW_WIN_HEIGHT       = #{NEW_WIN_HEIGHT}::numeric
+             , UPD_USER_ID          = #{UPD_USER_ID}
+             , UPD_DATE             = NOW()
+         where PGM_MENU_ID = #{PGM_MENU_ID}
+    </update>
+    <!-- 
+    <delete id="delete_bak" parameterType="java.util.HashMap">
+        <![CDATA[
+            update CM_PGM_MENU
+                set USE_TY_CD = 'D'
+                    , UPD_USER_ID = #{UPD_USER_ID}
+                    , UPD_DATE = NOW()
+                where
+                    PGM_MENU_ID = #{PGM_MENU_ID}
+        ]]>
+    </delete>
+     -->
+    <delete id="delete_pgm_menu" parameterType="java.util.HashMap">
+    /* delete_pgm_menu */
+        delete from CM_PGM_MENU
+         where PGM_MENU_ID = #{PGM_MENU_ID}
+    </delete>    
+    
+</mapper>   

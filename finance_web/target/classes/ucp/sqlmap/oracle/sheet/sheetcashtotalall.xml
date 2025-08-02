@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ucp.sheet.service.SheetcashtotalallMapper">
+
+    <sql id="sheetCashtotal">
+          from ( select A.ACCT_GB, B.ASSET_GB
+                   from ( select * from TB_ACCT_GB where ACCT_GB <![CDATA[<=]]> '9' 
+                        ) A
+                      , ( select  '1' AS ASSET_GB from DUAL UNION
+                          select  '2' AS ASSET_GB from DUAL UNION
+                  <!-- /* select  '3' AS ASSET_GB from DUAL UNION */ -->
+                          select  '9' AS ASSET_GB from DUAL
+                        ) B
+               ) X
+             , ( select B.ACCT_GB           , B.ASSET_GB
+                      , (A.INIT_AMT) AS INIT_AMT
+                      , (0)          AS PLUS_AMT
+                      , (0)          AS MINUS_AMT
+                   from TB_FINANCE_MAST    A
+                      , TB_FINANCE_INFO    B
+                  where A.ASSET_CODE = B.ASSET_CODE
+                    and A.STAN_YMD   = #{stanYmd}
+                    and B.ASSET_GB  != '2'
+              UNION ALL
+                 select B.ACCT_GB           , B.ASSET_GB
+                      , (0)                             AS INIT_AMT
+                      , DECODE(INOUT_GB,'I', MONEY_AMT, 0) PLUS_AMT
+                      , DECODE(INOUT_GB,'O', MONEY_AMT, 0) MINUS_AMT               
+                   from TB_FINANCE_TR      A
+                      , TB_FINANCE_INFO    B
+                  where A.ASSET_CODE = B.ASSET_CODE
+                    and A.STAN_YMD = #{stanYmd}
+                    and A.CLOSE_YN = 'Y'
+                    and B.ASSET_GB != '2'
+              UNION ALL 
+                 select ACCT_GB             , ('2') ASSET_GB
+                      , nvl(PRE_AMT,0) as INIT_AMT
+                      , nvl(IN_AMT,0)  as PLUS_AMT
+                      , nvl(OUT_AMT,0) as MINUS_AMT
+                <!-- /* (nvl(PRE_AMT,0) + nvl(IN_AMT,0) - nvl(OUT_AMT,0)) as REM_AMT */ -->
+                   from TB_MAST_WEEKSUM 
+                  where STAN_YMD = #{stanYmd}
+               ) Y
+         where X.ACCT_GB  = Y.ACCT_GB(+)
+           and X.ASSET_GB = Y.ASSET_GB(+) 
+           and X.ACCT_GB IN ('1', '2', '3', '4', '5', '6', '7')
+    </sql>
+    
+    <select id="selectSheetCashtotalall" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectSheetCashtotalall */
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingHeader"/>
+        select X.ACCT_GB
+             , X.ASSET_GB
+             , (SELECT ACCT_GB_NAME from TB_ACCT_GB A where A.ACCT_GB = X.ACCT_GB) ACCT_GB_NAME
+             , CASE WHEN X.ASSET_GB = '1' THEN '정기예적금'  WHEN X.ASSET_GB = '2' THEN '일반예금'
+                    WHEN X.ASSET_GB = '3' THEN '대여금'     WHEN X.ASSET_GB = '9' THEN '기타'      ELSE '-'
+                END AS ASSET_GB_NAME
+             , SUM(Y.INIT_AMT) AS INIT_AMT
+             , SUM(Y.PLUS_AMT)  AS PLUS_AMT
+             , SUM(Y.MINUS_AMT)  AS MINUS_AMT
+             , (SUM(Y.INIT_AMT) + SUM(Y.PLUS_AMT) - SUM(Y.MINUS_AMT))  AS LAST_AMT
+      <include refid="sheetCashtotal"/>
+      group by X.ACCT_GB , X.ASSET_GB
+     union all
+        select X.ACCT_GB
+             , '99' ASSET_GB
+             , (SELECT ACCT_GB_NAME from TB_ACCT_GB A where A.ACCT_GB = X.ACCT_GB) ACCT_GB_NAME
+             , '소계' ASSET_GB_NAME
+             , SUM(Y.INIT_AMT) AS INIT_AMT
+             , SUM(Y.PLUS_AMT)  AS PLUS_AMT
+             , SUM(Y.MINUS_AMT)  AS MINUS_AMT
+             , (SUM(Y.INIT_AMT) + SUM(Y.PLUS_AMT) - SUM(Y.MINUS_AMT))  AS LAST_AMT
+      <include refid="sheetCashtotal"/>
+      group by X.ACCT_GB
+     union all
+        select '99' ACCT_GB
+             , X.ASSET_GB
+             , '전체' ACCT_GB_NAME
+             , CASE WHEN X.ASSET_GB = '1' THEN '정기예적금'  WHEN X.ASSET_GB = '2' THEN '일반예금'
+                    WHEN X.ASSET_GB = '3' THEN '대여금'     WHEN X.ASSET_GB = '9' THEN '기타'      ELSE '-'
+                END AS ASSET_GB_NAME
+             , SUM(Y.INIT_AMT) AS INIT_AMT
+             , SUM(Y.PLUS_AMT)  AS PLUS_AMT
+             , SUM(Y.MINUS_AMT)  AS MINUS_AMT
+             , (SUM(Y.INIT_AMT) + SUM(Y.PLUS_AMT) - SUM(Y.MINUS_AMT))  AS LAST_AMT
+      <include refid="sheetCashtotal"/>
+      group by X.ASSET_GB
+     union all
+        select '99' ACCT_GB
+             , '99' ASSET_GB
+             , '전체' ACCT_GB_NAME
+             , '합계' ASSET_GB_NAME
+             , SUM(Y.INIT_AMT) AS INIT_AMT
+             , SUM(Y.PLUS_AMT)  AS PLUS_AMT
+             , SUM(Y.MINUS_AMT)  AS MINUS_AMT
+             , (SUM(Y.INIT_AMT) + SUM(Y.PLUS_AMT) - SUM(Y.MINUS_AMT))  AS LAST_AMT
+      <include refid="sheetCashtotal"/>
+      
+      order by 1,2
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingBottom"/>
+    </select>
+
+    <insert id="insertSheet" parameterType="java.util.HashMap">
+    /* insertSheet */
+        insert into TB_MEMBER
+             ( MEMBER_ID       , MEMBER_NO       , MEMBER_NAME
+             , SEX_TYPE        , TEL_NO          , HPHONE_NO 
+             , POSITION_CODE   , DEPT_CODE       , REGION_CODE
+             , ADDR            , FAMILY_REMARK   , USE_YN        , REG_TIME )
+        values
+             ( #{memberId}     , #{memberNo}     , #{memberName}  
+             , #{sexType}      , #{telNo}        , #{hphoneNo}  
+             , #{positionCode} , #{deptCode}     , #{regionCode}
+             , #{addr}         , #{familyRemark} , #{useYn}      , SYSDATE  )
+    </insert>
+    
+    <update id="updateSheet" parameterType="java.util.HashMap">
+    /* updateSheet */
+        update TB_MEMBER
+           set MEMBER_ID     = #{memberId}
+             , MEMBER_NO     = #{memberNo}
+             , MEMBER_NAME   = #{memberName}
+             , SEX_TYPE      = #{sexType}
+             , TEL_NO        = #{telNo}
+             , HPHONE_NO     = #{hphoneNo}
+             , POSITION_CODE = #{positionCode}
+             , DEPT_CODE     = #{deptCode}
+             , REGION_CODE   = #{regionCode}
+             , ADDR          = #{addr}
+             , FAMILY_REMARK = #{familyRemark}
+             , USE_YN        = #{useYn}
+         where MEMBER_ID = #{memberId}
+    </update>
+
+    <delete id="deleteSheet" parameterType="java.util.HashMap">
+    /* deleteSheet */
+        delete from TB_MEMBER
+         where MEMBER_ID = #{memberId}
+           and MEMBER_NO = #{memberNo}
+    </delete>
+    
+</mapper>

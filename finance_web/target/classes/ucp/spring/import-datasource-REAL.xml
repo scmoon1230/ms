@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.0.xsd">
+
+     <!-- datasource 설정(propertyConfigurer 활용) -->
+    <alias name="dataSource-${Globals.dbType}" alias="dataSource" />
+    <alias name="dataSource-${Globals.dbType}" alias="egov.dataSource" />
+
+    <bean id="dataSource-oracle" class="org.apache.commons.dbcp2.BasicDataSource" destroy-method="close">
+        <property name="driverClassName" 	value="${db.oracle.drv}"/>
+        <property name="url" 				value="${db.oracle.url}" />
+        <property name="username" 			value="${db.oracle.usr}"/>
+        <property name="password" 			value="${db.oracle.pwd}"/>
+        <property name="maxWaitMillis" 		value="10000" />
+		<property name="maxTotal" 			value="20" />
+		<property name="maxIdle" 			value="20" />
+		<property name="minIdle" 			value="20" />
+		<property name="validationQuery" 	value="select 1 from dual" />
+		<property name="testWhileIdle" 		value="true" />
+		<property name="timeBetweenEvictionRunsMillis" value="3600000" />
+    </bean>
+    
+</beans>

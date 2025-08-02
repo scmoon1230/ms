@@ -1,0 +1,45 @@
+#loginBox {
+    height: auto;
+}
+
+#loginBox ul {
+    margin-top: 30px;
+    margin-bottom: 30px;
+}
+/*
+#loginBox > input + a {
+    position: relative;
+    top: 20px;
+    color: #ffffff;
+}
+
+#loginBox > input + a:hover {
+    text-decoration: underline;
+}
+*/
+#loginBox a {
+    position: relative;
+    top: 20px;
+    color: #ffffff;
+}
+
+#loginBox a:hover {
+    text-decoration: underline;
+}
+
+#container-modal {
+    position: fixed;
+    z-index: 30;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: rgba(0, 0, 0, 0.3);
+}
+
+#container-modal.hide {
+   display: none;
+}

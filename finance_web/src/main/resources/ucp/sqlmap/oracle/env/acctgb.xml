@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ucp.env.service.AcctgbMapper">
+
+    <select id="selectAcctgb" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectAcctgb */
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingHeader"/>
+        select ACCT_GB     , ACCT_GB_NAME   , PRINT_NAME     , USE_YN
+          from TB_ACCT_GB
+         where 1 = 1
+           <if test="exceptA != null and exceptA != '' ">
+           and ACCT_GB <![CDATA[<>]]> 'A'
+           </if>
+           <if test="acctGbName != null and acctGbName != '' ">
+           and ACCT_GB_NAME LIKE #{acctGbName} || '%'
+           </if>
+      order by ${sidx} ${sord}
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingBottom"/>
+    </select>
+
+    <insert id="insertAcctgb" parameterType="java.util.HashMap">
+    /* insertAcctgb */
+        insert into TB_ACCT_GB
+             ( ACCT_GB   , ACCT_GB_NAME  , PRINT_NAME   , USE_YN     )
+        values
+             ( #{acctGb} , #{acctGbName} , #{printName} , #{useYn}   )
+    </insert>
+    
+    <update id="updateAcctgb" parameterType="java.util.HashMap">
+    /* updateAcctgb */
+        update TB_ACCT_GB
+           set ACCT_GB      = #{acctGb}
+             , ACCT_GB_NAME = #{acctGbName}
+             , PRINT_NAME   = #{printName}
+             , USE_YN       = #{useYn}
+         where ACCT_GB = #{acctGb}
+    </update>
+
+    <delete id="deleteAcctgb" parameterType="java.util.HashMap">
+    /* deleteAcctgb */
+        delete from TB_ACCT_GB
+         where ACCT_GB = #{acctGb}
+    </delete>
+    
+</mapper>

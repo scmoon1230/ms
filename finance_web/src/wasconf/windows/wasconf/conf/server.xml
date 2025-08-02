@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Server port="51115" shutdown="SHUTDOWN">
+  <Listener className="org.apache.catalina.startup.VersionLoggerListener" />
+  <Listener className="org.apache.catalina.core.AprLifecycleListener" SSLEngine="on" />
+  <Listener className="org.apache.catalina.core.JreMemoryLeakPreventionListener" />
+  <Listener className="org.apache.catalina.mbeans.GlobalResourcesLifecycleListener" />
+  <Listener className="org.apache.catalina.core.ThreadLocalLeakPreventionListener" />
+
+  <Service name="Catalina">
+    <Connector port="51110" protocol="HTTP/1.1" connectionTimeout="20000" redirectPort="8443" URIEncoding="UTF-8"/>
+    <Engine name="Catalina" defaultHost="localhost">
+      <Host name="localhost"  appBase="webapps"   unpackWARs="true" autoDeploy="true">
+		<Context docBase="D:\cubeapps\www\swip_pve\webapp" path="/"    reloadable="true" sessionCookieName="JSESSIONID_swip_pve"/>
+		<Context docBase="D:\cubeapps\www\swip_pve\webapp" path="/pve" reloadable="true" sessionCookieName="JSESSIONID_swip_pve"/>
+        <Context docBase="D:\data\cctv_data"              path="/cctv_data" reloadable="true"/>
+      </Host>
+    </Engine>
+  </Service>
+</Server>

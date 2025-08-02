@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.co.ucp.cmm.service.PrprtsMapper">
+    <select id="selectPrprtsList" parameterType="String" resultType="egovMap">
+    /* selectPrprtsList */
+        select PRPRTS_KEY , COALESCE(NULLIF(PRPRTS_VAL, ''), DEFAULT_VAL) as PRPRTS_VAL , DEFAULT_VAL
+          from CM_PRPRTS
+         where USE_TY_CD = 'Y' and PRPRTS_ID = #{value}
+         union all
+        select PRPRTS_KEY , COALESCE(PRPRTS_VAL,COALESCE(DEFAULT_VAL,'')) as PRPRTS_VAL , DEFAULT_VAL
+          from CM_PRPRTS
+         where USE_TY_CD = 'Y' and PRPRTS_ID = 'COM'
+         union all
+        select PRPRTS_KEY , COALESCE(NULLIF(PRPRTS_VAL, ''), DEFAULT_VAL) as PRPRTS_VAL , DEFAULT_VAL
+          from CM_PRPRTS
+         where USE_TY_CD = 'Y'
+           and PRPRTS_ID = ( select PRPRTS_VAL from CM_PRPRTS where PRPRTS_KEY = 'GIS_ENGINE' and PRPRTS_ID = #{value} )
+   <!-- select PRPRTS_KEY , COALESCE(NULLIF(PRPRTS_VAL, ''), DEFAULT_VAL) as PRPRTS_VAL , DEFAULT_VAL
+          from CM_PRPRTS_GIS
+         where GIS_ENGINE = ( select PRPRTS_VAL from CM_PRPRTS where PRPRTS_KEY = 'GIS_ENGINE' and PRPRTS_ID = #{value} ) -->
+         union all
+        select 'HD_TIT' AS PRPRTS_KEY             <!-- , SYS_NM AS PRPRTS_VAL  --> , '영상반출' AS PRPRTS_VAL , '영상반출' AS DEFAULT_VAL
+          from CM_TOP_MENU
+         where SYS_ID = ( select PRPRTS_VAL from CM_PRPRTS where PRPRTS_KEY = 'G_SYS_ID' and PRPRTS_ID = #{value} )
+      order by PRPRTS_KEY
+    </select>
+
+    <insert id="insertPrprts" parameterType="map">
+    /* insertPrprts */
+        insert into CM_PRPRTS
+               ( PRPRTS_ID  , PRPRTS_TY  , PRPRTS_KEY  , PRPRTS_VAL    )
+        values ( #{prprtsId}, #{prprtsTy}, #{prprtsKey}, #{prprtsVal}  )
+   ON CONFLICT (PRPRTS_ID, PRPRTS_KEY)
+     DO UPDATE
+           SET PRPRTS_VAL = #{prprtsVal}
+    </insert>
+
+    <update id="updatePrprts" parameterType="map">
+        update CM_PRPRTS
+           set PRPRTS_VAL = #{prprtsVal}
+         where PRPRTS_ID  = #{prprtsId}
+           and PRPRTS_KEY = #{prprtsKey}
+    </update>
+	<!-- 
+    <select id="getCdDscrt" parameterType="java.util.HashMap" resultType="String">
+        select CD_DSCRT
+          from CM_TC_CODE
+         where CD_ID = #{cdId}
+           and CD_ID = #{cdGrpId}
+         limit 1
+    </select>
+
+    <select id="getUserNm" parameterType="String" resultType="String">
+        select COALESCE(NULLIF(USER_NM_KO,''), USER_ID) as USER_NM
+          from CM_USER
+         where USER_ID = #{value}
+         limit 1
+    </select>
+	 -->
+    <select id="selectCodeList" parameterType="String" resultType="egovMap">
+    /* selectCodeList */
+        select CD_GRP_ID         , CD_ID             , CD_TY
+             , CD_NM_KO          , CD_NM_EN          , CD_DSCRT
+             , SORT_ORDR         , SYS_CD            , USE_TY_CD
+          from CM_TC_CODE
+         where 1 = 1
+           and USE_TY_CD = 'Y'
+           and CD_GRP_ID =  #{value}
+           and CD_TY     = 'C'
+      order by SORT_ORDR asc
+    </select>
+
+     <select id="getDigest" parameterType="String" resultType="String">
+     /* getDigest */
+        select  CASE
+              WHEN LENGTH(PASSWORD) <![CDATA[<]]> 45
+                THEN 'scmpworld'
+                ELSE SUBSTR(PASSWORD,LENGTH(PASSWORD)-15)
+              END AS DIGEST
+        from CM_USER
+        where 1 = 1
+          and USER_ID = #{value}
+        LIMIT 1
+    </select>
+
+ </mapper>

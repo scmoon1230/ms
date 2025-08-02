@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ucp.sheet.service.SheetinvenMapper">
+
+    <select id="selectSheetInven" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectSheetInven */
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingHeader"/>
+        select MA.SEQ_NO        , TO_CHAR(TO_DATE(MA.STAN_YMD, 'YYYYMMDD'), 'YYYY-MM-DD') STAN_YMD
+             , MA.ACCT_GB
+             , (SELECT ACCT_GB_NAME from TB_ACCT_GB AG where AG.ACCT_GB = MA.ACCT_GB) ACCT_GB_NAME
+             , AC.UP_CODE     , AC.UP_NAME     , UAC.MONEY_AMT UP_MONEY_AMT
+             , MA.ACCT_CODE   , AC.ACCT_NAME   , MA.MONEY_AMT
+             , MA.ACCT_REMARK , MA.ACCT_TYPE  , AC.INOUT_GB
+             , U.USER_NAME
+             , AC.PRINT_NAME , AC.UP_PNAME
+          from TB_MAST_ACCT MA
+             , ( select X.ACCT_GB    , X.STAN_YY   , Z.FROM_YMD   , Z.END_YMD
+                      , X.ACCT_CODE  , X.ACCT_NAME , X.PRINT_NAME , X.INOUT_GB
+                      , Y.ACCT_CODE  AS UP_CODE    , Y.ACCT_NAME  AS UP_NAME
+                      , Y.PRINT_NAME AS UP_PNAME
+                   from TB_ACCTCODE X
+                      , TB_ACCTCODE Y
+                      , TB_ACCTYEAR Z
+                  where X.ACCT_GB = Y.ACCT_GB
+                    and X.STAN_YY = Y.STAN_YY
+                    and X.ACCT_UP = Y.ACCT_CODE
+                    and X.STAN_YY = Z.STAN_YY
+               ) AC
+             , ( SELECT B.UP_CODE, SUM(MA.MONEY_AMT) MONEY_AMT
+                   FROM TB_MAST_ACCT MA 
+                      , ( select X.ACCT_GB    , X.STAN_YY   , Z.FROM_YMD   , Z.END_YMD
+                               , X.ACCT_CODE  , X.ACCT_NAME , X.PRINT_NAME , X.INOUT_GB
+                               , Y.ACCT_CODE  AS UP_CODE    , Y.ACCT_NAME  AS UP_NAME
+                               , Y.PRINT_NAME AS UP_PNAME
+                            from TB_ACCTCODE X
+                               , TB_ACCTCODE Y
+                               , TB_ACCTYEAR Z
+                           where X.ACCT_GB = Y.ACCT_GB
+                             and X.STAN_YY = Y.STAN_YY
+                             and X.ACCT_UP = Y.ACCT_CODE
+                             and X.STAN_YY = Z.STAN_YY
+                        ) B
+                  WHERE MA.ACCT_GB   = B.ACCT_GB
+                    and MA.ACCT_CODE = B.ACCT_CODE
+                    and MA.STAN_YMD  BETWEEN B.FROM_YMD and B.END_YMD
+                   <if test="stanYmd  != null and stanYmd  != '' "> and MA.STAN_YMD = #{stanYmd}  </if>
+                   <if test="acctGb   != null and acctGb   != '' "> and MA.ACCT_GB  = #{acctGb}   </if>
+                   <if test="inoutGb  != null and inoutGb  != '' "> and B.INOUT_GB = #{inoutGb}  </if>   
+               GROUP BY B.UP_CODE
+               ) UAC
+             , TB_USER U
+         where MA.ACCT_GB   = AC.ACCT_GB
+           and MA.ACCT_CODE = AC.ACCT_CODE
+           and MA.STAN_YMD  BETWEEN AC.FROM_YMD and AC.END_YMD
+           AND AC.UP_CODE   = UAC.UP_CODE
+           and MA.USER_ID   = U.USER_ID(+)
+           <if test="stanYmd  != null and stanYmd  != '' "> and MA.STAN_YMD = #{stanYmd}  </if>
+           <if test="acctGb   != null and acctGb   != '' "> and MA.ACCT_GB  = #{acctGb}   </if>
+           <if test="inoutGb  != null and inoutGb  != '' "> and AC.INOUT_GB = #{inoutGb}  </if>
+      order by ${sidx} ${sord}
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingBottom"/>
+    </select>
+
+    <select id="selectSheetInvenTotalAmnt" parameterType="java.util.HashMap" resultType="String">
+    /* selectSheetInvenTotalAmnt */
+        select nvl(sum(MA.MONEY_AMT),'0') MONEY_AMT
+          from TB_MAST_ACCT MA
+             , ( select X.ACCT_GB    , X.STAN_YY   , Z.FROM_YMD   , Z.END_YMD
+                      , X.ACCT_CODE  , X.ACCT_NAME , X.PRINT_NAME , X.INOUT_GB
+                      , Y.ACCT_CODE  AS UP_CODE    , Y.ACCT_NAME  AS UP_NAME
+                      , Y.PRINT_NAME AS UP_PNAME
+                   from TB_ACCTCODE X
+                      , TB_ACCTCODE Y
+                      , TB_ACCTYEAR Z
+                  where X.ACCT_GB = Y.ACCT_GB
+                    and X.STAN_YY = Y.STAN_YY
+                    and X.ACCT_UP = Y.ACCT_CODE
+                    and X.STAN_YY = Z.STAN_YY
+               ) AC
+             , TB_USER U
+         where MA.ACCT_GB   = AC.ACCT_GB
+           and MA.ACCT_CODE = AC.ACCT_CODE
+           and MA.STAN_YMD  BETWEEN AC.FROM_YMD and AC.END_YMD
+           and MA.USER_ID   = U.USER_ID(+)
+           <if test="stanYmd  != null and stanYmd  != '' "> and MA.STAN_YMD = #{stanYmd}  </if>
+           <if test="acctGb   != null and acctGb   != '' "> and MA.ACCT_GB  = #{acctGb}   </if>
+           <if test="inoutGb  != null and inoutGb  != '' "> and AC.INOUT_GB = #{inoutGb}  </if>
+    </select>
+
+</mapper>

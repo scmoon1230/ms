@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.co.ucp.wrks.sstm.mpg.service.MpgInfoMapper">
+
+    <!-- 목록조회 -->
+    <select id="selectMpgInfoList" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectMpgInfoList */
+        select A.*
+             , ( select COUNT(*) from CM_MP_NETWORK_IP
+                  where 1=1
+                    <if test="networkTy != null and networkTy != '' "> and NETWORK_TY = #{networkTy} </if>
+                    <if test="networkNm != null and networkNm != '' "> and NETWORK_NM LIKE '%' || #{networkNm} || '%' </if>
+                    <if test='dstrtCd   != null and dstrtCd   != "" '> and DSTRT_CD = #{dstrtCd} </if>
+               ) ROWCNT
+          from ( select ROW_NUMBER() OVER (order by ${sidx} ${sord}) as RK, A.*
+                   from ( select cmni.NETWORK_ID
+                               , cmni.NETWORK_TY
+                               , FN_GET_TC_CODE('MP_NETWORK_TY', cmni.NETWORK_TY) AS NETWORK_TY_NM
+                               , cmni.NETWORK_NM
+                               , cmni.NETWORK_IP
+                               , cmni.NETWORK_MP_IP
+                               , cmni.DSTRT_CD
+                               , COALESCE((select dstrt_nm from cm_dstrt_cd_mng cdcm where cdcm.DSTRT_CD = cmni.DSTRT_CD), cmni.DSTRT_CD) DSTRT_NM
+                            from CM_MP_NETWORK_IP cmni
+                           where 1=1
+                             <if test="networkTy != null and networkTy != '' "> and cmni.NETWORK_TY = #{networkTy} </if>
+                             <if test="networkNm != null and networkNm != '' "> and cmni.NETWORK_NM LIKE '%' || #{networkNm} || '%' </if>
+                             <if test='dstrtCd   != null and dstrtCd   != "" '> and cmni.DSTRT_CD = #{dstrtCd} </if>
+                        ) A
+               ) A
+    <![CDATA[
+			 OFFSET ((#{pageNo}::integer - 1) * #{rowsPerPage}::integer)
+			 LIMIT #{rowsPerPage}::integer
+    ]]>
+    </select>
+
+    <insert id="insertMpgInfo" parameterType="java.util.HashMap" >
+    /* insertMpgInfo */
+        insert into CM_MP_NETWORK_IP
+             ( NETWORK_ID         , NETWORK_NM         , NETWORK_TY
+             , NETWORK_IP         , NETWORK_MP_IP      , DSTRT_CD
+             , RGS_USER_ID        , RGS_DATE           , UPD_USER_ID        , UPD_DATE    )
+        values
+             ( #{networkId}       , #{networkNm}       , #{networkTy}
+             , #{networkIp}       , #{networkMpIp}     , #{dstrtCd}
+             , #{rgsUserId}       , NOW()              , #{updUserId}       , NOW()       )
+    </insert>
+
+    <update id="updateMpgInfo" parameterType="java.util.HashMap">
+    /* updateMpgInfo */
+        update CM_MP_NETWORK_IP
+           set NETWORK_ID = #{networkId}
+             , NETWORK_NM = #{networkNm}
+             , NETWORK_TY = #{networkTy}
+             , NETWORK_IP = #{networkIp}
+             , NETWORK_MP_IP = #{networkMpIp}
+         where NETWORK_ID = #{networkId}
+    </update>
+
+    <delete id="deleteMpgInfo" parameterType="java.util.HashMap" >
+    /* deleteMpgInfo */
+        delete from CM_MP_NETWORK_IP
+         where NETWORK_ID = #{networkId}
+    </delete>
+
+</mapper>
+
+

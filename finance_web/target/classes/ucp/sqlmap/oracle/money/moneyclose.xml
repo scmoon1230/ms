@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ucp.money.service.MoneycloseMapper">
+
+    <select id="selectStartEndDay" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectStartEndDay */
+    select TO_CHAR(TRUNC(TO_DATE(#{stanYmd},'YYYYMMDD'),'iw')  ,'YYYY-MM-DD') START_YMD
+         , TO_CHAR(TRUNC(TO_DATE(#{stanYmd},'YYYYMMDD'),'iw')+6,'YYYY-MM-DD') END_YMD
+      from DUAL
+    </select>
+
+    <select id="selectMoneyClose" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectMoneyClose */
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingHeader"/>
+        select TO_CHAR(TO_DATE(MM.STAN_YMD, 'YYYYMMDD'), 'YYYY-MM-DD') STAN_YMD
+             , M.ACCT_GB       , AG.ACCT_GB_NAME     , MM.MONEY_CODE    , M.MONEY_NAME
+             , MM.MONEY_AMT    , M.ACCT_CODE
+             , ( select AC.ACCT_NAME from TB_ACCTCODE AC
+                  where AC.ACCT_GB=M.ACCT_GB and AC.ACCT_CODE=M.ACCT_CODE
+                    and AC.STAN_YY = ( select STAN_YY from TB_ACCTYEAR AY
+                                        where MM.STAN_YMD BETWEEN AY.FROM_YMD and AY.END_YMD )
+               ) ACCT_NAME
+             , ( select COUNT(CLOSE_YN)
+                   from TB_MAST_MONEY MMON
+              left join TB_MONEY   MON  ON MON.MONEY_CODE   = MMON.MONEY_CODE
+                  where MMON.STAN_YMD   = MM.STAN_YMD
+                    and MON.ACCT_GB     = M.ACCT_GB
+                    and MMON.MONEY_CODE = MM.MONEY_CODE
+               ) TOTAL_CNT
+             , ( select COUNT(CLOSE_YN)
+                   from TB_MAST_MONEY MMON
+              left join TB_MONEY   MON  ON MON.MONEY_CODE   = MMON.MONEY_CODE
+                  where MMON.STAN_YMD   = MM.STAN_YMD
+                    and MON.ACCT_GB     = M.ACCT_GB
+                    and MMON.CLOSE_YN   = 'Y'
+                    and MMON.MONEY_CODE = MM.MONEY_CODE
+               ) CLOSE_CNT
+          from ( select STAN_YMD, MONEY_CODE, nvl(sum(MONEY_AMT),'0') MONEY_AMT
+                   from TB_MAST_MONEY
+                  where #{startYmd} <![CDATA[<=]]> STAN_YMD and STAN_YMD <![CDATA[<=]]> #{endYmd}
+               group by STAN_YMD, MONEY_CODE
+               ) MM
+             , TB_MONEY   M
+             , TB_ACCT_GB AG
+         where MM.MONEY_CODE     = M.MONEY_CODE
+           and M.ACCT_GB         = AG.ACCT_GB
+           <if test="acctGb    != null and acctGb    != '' "> and M.ACCT_GB     = #{acctGb}    </if>
+      order by ${sidx} ${sord}
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingBottom"/>
+    </select>
+
+    <select id="selectMoneyCloseTotalAmnt" parameterType="java.util.HashMap" resultType="String">
+    /* selectMoneyCloseTotalAmnt */
+        select nvl(sum(MONEY_AMT),'0') MONEY_AMT
+          from ( select MM.MONEY_AMT
+                   from TB_MAST_MONEY MM
+              left join TB_MONEY   M  ON M.MONEY_CODE   = MM.MONEY_CODE
+              left join TB_ACCT_GB AG ON AG.ACCT_GB     = M.ACCT_GB
+                  where #{startYmd} <![CDATA[<=]]> STAN_YMD and STAN_YMD <![CDATA[<=]]> #{endYmd}
+                    <if test="acctGb    != null and acctGb    != '' "> and M.ACCT_GB     = #{acctGb}    </if>
+                    <if test="moneyCode != null and moneyCode != '' "> and MM.MONEY_CODE = #{moneyCode} </if>
+               ) TB
+    </select>
+
+    <select id="selectMoneyCloseCnt" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectMoneyCloseCnt */
+        select COUNT(CLOSE_YN) CLOSE_CNT
+          from TB_MAST_MONEY
+         where CLOSE_YN    = #{closeYn}
+           and #{startYmd} <![CDATA[<=]]> STAN_YMD and STAN_YMD <![CDATA[<=]]> #{endYmd}
+           and MONEY_CODE IN ( select MONEY_CODE from TB_MONEY where ACCT_GB = #{acctGb} )   
+    </select>
+    
+    <update id="updateMoneyClose" parameterType="java.util.HashMap">
+    /* updateMoneyClose */
+        update TB_MAST_MONEY
+           set CLOSE_YN    = #{closeYn}
+         where #{startYmd} <![CDATA[<=]]> STAN_YMD and STAN_YMD <![CDATA[<=]]> #{endYmd}
+           and MONEY_CODE IN ( select MONEY_CODE from TB_MONEY where ACCT_GB = #{acctGb} )   
+    </update>
+
+</mapper>

@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ucp.sheet.service.SheetdurationMapper">
+
+    <select id="selectSheetDuration" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectSheetDuration */
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingHeader"/>
+        select A.SEQ_NO        , TO_CHAR(TO_DATE(A.STAN_YMD, 'YYYYMMDD'), 'YYYY-MM-DD') STAN_YMD
+             , A.ACCT_GB
+             , (SELECT ACCT_GB_NAME from TB_ACCT_GB AG where AG.ACCT_GB = A.ACCT_GB) ACCT_GB_NAME
+             , A.ACCT_CODE , A.MONEY_AMT  , A.ACCT_REMARK , A.ACCT_TYPE
+             , B.ACCT_NAME , B.PRINT_NAME , B.INOUT_GB
+             , B.UP_NAME   , B.UP_PNAME
+             , D.USER_NAME
+          from TB_MAST_ACCT A
+             , ( select X.ACCT_GB    , X.STAN_YY   , Z.FROM_YMD   , Z.END_YMD
+                      , X.ACCT_CODE  , X.ACCT_NAME , X.PRINT_NAME , X.INOUT_GB
+                      , Y.ACCT_NAME  AS UP_NAME
+                      , Y.PRINT_NAME AS UP_PNAME
+                   from TB_ACCTCODE X
+                      , TB_ACCTCODE Y
+                      , TB_ACCTYEAR Z
+                  where X.ACCT_GB = Y.ACCT_GB
+                    and X.STAN_YY = Y.STAN_YY
+                    and X.ACCT_UP = Y.ACCT_CODE
+                    and X.STAN_YY = Z.STAN_YY
+               ) B
+             , TB_USER D
+         where A.ACCT_GB   = B.ACCT_GB
+           and A.ACCT_CODE = B.ACCT_CODE
+           and A.STAN_YMD  BETWEEN B.FROM_YMD and B.END_YMD
+           and A.USER_ID   = D.USER_ID(+)
+           <if test="startDate    != null and startDate    != '' ">
+           and ( A.STAN_YMD <![CDATA[>=]]> #{startDate} and A.STAN_YMD <![CDATA[<=]]> #{endDate} )
+           </if>
+           <if test="acctGb     != null and acctGb     != '' "> and A.ACCT_GB   = #{acctGb}   </if>
+           <if test="inoutGb    != null and inoutGb    != '' "> and B.INOUT_GB  = #{inoutGb}  </if>
+           <if test="acctCode   != null and acctCode   != '' "> and A.ACCT_CODE   LIKE '%' || #{acctCode} || '%' </if>
+           <if test="acctRemark != null and acctRemark != '' "> and A.ACCT_REMARK LIKE '%' || #{acctRemark} || '%' </if>
+      order by ${sidx} ${sord}
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingBottom"/>
+    </select>
+
+    <select id="selectSheetDurationTotalAmnt" parameterType="java.util.HashMap" resultType="String">
+    /* selectSheetDurationTotalAmnt */
+        select nvl(sum(A.MONEY_AMT),'0') MONEY_AMT
+          from TB_MAST_ACCT A
+             , ( select X.ACCT_GB    , X.STAN_YY   , Z.FROM_YMD   , Z.END_YMD
+                      , X.ACCT_CODE  , X.ACCT_NAME , X.PRINT_NAME , X.INOUT_GB
+                      , Y.ACCT_NAME  AS UP_NAME
+                      , Y.PRINT_NAME AS UP_PNAME
+                   from TB_ACCTCODE X
+                      , TB_ACCTCODE Y
+                      , TB_ACCTYEAR Z
+                  where X.ACCT_GB = Y.ACCT_GB
+                    and X.STAN_YY = Y.STAN_YY
+                    and X.ACCT_UP = Y.ACCT_CODE
+                    and X.STAN_YY = Z.STAN_YY
+               ) B
+             , TB_USER D
+         where A.ACCT_GB   = B.ACCT_GB
+           and A.ACCT_CODE = B.ACCT_CODE
+           and A.STAN_YMD  BETWEEN B.FROM_YMD and B.END_YMD
+           and A.USER_ID   = D.USER_ID(+)
+           <if test="startDate    != null and startDate    != '' ">
+           and ( A.STAN_YMD <![CDATA[>=]]> #{startDate} and A.STAN_YMD <![CDATA[<=]]> #{endDate} )
+           </if>
+           <if test="acctGb     != null and acctGb     != '' "> and A.ACCT_GB   = #{acctGb}   </if>
+           <if test="inoutGb    != null and inoutGb    != '' "> and B.INOUT_GB  = #{inoutGb}  </if>
+           <if test="acctCode   != null and acctCode   != '' "> and A.ACCT_CODE   LIKE '%' || #{acctCode} || '%' </if>
+           <if test="acctRemark != null and acctRemark != '' "> and A.ACCT_REMARK LIKE '%' || #{acctRemark} || '%' </if>
+    </select>
+
+</mapper>

@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ucp.report.service.RprtsumdurationMapper">
+
+    <select id="selectMoney" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectMoney */
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingHeader"/>
+        select MEMBER_ID, MEMBER_NO, MEMBER_NAME, POSITION_NAME, MONEY_NAME
+             , sum(MONEY_AMT) MONEY_AMT
+          from (
+                 select MM.MONEY_CODE      , M.MONEY_NAME
+                      , MEM.POSITION_CODE  , MEM.POSITION_NAME
+                      , MM.MEMBER_ID       , MEM.MEMBER_NO
+                      , decode( MM.ID_EXIST,'Y'
+                              , decode( MM.member_id
+                                      , '888888',nvl(MM.member_name,MEM.member_name)
+                                      , '999999',nvl(MM.member_name,MEM.member_name)
+                                      , MEM.MEMBER_NAME
+                                      )
+                              , MM.MEMBER_NAME
+                              ) MEMBER_NAME
+                      , MM.MONEY_AMT
+                   from TB_MAST_MONEY MM
+                      , ( select mem.MEMBER_ID, mem.MEMBER_NO, mem.MEMBER_NAME  , mem.REGION_CODE
+                               , mem.DEPT_CODE, d.DEPT_NAME  , mem.POSITION_CODE, p.POSITION_NAME
+                            from TB_MEMBER mem
+                       left join TB_DEPT     d ON d.DEPT_CODE     = mem.DEPT_CODE
+                       left join TB_POSITION p ON p.POSITION_CODE = mem.POSITION_CODE
+                        ) MEM
+                      , TB_MONEY   M
+                      , TB_ACCT_GB AG
+                      , TB_WORSHIP W
+                      , TB_USER    U
+                  where NVL(MM.MEMBER_ID, 'X') = MEM.MEMBER_ID(+)
+                    and MM.MONEY_CODE     = M.MONEY_CODE
+                    and M.ACCT_GB         = AG.ACCT_GB
+                    and MM.WORSHIP_CODE   = W.WORSHIP_CODE(+)
+                    and MM.USER_ID        = U.USER_ID(+)
+                    <if test="startDate    != null and startDate    != '' ">
+                    and ( MM.STAN_YMD <![CDATA[>=]]> #{startDate} and MM.STAN_YMD <![CDATA[<=]]> #{endDate} )
+                    </if>
+                    <if test="acctGb       != null and acctGb       != '' "> and M.ACCT_GB         = #{acctGb}       </if>
+                    <if test="moneyCode    != null and moneyCode    != '' "> and MM.MONEY_CODE     = #{moneyCode}    </if>
+                    <if test="worshipCode  != null and worshipCode  != '' "> and MM.WORSHIP_CODE   = #{worshipCode}  </if>
+                    <if test="positionCode != null and positionCode != '' "> and MEM.POSITION_CODE = #{positionCode} </if>
+                    <if test="deptCode     != null and deptCode     != '' "> and MEM.DEPT_CODE     = #{deptCode}     </if>
+                    <if test="regionCode   != null and regionCode   != '' "> and MEM.REGION_CODE   = #{regionCode}   </if>
+                    <if test="memberNo     != null and memberNo     != '' "> and MEM.MEMBER_NO   LIKE '%' || #{memberNo}   || '%' </if>
+                    <if test="memberName   != null and memberName   != '' "> and MEM.MEMBER_NAME LIKE '%' || #{memberName} || '%' </if>
+               ) TB
+      group by MEMBER_ID, MEMBER_NO, MEMBER_NAME, POSITION_NAME, MONEY_NAME
+      order by ${sidx} ${sord}
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingBottom"/>
+    </select>
+
+    <select id="selectTotalAmnt" parameterType="java.util.HashMap" resultType="String">
+    /* selectTotalAmnt */
+        select nvl(sum(MM.MONEY_AMT),'0') MONEY_AMT
+          from TB_MAST_MONEY MM
+             , ( select mem.MEMBER_ID, mem.MEMBER_NO, mem.MEMBER_NAME  , mem.REGION_CODE
+                      , mem.DEPT_CODE, d.DEPT_NAME  , mem.POSITION_CODE, p.POSITION_NAME
+                   from TB_MEMBER mem
+              left join TB_DEPT     d ON d.DEPT_CODE     = mem.DEPT_CODE
+              left join TB_POSITION p ON p.POSITION_CODE = mem.POSITION_CODE
+               ) MEM
+             , TB_MONEY   M
+             , TB_ACCT_GB AG
+             , TB_WORSHIP W
+             , TB_USER    U
+         where NVL(MM.MEMBER_ID, 'X') = MEM.MEMBER_ID(+)
+           and MM.MONEY_CODE     = M.MONEY_CODE
+           and M.ACCT_GB         = AG.ACCT_GB
+           and MM.WORSHIP_CODE   = W.WORSHIP_CODE(+)
+           and MM.USER_ID        = U.USER_ID(+)
+           <if test="startDate    != null and startDate    != '' ">
+           and ( MM.STAN_YMD <![CDATA[>=]]> #{startDate} and MM.STAN_YMD <![CDATA[<=]]> #{endDate} )
+           </if>
+           <if test="acctGb       != null and acctGb       != '' "> and M.ACCT_GB         = #{acctGb}       </if>
+           <if test="moneyCode    != null and moneyCode    != '' "> and MM.MONEY_CODE     = #{moneyCode}    </if>
+           <if test="worshipCode  != null and worshipCode  != '' "> and MM.WORSHIP_CODE   = #{worshipCode}  </if>
+           <if test="positionCode != null and positionCode != '' "> and MEM.POSITION_CODE = #{positionCode} </if>
+           <if test="deptCode     != null and deptCode     != '' "> and MEM.DEPT_CODE     = #{deptCode}     </if>
+           <if test="regionCode   != null and regionCode   != '' "> and MEM.REGION_CODE   = #{regionCode}   </if>
+           <if test="memberNo     != null and memberNo     != '' "> and MEM.MEMBER_NO   LIKE '%' || #{memberNo}   || '%' </if>
+           <if test="memberName   != null and memberName   != '' "> and MEM.MEMBER_NAME LIKE '%' || #{memberName} || '%' </if>
+    </select>
+
+    <insert id="insertMoney" parameterType="java.util.HashMap">
+    /* insertMoney */
+        insert into TB_MEMBER
+             ( MEMBER_ID       , MEMBER_NO       , MEMBER_NAME
+             , SEX_TYPE        , TEL_NO          , HPHONE_NO 
+             , POSITION_CODE   , DEPT_CODE       , REGION_CODE
+             , ADDR            , FAMILY_REMARK   , USE_YN        , REG_TIME )
+        values
+             ( #{memberId}     , #{memberNo}     , #{memberName}  
+             , #{sexType}      , #{telNo}        , #{hphoneNo}  
+             , #{positionCode} , #{deptCode}     , #{regionCode}
+             , #{addr}         , #{familyRemark} , #{useYn}      , SYSDATE  )
+    </insert>
+    
+    <update id="updateMoney" parameterType="java.util.HashMap">
+    /* updateMoney */
+        update TB_MEMBER
+           set MEMBER_ID     = #{memberId}
+             , MEMBER_NO     = #{memberNo}
+             , MEMBER_NAME   = #{memberName}
+             , SEX_TYPE      = #{sexType}
+             , TEL_NO        = #{telNo}
+             , HPHONE_NO     = #{hphoneNo}
+             , POSITION_CODE = #{positionCode}
+             , DEPT_CODE     = #{deptCode}
+             , REGION_CODE   = #{regionCode}
+             , ADDR          = #{addr}
+             , FAMILY_REMARK = #{familyRemark}
+             , USE_YN        = #{useYn}
+         where MEMBER_ID = #{memberId}
+    </update>
+
+    <delete id="deleteMoney" parameterType="java.util.HashMap">
+    /* deleteMoney */
+        delete from TB_MEMBER
+         where MEMBER_ID = #{memberId}
+           and MEMBER_NO = #{memberNo}
+    </delete>
+    
+</mapper>

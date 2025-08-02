@@ -1,0 +1,457 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.co.ucp.wrks.lgn.service.LgnLoginMapper">
+
+    <!-- 로그인 처리를 위한 resultMap -->
+    <resultMap id="loginVO" type="kr.co.ucp.cmm.LoginVO">
+        <result property="userId"       column="USER_ID"       />
+        <result property="userPwd"      column="USER_PWD"      />
+        <result property="userName"     column="USER_NAME"     />
+        <result property="positionCode" column="POSITION_CODE" />
+        <result property="positionName" column="POSITION_NAME" />
+        <result property="userGb"       column="USER_GB"       />
+        <result property="useYn"        column="USE_YN"        />
+        <result property="acctGb"       column="ACCT_GB"       />
+        <result property="acctGbName"   column="ACCT_GB_NAME"  />
+        <result property="telNo"        column="TEL_NO"        />
+        
+        <result property="dbName"        column="DB_NAME"      />
+        
+        <result property="dstrtCd"       column="DSTRT_CD"    />
+        <result property="userNmKo"      column="USER_NM_KO"  />
+        <result property="userNmEn"      column="USER_NM_EN"  />
+        <result property="useTyCd"       column="USE_TY_CD"   />
+        <result property="moblNo"        column="MOBL_NO"     />
+        <result property="email"         column="EMAIL"       />
+        <result property="ipAdres"       column="IP_ADRES"    />
+        <result property="offcTelNo"     column="OFFC_TEL_NO" />
+        <result property="rankNm"        column="RANK_NM"     />
+        <result property="deptNm"        column="DEPT_NM"     />
+        <result property="insttNm"       column="INSTT_NM"    />
+        <!-- <result property="chrgWork"      column="CHRG_WORK"   /> -->
+        <result property="remark"        column="REMARK"      />
+        <result property="rgsUserId"     column="RGS_USER_ID" />
+        <result property="rgsDate"       column="RGS_DATE"    />
+        <result property="updUserId"     column="UPD_USER_ID" />
+        <result property="updDate"       column="UPD_DATE"    />
+        <result property="ipTyCd"        column="IP_TY_CD"    />
+        <result property="ipCd"          column="IP_CD"       />
+        
+        <result property="grpId"         column="GRP_ID"      />
+        <result property="grpNmKo"       column="GRP_NM_KO"   />
+        <result property="authLvl"       column="AUTH_LVL"    />
+        <result property="authLvlNm"     column="AUTH_LVL_NM" />
+        
+        <result property="sysId"         column="SYS_ID"      />
+        <result property="gSysId"        column="G_SYS_ID"    />
+        <result property="sysCd"         column="SYS_CD"      />
+        <result property="menuSysNm"     column="MENU_SYS_NM" />
+        <result property="uniqId"        column="UNIQ_ID"     />
+        <result property="grpTy"         column="GRP_TY"      />
+        <result property="userApproveTy"    column="USER_APPROVE_TY"/>
+        <result property="approveUserId"    column="APPROVE_USER_ID"/>
+        <result property="userApproveDt"    column="USER_APPROVE_DT"/>
+        <result property="pwChgDtSys"       column="PW_CHG_DT_SYS"/>
+        <result property="pwChgDtUser"      column="PW_CHG_DT_USER"/>
+        <result property="latestLoginDt"    column="LATEST_LOGIN_DT"/>
+        <result property="mainPage"    column="MAIN_PAGE"/>
+    </resultMap>
+
+    <!-- 아이디 찾기를 위한 resultMap -->
+    <resultMap id="id" type="kr.co.ucp.cmm.LoginVO">
+        <result property="userId"        column="USER_ID"     />
+    </resultMap>
+
+    <!-- 비밀번호 처리를 위한 resultMap -->
+    <resultMap id="userPw" type="kr.co.ucp.cmm.LoginVO">
+        <result property="userPwd"      column="USER_PWD"    />
+    </resultMap>
+    <!-- 
+    <sql id="selectUserInfo">
+        select A.USER_ID         , A.PASSWORD
+           <if test="saltText == null ">
+             , A.USER_NM_KO
+             , A.MOBL_NO
+             , A.EMAIL
+           </if>
+           <if test="saltText != null ">
+             , convert_from(decrypt(decode(A.USER_NM_KO,'hex')::bytea,#{saltText}::bytea,'aes'),'utf8') as USER_NM_KO
+             , convert_from(decrypt(decode(A.MOBL_NO,'hex')::bytea,#{saltText}::bytea,'aes'),'utf8')    as MOBL_NO
+             , convert_from(decrypt(decode(A.EMAIL,'hex')::bytea,#{saltText}::bytea,'aes'),'utf8')      as EMAIL
+           </if>
+             , A.USER_NM_EN      , A.USE_TY_CD
+             , A.OFFC_TEL_NO     , A.RANK_NM         , A.DEPT_NM
+             , A.INSTT_CD        , A.INSTT_NM        , A.RPSB_WORK       , A.REMARK
+             , A.RGS_USER_ID     , A.UPD_USER_ID
+             , A.IP_TY_CD        , A.IP_CD           , A.IP_ADRES
+             , B.GRP_ID          , B.GRP_TY          , B.GRP_NM_KO       , B.AUTH_LVL        , B.AUTH_LVL_NM
+             , B.SYS_ID          , B.SYS_ID as SYS_CD
+             , (select SYS_NM  from CM_TOP_MENU where SYS_ID = B.SYS_ID) as MENU_SYS_NM
+             , A.USER_ID as UNIQ_ID
+             , TO_CHAR(A.RGS_DATE, 'YYYY-MM-DD HH24:MI:SS') as RGS_DATE
+             , TO_CHAR(A.UPD_DATE, 'YYYY-MM-DD HH24:MI:SS') as UPD_DATE
+             , A.USER_APPROVE_TY
+             , A.APPROVE_USER_ID
+             , TO_CHAR(A.USER_APPROVE_DT, 'YYYYMMDDHH24MISS')     AS USER_APPROVE_DT
+             , TO_CHAR(A.PW_CHG_DT_SYS  , 'YYYYMMDDHH24MISS')     AS PW_CHG_DT_SYS
+             , TO_CHAR(A.PW_CHG_DT_USER , 'YYYYMMDDHH24MISS')     AS PW_CHG_DT_USER
+             , TO_CHAR(A.LATEST_LOGIN_DT, 'YYYYMMDDHH24MISS')     AS LATEST_LOGIN_DT
+          from VW_USER A
+     left join ( select A.USER_ID, A.GRP_ID, B.GRP_NM_KO, C.AUTH_LVL, C.AUTH_LVL_NM, B.SYS_ID, B.GRP_TY
+                   from CM_GRP_USER A, CM_GROUP B, CM_GRP_AUTH_LVL C
+                  where A.GRP_ID    = B.GRP_ID
+                    and A.USER_ID   = #{userId}
+                    and A.GRP_ID    = C.GRP_ID
+                    and A.AUTH_LVL  = C.AUTH_LVL
+                  limit  1
+               ) B
+                on A.USER_ID = B.USER_ID
+         where 1 = 1 
+           and USE_TY_CD     = 'Y'
+           and A.USER_ID     = #{userId}
+    </sql>
+    
+    <select id="selectLogin" parameterType="java.util.HashMap" resultMap="loginVO">
+    /* selectLogin */
+    select COALESCE(NULLIF(TM.SYS_NM,''),'영상반출') AS MENU_SYS_NM
+         , B.*
+    from (
+        select #{gSysId}  AS G_SYS_ID         , A.USER_ID         , A.PASSWORD      , DSTRT_CD
+           <if test="saltText == null ">
+             , A.USER_NM_KO
+             , A.MOBL_NO
+             , A.EMAIL
+           </if>
+           <if test="saltText != null ">
+             , convert_from(decrypt(decode(A.USER_NM_KO,'hex')::bytea,#{saltText}::bytea,'aes'),'utf8') as USER_NM_KO
+             , convert_from(decrypt(decode(A.MOBL_NO,'hex')::bytea,#{saltText}::bytea,'aes'),'utf8')    as MOBL_NO
+             , convert_from(decrypt(decode(A.EMAIL,'hex')::bytea,#{saltText}::bytea,'aes'),'utf8')      as EMAIL
+           </if>
+             , A.USER_NM_EN      , A.USE_TY_CD
+             , A.OFFC_TEL_NO     , A.RANK_NM         , A.DEPT_NM
+             , A.INSTT_CD        , A.INSTT_NM        , A.RPSB_WORK       , A.REMARK
+             , A.RGS_USER_ID     , A.UPD_USER_ID
+             , A.IP_TY_CD        , A.IP_CD           , A.IP_ADRES
+             , B.GRP_ID          , B.GRP_TY          , B.GRP_NM_KO       , B.AUTH_LVL        , B.AUTH_LVL_NM
+             , B.SYS_ID          , B.SYS_ID as SYS_CD
+             , A.USER_ID as UNIQ_ID
+             , TO_CHAR(A.RGS_DATE, 'YYYY-MM-DD HH24:MI:SS') as RGS_DATE
+             , TO_CHAR(A.UPD_DATE, 'YYYY-MM-DD HH24:MI:SS') as UPD_DATE
+             , A.USER_APPROVE_TY
+             , A.APPROVE_USER_ID
+             , TO_CHAR(A.USER_APPROVE_DT, 'YYYYMMDDHH24MISS')     AS USER_APPROVE_DT
+             , TO_CHAR(A.PW_CHG_DT_SYS  , 'YYYYMMDDHH24MISS')     AS PW_CHG_DT_SYS
+             , TO_CHAR(A.PW_CHG_DT_USER , 'YYYYMMDDHH24MISS')     AS PW_CHG_DT_USER
+             , TO_CHAR(A.LATEST_LOGIN_DT, 'YYYYMMDDHH24MISS')     AS LATEST_LOGIN_DT
+          from VW_USER A
+     left join ( select A.USER_ID, A.GRP_ID, B.GRP_NM_KO, C.AUTH_LVL, C.AUTH_LVL_NM, B.SYS_ID, B.GRP_TY
+                   from CM_GRP_USER A, CM_GROUP B, CM_GRP_AUTH_LVL C
+                  where A.GRP_ID    = B.GRP_ID
+                    and A.USER_ID   = #{userId}
+                    and A.GRP_ID    = C.GRP_ID
+                    and A.AUTH_LVL  = C.AUTH_LVL
+                  limit  1
+               ) B
+                on A.USER_ID = B.USER_ID
+         where USE_TY_CD = 'Y'
+           and DSTRT_CD  =  #{dstrtCd}
+        <choose>
+            <when test='LOGIN_DIRECT_YN != null and LOGIN_DIRECT_YN == "Y"'>
+                and A.USER_ID   = #{userId}
+            </when>
+            <otherwise>
+                and A.USER_ID   = #{userId}
+                and A.PASSWORD  = #{password}
+            </otherwise>
+        </choose>
+         ) B
+ left join CM_TOP_MENU TM ON B.G_SYS_ID = TM.SYS_ID
+    </select>
+     -->
+    
+    <select id="selectLogin" parameterType="java.util.HashMap" resultMap="loginVO">
+    /* selectLogin */
+        select tu.USER_ID
+             , tu.USER_PWD
+             , tu.USER_NAME 
+             , tu.POSITION_CODE
+             , (SELECT POSITION_NAME from ${dbName}.TB_POSITION tp where tp.POSITION_CODE = tu.POSITION_CODE) AS POSITION_NAME
+             , tu.USER_GB 
+             , tu.USE_YN 
+             , tu.ACCT_GB 
+             , (SELECT ACCT_GB_NAME||'('||PRINT_NAME||')' from ${dbName}.TB_ACCT_GB tag where tag.ACCT_GB = tu.ACCT_GB) AS ACCT_GB_NAME
+             , tu.TEL_NO 
+             , '${dbName}' DB_NAME
+          from ${dbName}.TB_USER tu
+         where 1 = 1
+           and tu.USER_ID  = #{userId}
+           and tu.USER_PWD = #{userPw}
+    </select>
+    
+    <select id="selectSystemInfo" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectSystemInfo */
+        select DSTRT_CD          , DSTRT_NM            
+             , DSTRT_DSCRT       , SIGUNGU_CD          
+          from CM_DSTRT_CD_MNG CDCM
+         where DSTRT_CD = #{dstrtCd}
+    </select>
+    
+    <select id="selectRepTelNo" parameterType="java.util.HashMap" resultType="String">
+    /* selectRepTelNo */
+        select REP_TEL_NO
+          from CM_DSTRT_CD_MNG
+         where DSTRT_CD = #{dstrtCd}
+    </select>
+    
+    <!-- 
+    <select id="selectLoginPass" parameterType="java.util.HashMap" resultMap="loginVO">
+        <include refid="selectUserInfo"/>
+    </select>
+
+    <select id="loginVO" parameterType="java.util.HashMap" resultMap="loginVO">
+        <include refid="selectUserInfo"/>
+           and A.PASSWORD = XX1.ENC_VARCHAR2_INS(#{password},10,'PASSWD','CM_USER','PASSWORD')
+    </select>
+
+    <select id="loginEncrypt" parameterType="java.util.HashMap" resultMap="loginVO">
+        <include refid="selectUserInfo"/>
+           and A.PASSWORD = #{password}
+    </select>
+
+    <select id="loginSSO" parameterType="java.util.HashMap" resultMap="loginVO">
+        <include refid="selectUserInfo"/>
+    </select>
+    
+    <select id="getUserInfo" parameterType="java.util.HashMap" resultMap="loginVO">
+        <include refid="selectUserInfo"/>
+    </select>
+
+    <update id="update" parameterType="java.util.HashMap">
+        update CM_USER
+           set PASSWORD    = #{password}
+             , UPD_USER_ID = #{updUserId}
+             , UPD_DATE    = NOW()
+         where USER_ID = #{userId}
+    </update>
+     -->
+    <update id="changePwd" parameterType="java.util.HashMap">
+        update CM_USER
+        <choose>
+            <when test="dbEncryptTag == 'KSG'">    
+                   set PASSWORD = SCP.ENC_B64('DAMO', 'SCPS','ARIA_256_FIXED_IV_CBC.SCPS', #{password})
+             </when>  
+            <otherwise>
+                   set PASSWORD = #{password}
+            </otherwise>             
+        </choose>
+             , PLAY_PWD    = #{playPwd}
+             , UPD_USER_ID = #{updUserId}
+             , UPD_DATE    = NOW()
+         where USER_ID     = #{userId}
+    </update>
+
+    <select id="findPwd" parameterType="java.util.HashMap" resultMap="loginVO">
+    /* findPwd */
+        select USER_ID           , PASSWORD          , USER_NM_KO        , USER_NM_EN
+             , USE_TY_CD         , MOBL_NO           , EMAIL             , OFFC_TEL_NO
+             , RANK_NM           , DEPT_NM           , INSTT_NM          , REMARK
+             , IP_ADRES
+             , RGS_USER_ID
+             , UPD_USER_ID
+             , TO_CHAR(RGS_DATE, 'YYYY-MM-DD HH24:MI:SS') as RGS_DATE
+             , TO_CHAR(UPD_DATE, 'YYYY-MM-DD HH24:MI:SS') as UPD_DATE
+          from CM_USER
+         where USER_ID    = #{userId}
+           and USER_NM_KO = #{userNm}
+           and MOBL_NO    = #{moblNo}
+    </select>
+	<!-- 
+    <select id="getMenuList" parameterType="java.util.HashMap" resultType="egovMap">
+    /* getMenuList */
+        select M5.RK
+             , M5.PGM_MENU_ID
+             , M5.PGM_MENU_NM_KO
+             , M5.PGM_TITLE
+             , (REGEXP_SPLIT_TO_ARRAY(M5.PGM_TITLE, ' / '))[1] as PGM_TIT_1
+             , (REGEXP_SPLIT_TO_ARRAY(M5.PGM_TITLE, ' / '))[2] as PGM_TIT_2
+             , (REGEXP_SPLIT_TO_ARRAY(M5.PGM_TITLE, ' / '))[3] as PGM_TIT_3
+             , M5.PRNT_PGM_MENU_ID
+             , TO_CHAR(M5.LVL,'FM999999999') as LVL
+             , M5.PGM_ID
+             , CASE WHEN M5.ON_ICON               != '0' THEN M5.ON_ICON 
+                    WHEN M5.PRNT_ON_ICON          != '0' THEN M5.PRNT_ON_ICON
+                    WHEN M5.PRNT_PRNT_ON_ICON     != '0' THEN M5.PRNT_PRNT_ON_ICON 
+                    ELSE  '0_on.png'
+               END  as PGM_MENU_ON_IMG_CRS            
+             , CASE WHEN M5.OFF_ICON              != '0' THEN M5.OFF_ICON 
+                    WHEN M5.PRNT_OFF_ICON         != '0' THEN M5.PRNT_OFF_ICON
+                    WHEN M5.PRNT_PRNT_OFF_ICON    != '0' THEN M5.PRNT_PRNT_OFF_ICON 
+                    ELSE  '0_on.png'
+               END  as PGM_MENU_OFF_IMG_CRS            
+             , CASE WHEN M5.MENU_ICON             != '0' THEN M5.MENU_ICON 
+                    WHEN M5.PRNT_MENU_ICON        != '0' THEN M5.PRNT_MENU_ICON
+                    WHEN M5.PRNT_PRNT_MENU_ICON   != '0' THEN M5.PRNT_PRNT_MENU_ICON 
+                    ELSE  '0_on.png'
+               END  as PGM_MENU_IMG_CRS            
+             , M5.USE_TY_CD
+             , M5.NEW_WDW_YN
+             , M5.NEW_WIN_WIDTH
+             , M5.NEW_WIN_HEIGHT
+             , M5.PGM_MENU_VISIBLE_YN
+               <![CDATA[
+             , ( CASE WHEN (select COUNT(*) from CM_PGM_MENU where M5.PGM_MENU_ID = PRNT_PGM_MENU_ID) > 0
+                 THEN 'false' ELSE 'true'
+                 END ) as ISLF
+               ]]>
+             , CASE WHEN B.SEA_AUTH_YN IS NULL THEN 'N' ELSE 'Y' END as SEA_AUTH_YN
+             , CASE WHEN B.RGS_AUTH_YN IS NULL THEN 'N' ELSE 'Y' END as RGS_AUTH_YN
+             , CASE WHEN B.UPD_AUTH_YN IS NULL THEN 'N' ELSE 'Y' END as UPD_AUTH_YN
+             , CASE WHEN B.DEL_AUTH_YN IS NULL THEN 'N' ELSE 'Y' END as DEL_AUTH_YN
+             , 'true' as EXPD
+             , C.PGM_URL
+             , CONCAT(C.PGM_URL , C.PGM_URL2) as PGM_URL2
+             , regexp_replace(C.PGM_URL, E'\\.[^.]+$', '') as PGM_URL3
+          from ( select M1.* 
+                      , M2.USE_TY_CD
+                      , M2.NEW_WDW_YN
+                      , TO_CHAR(M2.NEW_WIN_WIDTH,'FM99999') as NEW_WIN_WIDTH
+                      , TO_CHAR(M2.NEW_WIN_HEIGHT,'FM99999') as NEW_WIN_HEIGHT
+                      , M2.PGM_MENU_VISIBLE_YN
+                      , CASE WHEN M3.PGM_MENU_ON_IMG_CRS  IS NULL THEN '0' ELSE M3.PGM_MENU_ON_IMG_CRS  END as PRNT_ON_ICON
+                      , CASE WHEN M3.PGM_MENU_OFF_IMG_CRS IS NULL THEN '0' ELSE M3.PGM_MENU_OFF_IMG_CRS END as PRNT_OFF_ICON
+                      , CASE WHEN M3.PGM_MENU_IMG_CRS     IS NULL THEN '0' ELSE M3.PGM_MENU_IMG_CRS     END as PRNT_MENU_ICON
+                      , (select CASE WHEN PGM_MENU_ON_IMG_CRS  IS NULL THEN '0' ELSE PGM_MENU_ON_IMG_CRS  END from CM_PGM_MENU M4 where M4.PGM_MENU_ID = M3.PRNT_PGM_MENU_ID) as PRNT_PRNT_ON_ICON
+                      , (select CASE WHEN PGM_MENU_OFF_IMG_CRS IS NULL THEN '0' ELSE PGM_MENU_OFF_IMG_CRS END from CM_PGM_MENU M4 where M4.PGM_MENU_ID = M3.PRNT_PGM_MENU_ID) as PRNT_PRNT_OFF_ICON
+                      , (select CASE WHEN PGM_MENU_IMG_CRS     IS NULL THEN '0' ELSE PGM_MENU_IMG_CRS     END from CM_PGM_MENU M4 where M4.PGM_MENU_ID = M3.PRNT_PGM_MENU_ID) as PRNT_PRNT_MENU_ICON
+                 from (  WITH RECURSIVE  WRCS (PGM_MENU_ID,PGM_MENU_NM_KO, PGM_TITLE,PRNT_PGM_MENU_ID,ON_ICON,OFF_ICON,MENU_ICON,PGM_ID,LVL,ROOT,PATH,RK) AS
+                         ( select PGM_MENU_ID       , PGM_MENU_NM_KO       , PGM_MENU_NM_KO::text                            , PRNT_PGM_MENU_ID
+                                , CASE WHEN PGM_MENU_ON_IMG_CRS  IS NULL THEN '0' ELSE PGM_MENU_ON_IMG_CRS  END as ON_ICON
+                                , CASE WHEN PGM_MENU_OFF_IMG_CRS IS NULL THEN '0' ELSE PGM_MENU_OFF_IMG_CRS END as OFF_ICON
+                                , CASE WHEN PGM_MENU_IMG_CRS     IS NULL THEN '0' ELSE PGM_MENU_IMG_CRS     END as MENU_ICON
+                                , PGM_ID            , 1 LVL                , PGM_MENU_ID as ROOT    , PGM_MENU_ID::text as PATH
+                                , SORT_ORDR RK      , SORT_ORDR2 RK2
+                             from CM_PGM_MENU
+                            where PRNT_PGM_MENU_ID = ( select SYS_TOP_MENU_ID from CM_TOP_MENU where SYS_ID = #{sysId} )   
+                              and USE_TY_CD != 'N'    
+                            union all
+                           select c.PGM_MENU_ID     , c.PGM_MENU_NM_KO     , s.PGM_TITLE || ' / ' || c.PGM_MENU_NM_KO::text  , c.PRNT_PGM_MENU_ID
+                                , CASE WHEN c.PGM_MENU_ON_IMG_CRS  IS NULL THEN '0' ELSE c.PGM_MENU_ON_IMG_CRS  END as ON_ICON
+                                , CASE WHEN c.PGM_MENU_OFF_IMG_CRS IS NULL THEN '0' ELSE c.PGM_MENU_OFF_IMG_CRS END as OFF_ICON
+                                , CASE WHEN c.PGM_MENU_IMG_CRS     IS NULL THEN '0' ELSE c.PGM_MENU_IMG_CRS     END as MENU_ICON
+                                , c.PGM_ID          , s.LVL + 1 as LVL     , s.ROOT  as ROOT        , s.PATH || '-' || c.PGM_MENU_ID::text as PATH 
+                                , c.SORT_ORDR as RK , c.SORT_ORDR2 as RK2
+                             from CM_PGM_MENU c, WRCS s
+                            where s.PGM_MENU_ID = c.PRNT_PGM_MENU_ID 
+                              and USE_TY_CD != 'N'    
+                         )
+                         select * from WRCS
+                      ) M1 
+                    , CM_PGM_MENU M2
+                    , CM_PGM_MENU M3
+                where M1.PGM_MENU_ID      = M2.PGM_MENU_ID
+                  and M2.PRNT_PGM_MENU_ID = M3.PGM_MENU_ID
+               ) M5        
+             , ( select A.PGM_MENU_ID  , MAX(A.SEA_AUTH_YN) as SEA_AUTH_YN  , MAX(A.RGS_AUTH_YN) as RGS_AUTH_YN  , MAX(A.UPD_AUTH_YN) as UPD_AUTH_YN  , MAX(A.DEL_AUTH_YN) as DEL_AUTH_YN
+                   from ( select PGM_MENU_ID, SEA_AUTH_YN, RGS_AUTH_YN, UPD_AUTH_YN, DEL_AUTH_YN
+                            from CM_USER_PGM_MENU
+                           where USER_ID = #{userId}
+                       union all
+                          select PGM_MENU_ID, SEA_AUTH_YN, RGS_AUTH_YN, UPD_AUTH_YN, DEL_AUTH_YN
+                            from CM_GRP_AUTH_LVL_MENU A, CM_GRP_USER C
+                           where C.GRP_ID = A.GRP_ID
+                             and C.AUTH_LVL = A.AUTH_LVL
+                             and C.USER_ID = #{userId}
+                        ) A
+                  group by A.PGM_MENU_ID
+               ) B
+               <![CDATA[
+             , ( select PGM_ID, PGM_URL, CASE WHEN position('?' in PGM_URL) = 0 THEN '?' ELSE '&' END as PGM_URL2 from CM_PROGRAM
+               ) C
+               ]]>
+         where M5.PGM_MENU_ID = B.PGM_MENU_ID
+           and M5.PGM_ID      = C.PGM_ID
+        <choose>
+            <when test='menuOrdrTy != null and menuOrdrTy == "2"'>
+         order by M5.RK2
+            </when>
+            <otherwise>
+         order by M5.RK
+            </otherwise>
+        </choose>
+    </select>
+	 -->
+    <select id="getMenuList" parameterType="java.util.HashMap" resultType="egovMap">
+    /* getMenuList */
+    select sm.MENU_LEVEL , sm.SGROUP_NM , sm.RUN_PROGRAM, sm.MENU_IMG
+         , TB.SGROUP3 MENU_ID
+         , CASE WHEN SM.MENU_LEVEL = 1 THEN ''
+                WHEN SM.MENU_LEVEL = 2 THEN TB.SGROUP1
+                WHEN SM.MENU_LEVEL = 3 THEN TB.SGROUP2
+           END AS PARENT_MENU_ID
+         , tb.*
+      from ( select sm.SYS_GUBUN, sm.SGROUP1, sm.SGROUP2, sm.SGROUP3, sm.MENU_IMG, '' ID
+               from ${dbName}.SYS_MENU sm
+              where sm.RUN_YN ='N'
+          UNION all
+             select um.SYS_GUBUN, um.SGROUP1, um.SGROUP2, um.SGROUP3, '' MENU_IMG, um.ID
+               from ${dbName}.USER_MENU um
+              where UM.ID = #{userId}
+           ) tb
+ left join ${dbName}.SYS_MENU sm
+        ON SM.SYS_GUBUN = tb.SYS_GUBUN and sm.SGROUP1 = tb.SGROUP1
+       and sm.SGROUP2 = tb.SGROUP2 and sm.SGROUP3 = tb.SGROUP3
+  order by tb.SGROUP1, tb.SGROUP2, tb.SGROUP3
+    </select>
+
+    <insert id="insertConnectUserCnt" parameterType="lgn" >
+    /* insertConnectUserCnt */
+        insert into ${dbName}.TB_USE_LOG
+             ( STAN_YMD
+             , USER_ID      , PROG_ID     , USE_TIME  )
+        values
+             ( TO_CHAR(SYSDATE, 'YYYYMMDD')
+             , #{userId}    , #{progId}  , SYSDATE    )
+    </insert>
+    <!-- 
+    <insert id="insertConnectUserCnt" parameterType="lgn" >
+    /* insertConnectUserCnt */
+        insert into CM_HIS_USER_CONNECT
+             ( CONNECT_YMD
+             , USER_ID      , DSTRT_CD
+             , CONNECT_SEQ  , LOGIN_TIME  , LOGIN_LAST_TIME )
+        values ( TO_CHAR(LOCALTIMESTAMP, 'YYYYMMDDHH24MI')
+             , #{userId}    , #{dstrtCd}
+             , 0            , NOW()       , NOW()           )
+   ON CONFLICT (CONNECT_YMD, USER_ID, DSTRT_CD) DO UPDATE
+           SET LOGIN_LAST_TIME = NOW()
+    </insert>
+    
+    <select id="selectMappingIp" parameterType="String" resultType="java.util.HashMap">
+        select A.NETWORK_ID
+             , A.NETWORK_NM
+             , A.NETWORK_TY
+             , A.NETWORK_IP
+             , A.NETWORK_MP_IP
+          from CM_MP_NETWORK_IP A, CM_MP_CONN_IP B
+         where '${value}' LIKE REPLACE(B.CONN_IP, 'X', '%')
+           and A.NETWORK_ID = B.NETWORK_ID
+    </select>
+     -->
+    <select id="fileDownList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+        select B.ATCH_FILE_ID
+             , B.ORGN_ATCH_FILE_NM
+             , B.ATCH_FILE_NM
+             , B.ATCH_FILE_ETS
+             , M.BBN_TITLE
+             , #{filePath} || #{mainBbsPath} || '/' || B.ORGN_ATCH_FILE_NM as FULL_PATH
+          from UW_BBS_ATCH_FILE_INFO A
+             , UW_BBS_ATCH_FILE_DTL  B
+             , UW_BBS M
+         where M.ATCH_FILE_ID = A.ATCH_FILE_ID
+           and A.ATCH_FILE_ID = B.ATCH_FILE_ID
+           and M.USE_YN = 'Y'
+           and M.BBS_ID = #{mainBbsId}
+    </select>
+    
+</mapper>

@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+
+<mapper namespace="kr.co.ucp.wrks.sstm.code.service.CodeDstMapper">
+    <!-- 
+    <select id="sggList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+            select
+                SIGUNGU_CD
+                , SIGUNGU_NM
+            from
+                CM_TC_SIGUNGU
+            where SIDO_NM = '서울특별시'
+            order by SIGUNGU_NM asc
+    </select>
+     -->
+
+    <select id="codeDstList" parameterType="java.util.HashMap" resultType="egovMap">
+    /* codeDstList */
+        select AAA.*
+             , ( select COUNT(*) from CM_DSTRT_CD_MNG
+                  where 1 = 1
+                    <if test="dstrtCd  != null and dstrtCd  != ''"> and DSTRT_CD LIKE CONCAT('%',#{dstrtCd}, '%') </if>
+                    <if test="dstrtNm  != null and dstrtNm  != ''"> and DSTRT_NM LIKE CONCAT('%', #{dstrtNm}, '%') </if>
+                    <if test="useTyCd != null and useTyCd != ''"> and USE_TY_CD LIKE CONCAT('%', #{useTyCd}, '%') </if>
+               ) as ROWCNT
+          from ( select ROW_NUMBER() OVER (order by ${sidx} ${sord}) as RK, A.*
+                   from ( select A.*
+                               , A.PLAYBACK_SPEED AS BASIC_PLAYBACK_SPEED
+                               , B.CD_NM_KO as USE_TY_NM
+                            from CM_DSTRT_CD_MNG A
+                       left join (select CD_ID, CD_NM_KO from CM_TC_CODE where CD_GRP_ID = 'USE_TY' and CD_TY = 'C') B
+                              ON A.USE_TY_CD = B.CD_ID
+                           where 1 = 1
+                             <if test="dstrtCd  != null and dstrtCd  != ''"> and A.DSTRT_CD LIKE CONCAT ('%', #{dstrtCd}, '%') </if>
+                             <if test="dstrtNm  != null and dstrtNm  != ''"> and DSTRT_NM LIKE CONCAT ('%', #{dstrtNm}, '%') </if>
+                             <if test="useTyCd != null and useTyCd != ''"> and USE_TY_CD LIKE CONCAT ('%',#{useTyCd},'%') </if>
+                        ) A
+               ) AAA
+        OFFSET ((#{pageNo}::integer - 1) * #{rowsPerPage}::integer)
+         LIMIT #{rowsPerPage}::integer
+    </select>
+
+    <insert id="insertCodeDst" parameterType="java.util.HashMap">
+    /* insertCodeDst */
+        insert into CM_DSTRT_CD_MNG
+             ( DSTRT_CD           , DSTRT_NM          , DSTRT_DSCRT
+             , DSTRT_TY           , REP_TEL_NO        , LINK_URL
+             , VRS_WEBRTC_ADDR    , PLAYBACK_SPEED    , USE_TY_CD
+             , RGS_USER_ID        , RGS_DATE          , UPD_USER_ID    , UPD_DATE )
+            values
+             ( #{dstrtCd}        , #{dstrtNm}       , #{dstrtDscrt}
+             , #{dstrtTy}        , #{repTelNo}     , #{linkUrl}
+             , #{vrsWebrtcAddr} , #{playbackSpeed} , #{useTyCd}
+             , #{rgsUserId}     , NOW()             , #{updUserId} , NOW()    )
+    </insert>
+
+    <update id="updateCodeDst" parameterType="java.util.HashMap" >
+    /* updateCodeDst */
+        update CM_DSTRT_CD_MNG
+           set DSTRT_NM        = #{dstrtNm}
+             , DSTRT_DSCRT     = #{dstrtDscrt}
+             , DSTRT_TY        = #{dstrtTy}
+             , REP_TEL_NO      = #{repTelNo}
+             , LINK_URL        = #{linkUrl}
+             , VRS_WEBRTC_ADDR = #{vrsWebrtcAddr}
+             , PLAYBACK_SPEED  = #{playbackSpeed}
+             , USE_TY_CD       = #{useTyCd}
+             , UPD_USER_ID     = #{updUserId}
+             , UPD_DATE = NOW()
+         where DSTRT_CD = #{dstrtCd}
+    </update>
+
+    <delete id="deleteCodeDst" parameterType="java.util.HashMap">
+    /* deleteCodeDst */
+        update CM_DSTRT_CD_MNG set
+            USE_TY_CD = 'D'
+            , UPD_USER_ID = #{updUserId}
+            , UPD_DATE    = NOW()
+        where
+            DSTRT_CD = #{dstrtCd}
+    </delete>
+
+</mapper>

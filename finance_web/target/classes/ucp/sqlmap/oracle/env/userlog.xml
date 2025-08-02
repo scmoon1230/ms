@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ucp.env.service.UserlogMapper">
+
+    <select id="selectUserlog" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectUserlog */
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingHeader"/>
+        select TO_CHAR(TO_DATE(ul.STAN_YMD, 'YYYYMMDD'), 'YYYY-MM-DD') STAN_YMD
+             , ul.USER_ID     , u.USER_NAME
+             , ul.PROG_ID
+             , CASE WHEN ul.PROG_ID ='wrks/lgn/logout.do' THEN '로그아웃'
+               ELSE sm.SGROUP_NM
+               END SGROUP_NM
+             , TO_CHAR(ul.USE_TIME, 'YYYY-MM-DD HH24:MI:SS') USE_TIME
+          from TB_USE_LOG ul
+     left join TB_USER u ON u.USER_ID = ul.USER_ID
+     left join SYS_MENU sm ON sm.RUN_PROGRAM = ul.PROG_ID
+         where ul.USE_TIME between TO_TIMESTAMP(#{startDate}, 'YYYYMMDDHH24MISS')
+                               and TO_TIMESTAMP(#{endDate}, 'YYYYMMDDHH24MISS')
+           <if test="userName != null and userName != '' "> and USER_NAME LIKE #{userName} || '%' </if>
+      order by ${sidx} ${sord}
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingBottom"/>
+    </select>
+    
+</mapper>

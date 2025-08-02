@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+    
+<mapper namespace="kr.co.ucp.wrks.sstm.menu.service.MenuIconMapper">
+
+	<select id="getMaxSeqNo" parameterType="java.lang.String" resultType="java.lang.Integer">
+		<![CDATA[
+			select CASE WHEN MAX(SEQ_NO) = NULL THEN 1 ELSE MAX(SEQ_NO)+1 END from CM_ICON_MNG
+		]]>
+	</select>
+	
+	<select id="list" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+		<![CDATA[
+		select AA.*
+		     , (
+		        select COUNT(*)
+     	          from CM_ICON_MNG
+                 where 1 = 1
+                      
+		 ]]>
+         <if test="ICON_TY != null and ICON_TY != '' ">
+                   and ICON_TY = #{ICON_TY}
+		 </if>
+		 <![CDATA[
+		 ) ROWCNT
+          from(
+     		    select ROW_NUMBER() OVER (order by ${sidx} ${sord}) as RK
+     		         , A.SEQ_NO                                     as SEQ_NO
+     		         , CONCAT(A.SEQ_NO, '_on.png')                  as ON_ICON
+     		         , CONCAT(A.SEQ_NO, '_off.png')                 as OFF_ICON
+     		         , CONCAT(A.SEQ_NO, '_on.png')                  as ON_ICON_VIEW
+     		         , CONCAT(A.SEQ_NO, '_off.png')                 as OFF_ICON_VIEW     		         
+     		         , A.ICON_TY                                    as ICON_TY
+     		         , B.CD_NM_KO                                   as ICON_TY_NM		
+     		         , DATE_FORMAT(A.RGS_DATE, '%Y-%m-%d')		AS RGS_DATE
+     		         , A.RGS_USER_ID                                as RGS_USER_ID
+     		         , DATE_FORMAT(A.UPD_DATE, '%Y-%m-%d')		AS UPD_DATE
+     		         , A.UPD_USER_ID                                as UPD_USER_ID
+     	          from CM_ICON_MNG    A
+						left join ( select CD_ID, CD_NM_KO from CM_TC_CODE where USE_TY_CD = 'Y' and CD_GRP_ID = 'ICON' and CD_TY = 'C' ) B
+							ON A.ICON_TY = B.CD_ID     	          
+                 where 1 = 1
+               
+		]]>
+        <if test="ICON_TY != null and ICON_TY != '' ">
+                   and A.ICON_TY = #{ICON_TY}
+		</if>
+		<![CDATA[
+		      ) AA
+			 OFFSET ((#{pageNo}::integer - 1) * #{rowsPerPage}::integer)
+			 LIMIT #{rowsPerPage}::integer
+		]]>
+	</select>
+	
+	<insert id="insert" parameterType="java.util.HashMap">
+		<![CDATA[
+			INSERT INTO CM_ICON_MNG(
+				                     SEQ_NO
+		                           , ICON_TY
+		                           , RGS_DATE
+		                           , RGS_USER_ID
+		                           , UPD_DATE
+		                           , UPD_USER_ID
+                                   )
+                             values(
+                            	     (select CASE WHEN MAX(SEQ_NO) = NULL THEN 1 ELSE MAX(SEQ_NO)+1 END from CM_ICON_MNG IconMng)
+                            	   , #{ICON_TY}
+                            	   , NOW()
+                            	   , #{RGS_USER_ID}
+                            	   , NOW()
+                            	   , #{UPD_USER_ID}
+                                   )
+		]]>
+	</insert>
+	
+	
+	<update id="update" parameterType="java.util.HashMap">
+		<![CDATA[
+			update CM_ICON_MNG
+			   set ICON_TY          = #{ICON_TY}
+				 , UPD_USER_ID      = #{UPD_USER_ID}
+				 , UPD_DATE         = NOW()
+			 where SEQ_NO           = #{SEQ_NO}
+		]]>
+	</update>
+	
+	<delete id="delete" parameterType="java.util.HashMap">
+		<![CDATA[
+			DELETE from CM_ICON_MNG
+			 where SEQ_NO = #{SEQ_NO}
+		]]>
+	</delete>
+	
+	
+	<delete id="deleteMulti" parameterType="java.util.HashMap">
+		<![CDATA[
+			DELETE from CM_ICON_MNG
+			 where SEQ_NO = #{SEQ_NO}
+		]]>
+	</delete>	
+		
+</mapper>   
+
+

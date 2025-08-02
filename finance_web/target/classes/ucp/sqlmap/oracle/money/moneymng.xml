@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ucp.money.service.MoneymngMapper">
+
+    <select id="selectMoneyMng" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectMoneyMng */
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingHeader"/>
+        select TO_CHAR(TO_DATE(MASMON.STAN_YMD, 'YYYYMMDD'), 'YYYY-MM-DD') STAN_YMD      , MASMON.DET_SEQ
+             , MONEY.ACCT_GB          , ACGB.ACCT_GB_NAME           , MASMON.MONEY_CODE  , MONEY.MONEY_NAME
+             , MASMON.WORSHIP_CODE    , WOR.WORSHIP_NAME            , MEM.POSITION_CODE  , MEM.POSITION_NAME
+             , nvl(MEM.DEPT_CODE  , MASMON.DEPT_CODE  ) DEPT_CODE   , MEM.DEPT_NAME
+             , nvl(MEM.REGION_CODE, MASMON.REGION_CODE) REGION_CODE
+             , ( select REGION_NAME from TB_REGION R where R.REGION_CODE = MEM.REGION_CODE) REGION_NAME
+             , MASMON.MEMBER_ID       , MEM.MEMBER_NO
+             , decode( MASMON.ID_EXIST,'Y'
+                     , decode( MASMON.member_id
+                             , '888888',nvl(MASMON.member_name,MEM.member_name)
+                             , '999999',nvl(MASMON.member_name,MEM.member_name)
+                             , MEM.MEMBER_NAME
+                             )
+                     , MASMON.MEMBER_NAME
+                     ) MEMBER_NAME
+             , MASMON.MONEY_AMT       , MASMON.CLOSE_YN       ,  MASMON.SEQ_NO
+             , MASMON.USER_ID         , TUSER.USER_NAME
+             , MASMON.INPUT_TIME
+             , MASMON.ID_EXIST
+             , ('N') as new_yn   , ('N') as sel_yn
+          from TB_MAST_MONEY MASMON
+             , ( select MEM.MEMBER_ID, MEM.MEMBER_NO  , MEM.MEMBER_NAME  , MEM.REGION_CODE
+                      , MEM.DEPT_CODE, DEPT.DEPT_NAME , MEM.POSITION_CODE, POS.POSITION_NAME
+                   from TB_MEMBER MEM
+              left join TB_DEPT     DEPT ON DEPT.DEPT_CODE     = MEM.DEPT_CODE
+              left join TB_POSITION POS ON POS.POSITION_CODE = MEM.POSITION_CODE
+               ) MEM
+             , TB_MONEY   MONEY
+             , TB_ACCT_GB ACGB
+             , TB_WORSHIP WOR
+             , TB_USER    TUSER
+         where NVL(MASMON.MEMBER_ID, 'X') = MEM.MEMBER_ID(+)
+           and MASMON.MONEY_CODE     = MONEY.MONEY_CODE
+           and MONEY.ACCT_GB         = ACGB.ACCT_GB
+           and MASMON.WORSHIP_CODE   = WOR.WORSHIP_CODE(+)
+           and MASMON.USER_ID        = TUSER.USER_ID(+)
+           <if test="stanYmd      != null and stanYmd      != '' "> and MASMON.STAN_YMD     = #{stanYmd}      </if>
+           <if test="startYmd     != null and startYmd     != '' "> and #{startYmd} <![CDATA[<=]]> substr(MASMON.INPUT_TIME,0,12) </if>
+           <if test="endYmd       != null and endYmd       != '' "> and substr(MASMON.INPUT_TIME,0,12) <![CDATA[<]]> #{endYmd}   </if>
+           <if test="acctGb       != null and acctGb       != '' "> and MONEY.ACCT_GB       = #{acctGb}       </if>
+           <if test="moneyCode    != null and moneyCode    != '' "> and MASMON.MONEY_CODE   = #{moneyCode}    </if>
+           <if test="worshipCode  != null and worshipCode  != '' "> and MASMON.WORSHIP_CODE = #{worshipCode}  </if>
+           <if test="positionCode != null and positionCode != '' "> and MEM.POSITION_CODE   = #{positionCode} </if>
+           <if test="deptCode     != null and deptCode     != '' "> and MEM.DEPT_CODE       = #{deptCode}     </if>
+           <if test="regionCode   != null and regionCode   != '' "> and MEM.REGION_CODE     = #{regionCode}   </if>
+           <if test="memberNo     != null and memberNo     != '' "> and MEM.MEMBER_NO      LIKE '%' || #{memberNo}   || '%' </if>
+           <if test="memberName   != null and memberName   != '' "> and MASMON.MEMBER_NAME LIKE '%' || #{memberName} || '%' </if>
+           <if test="userId       != null and userId       != '' "> and MASMON.USER_ID       = #{userId}       </if>
+      order by ${sidx} ${sord}
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingBottom"/>
+    </select>
+
+    <select id="selectTotalAmnt" parameterType="java.util.HashMap" resultType="String">
+    /* selectTotalAmnt */
+        select nvl(sum(MONEY_AMT),'0') MONEY_AMT
+          from ( select MASMON.MONEY_AMT
+                   from TB_MAST_MONEY MASMON
+              left join ( select MEM.MEMBER_ID, MEM.MEMBER_NO, MEM.MEMBER_NAME  , MEM.REGION_CODE
+                               , MEM.DEPT_CODE, DEPT.DEPT_NAME  , MEM.POSITION_CODE, POS.POSITION_NAME
+                            from TB_MEMBER MEM
+                       left join TB_DEPT     DEPT ON DEPT.DEPT_CODE     = MEM.DEPT_CODE
+                       left join TB_POSITION POS ON POS.POSITION_CODE = MEM.POSITION_CODE
+                        ) MEM         ON MEM.MEMBER_ID = MASMON.MEMBER_ID 
+              left join TB_MONEY   MONEY  ON MONEY.MONEY_CODE   = MASMON.MONEY_CODE
+              left join TB_ACCT_GB ACGB ON ACGB.ACCT_GB     = MONEY.ACCT_GB 
+              left join TB_WORSHIP WOR  ON WOR.WORSHIP_CODE = MASMON.WORSHIP_CODE
+              left join TB_USER    TUSER  ON TUSER.USER_ID      = MASMON.USER_ID
+                  where MASMON.STAN_YMD       = #{stanYmd}
+                    <if test="startYmd     != null and startYmd     != '' "> and #{startYmd} <![CDATA[<=]]> substr(MASMON.INPUT_TIME,0,12) </if>
+                    <if test="endYmd       != null and endYmd       != '' "> and substr(MASMON.INPUT_TIME,0,12) <![CDATA[<]]> #{endYmd}   </if>
+                    <if test="acctGb       != null and acctGb       != '' "> and MONEY.ACCT_GB       = #{acctGb}       </if>
+                    <if test="moneyCode    != null and moneyCode    != '' "> and MASMON.MONEY_CODE   = #{moneyCode}    </if>
+                    <if test="worshipCode  != null and worshipCode  != '' "> and MASMON.WORSHIP_CODE = #{worshipCode}  </if>
+                    <if test="positionCode != null and positionCode != '' "> and MEM.POSITION_CODE   = #{positionCode} </if>
+                    <if test="deptCode     != null and deptCode     != '' "> and MEM.DEPT_CODE       = #{deptCode}     </if>
+                    <if test="regionCode   != null and regionCode   != '' "> and MEM.REGION_CODE     = #{regionCode}   </if>
+                    <if test="memberNo     != null and memberNo     != '' "> and MEM.MEMBER_NO   LIKE '%' || #{memberNo}   || '%' </if>
+                    <if test="memberName   != null and memberName   != '' "> and MEM.MEMBER_NAME LIKE '%' || #{memberName} || '%' </if>
+                    <if test="userId       != null and userId       != '' "> and MASMON.USER_ID      = #{userId}       </if>
+               ) TB
+    </select>
+
+    <select id="selectMastMoneyOne" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectMastMoneyOne */
+        select TO_CHAR(TO_DATE(MASMON.STAN_YMD, 'YYYYMMDD'), 'YYYY-MM-DD') STAN_YMD      , MASMON.DET_SEQ
+             , MONEY.ACCT_GB          , ACGB.ACCT_GB_NAME           , MASMON.MONEY_CODE  , MONEY.MONEY_NAME
+             , MASMON.WORSHIP_CODE    , WOR.WORSHIP_NAME            , MEM.POSITION_CODE  , MEM.POSITION_NAME
+             , nvl(MEM.DEPT_CODE  , MASMON.DEPT_CODE  ) DEPT_CODE   , MEM.DEPT_NAME
+             , nvl(MEM.REGION_CODE, MASMON.REGION_CODE) REGION_CODE
+             , ( select REGION_NAME from TB_REGION R where R.REGION_CODE = MEM.REGION_CODE) REGION_NAME
+             , MASMON.MEMBER_ID       , MEM.MEMBER_NO
+             , decode( MASMON.ID_EXIST,'Y'
+                     , decode( MASMON.member_id
+                             , '888888',nvl(MASMON.member_name,MEM.member_name)
+                             , '999999',nvl(MASMON.member_name,MEM.member_name)
+                             , MEM.MEMBER_NAME
+                             )
+                     , MASMON.MEMBER_NAME
+                     ) MEMBER_NAME
+             , MASMON.MONEY_AMT       , MASMON.CLOSE_YN       ,  MASMON.SEQ_NO
+             , MASMON.USER_ID         , TUSER.USER_NAME
+             , MASMON.INPUT_TIME
+             , MASMON.ID_EXIST
+             , ('N') as new_yn   , ('N') as sel_yn
+          from TB_MAST_MONEY MASMON
+             , ( select MEM.MEMBER_ID, MEM.MEMBER_NO  , MEM.MEMBER_NAME  , MEM.REGION_CODE
+                      , MEM.DEPT_CODE, DEPT.DEPT_NAME , MEM.POSITION_CODE, POS.POSITION_NAME
+                   from TB_MEMBER MEM
+              left join TB_DEPT     DEPT ON DEPT.DEPT_CODE     = MEM.DEPT_CODE
+              left join TB_POSITION POS ON POS.POSITION_CODE = MEM.POSITION_CODE
+               ) MEM
+             , TB_MONEY   MONEY
+             , TB_ACCT_GB ACGB
+             , TB_WORSHIP WOR
+             , TB_USER    TUSER
+         where NVL(MASMON.MEMBER_ID, 'X') = MEM.MEMBER_ID(+)
+           and MASMON.MONEY_CODE     = MONEY.MONEY_CODE
+           and MONEY.ACCT_GB         = ACGB.ACCT_GB
+           and MASMON.WORSHIP_CODE   = WOR.WORSHIP_CODE(+)
+           and MASMON.USER_ID        = TUSER.USER_ID(+)
+           and MASMON.STAN_YMD   = #{stanYmd}
+           and MASMON.MONEY_CODE = #{moneyCode}
+           and MASMON.DET_SEQ    = #{detSeq}
+    </select>
+
+    <insert id="insertMoneyMngById" parameterType="java.util.HashMap">
+    /* insertMoneyMngById */
+        insert into TB_MAST_MONEY
+             ( STAN_YMD
+             , DET_SEQ
+             , MONEY_CODE      , WORSHIP_CODE
+             , MEMBER_ID       , MEMBER_NAME
+             , MONEY_AMT       , USER_ID
+             , INPUT_TIME
+             , ID_EXIST        , CLOSE_YN        )
+        values
+             ( #{stanYmd}
+             , (SELECT NVL(MAX(DET_SEQ),0)+1 from TB_MAST_MONEY where STAN_YMD = #{stanYmd} and MONEY_CODE = #{moneyCode})
+             , #{moneyCode}    , #{worshipCode}
+             , #{memberId}     , (SELECT MEMBER_NAME from TB_MEMBER where MEMBER_ID = #{memberId})
+             , #{moneyAmt}     , #{userId}
+             , (SELECT TO_CHAR(SYSTIMESTAMP, 'YYYYMMDDHH24MISSFF2') || '-' || #{index} from DUAL)
+             , 'Y'             , 'N'             )
+    </insert>
+
+    <insert id="insertMoneyMngByName" parameterType="java.util.HashMap">
+    /* insertMoneyMngByName */
+        insert into TB_MAST_MONEY
+             ( STAN_YMD
+             , DET_SEQ
+             , MONEY_CODE      , WORSHIP_CODE
+             , MEMBER_ID       , MEMBER_NAME
+             , MONEY_AMT       , USER_ID
+             , INPUT_TIME
+             , ID_EXIST        , CLOSE_YN        )
+        values
+             ( #{stanYmd}
+             , (SELECT NVL(MAX(DET_SEQ),0)+1 from TB_MAST_MONEY where STAN_YMD = #{stanYmd} and MONEY_CODE = #{moneyCode})
+             , #{moneyCode}    , #{worshipCode}
+             , NULL            , #{memberName}
+             , #{moneyAmt}     , #{userId}
+             , (SELECT TO_CHAR(SYSTIMESTAMP, 'YYYYMMDDHH24MISSFF2') || '-' || #{index} from DUAL)
+             , 'N'             , 'N'             )
+    </insert>
+        
+    <update id="updateMoneyMng" parameterType="java.util.HashMap">
+    /* updateMoneyMng */
+        update TB_MAST_MONEY
+           set WORSHIP_CODE = #{worshipCode}
+             , MONEY_AMT    = #{moneyAmt}
+           <if test="newStanYmd   != null and newStanYmd   != '' ">
+             , STAN_YMD   = #{newStanYmd}
+             , MONEY_CODE   = #{newMoneyCode}
+             , DET_SEQ      = (SELECT NVL(MAX(DET_SEQ),0)+1 from TB_MAST_MONEY where STAN_YMD = #{newStanYmd} and MONEY_CODE = #{newMoneyCode})
+           </if>
+           <if test="newStanYmd   == null or newStanYmd   == '' ">
+               <if test="newMoneyCode != null and newMoneyCode != '' ">
+             , MONEY_CODE   = #{newMoneyCode}
+             , DET_SEQ      = (SELECT NVL(MAX(DET_SEQ),0)+1 from TB_MAST_MONEY where STAN_YMD = #{stanYmd} and MONEY_CODE = #{newMoneyCode})
+               </if>
+           </if>    
+             , MEMBER_ID    = #{memberId}
+             , MEMBER_NAME  = #{memberName}
+             , ID_EXIST     = #{idExist}
+         where STAN_YMD   = #{stanYmd}
+           and MONEY_CODE = #{moneyCode}
+           and DET_SEQ    = #{detSeq}
+    </update>
+
+    <update id="modifyMoneyMng" parameterType="java.util.HashMap">
+    /* modifyMoneyMng */
+        update TB_MAST_MONEY
+           set WORSHIP_CODE = #{newWorshipCode}
+             , MONEY_CODE   = #{newMoneyCode}
+             , DET_SEQ      = (SELECT NVL(MAX(DET_SEQ),0)+1 from TB_MAST_MONEY where STAN_YMD = #{stanYmd} and MONEY_CODE = #{newMoneyCode})
+             , INPUT_TIME   = (SELECT TO_CHAR(SYSTIMESTAMP, 'YYYYMMDDHH24MISSFF2') || '-' || #{index} from DUAL)
+         where STAN_YMD   = #{stanYmd}
+           and MONEY_CODE = #{moneyCode}
+           and DET_SEQ    = #{detSeq}
+    </update>
+
+    <delete id="deleteMoneyMng" parameterType="java.util.HashMap">
+    /* deleteMoneyMng */
+        delete from TB_MAST_MONEY
+         where STAN_YMD   = #{stanYmd}
+           and MONEY_CODE = #{moneyCode}
+           and DET_SEQ    = #{detSeq}
+    </delete>
+    
+</mapper>

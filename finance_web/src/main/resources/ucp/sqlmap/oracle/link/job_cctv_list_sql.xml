@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.co.ucp.link.job.cctv.service.JobCctvListMapper">
+
+    <select id="selectCctvList" resultType="cmlMap2">
+    /* selectCctvList */
+        select CF.FCLT_ID                                        AS CCTV_ID
+             , CF.FCLT_STTUS                                     AS CCTV_STATUS
+           <if test='stateYn != "Y"'>
+             , CF.SYS_CD
+             , CF.FCLT_LBL_NM                                    AS CCTV_NM
+             , CF.FCLT_USED_TY_CD                                AS CCTV_USED_CD
+             , (
+                   select FCLT_USED_TY_NM
+                   from CM_TC_FCLT_USED
+                   where FCLT_KND_CD = CF.FCLT_KND_CD
+                     and FCLT_USED_TY_CD = CF.FCLT_USED_TY_CD
+               )                                                 AS CCTV_USED_NM
+             , CF.POINT_X                                        AS POINT_X
+             , CF.POINT_Y                                        AS POINT_Y
+             , CF.LOTNO_ADRES_NM                                 AS LOT_NUM_ADDR
+             , CF.ROAD_ADRES_NM                                  AS ROAD_NM_ADDR
+             , CF.FCLT_KND_DTL_CD                                AS CCTV_TY
+             , CF.FCLT_GDSDT_TY                                  AS CCTV_MSTR_TY
+             , CF.USE_TY_CD                                      AS USE_YN
+             , CF.PRESET_BDW_START_NUM                           AS PRESET_BDW_START_NUM
+             , CF.LINK_VMS_UID                                   AS VRS_CCTV_UID
+             , CF.CCTV_OSVT_X                                    AS OSVT_POINT_X
+             , CF.CCTV_OSVT_Y                                    AS OSVT_POINT_Y
+             , CF.RECORDING_YN
+             , CF.TVO_TRGT_YN
+           </if>
+        from CM_FACILITY CF
+        where CF.FCLT_KND_CD = 'CTV'
+          and CF.USE_TY_CD = 'Y'
+          and CF.DSTRT_CD = #{dstrtCd}
+    </select>
+
+    <insert id="insertCctv" parameterType="cmlMap2">
+    /* insertCctv */
+        insert into CM_FACILITY
+             ( RGS_USER_ID                        , RGS_DATE
+             , UPD_USER_ID                        , UPD_DATE
+             , DSTRT_CD         , FCLT_ID           , FCLT_LBL_NM
+             , FCLT_USED_TY_CD  , POINT_X         , POINT_Y
+             , LOTNO_ADRES_NM   , ROAD_ADRES_NM
+             , FCLT_KND_CD      , FCLT_KND_DTL_CD , FCLT_GDSDT_TY
+             , FCLT_STTUS       , USE_TY_CD       , SYS_CD
+             , PRESET_BDW_START_NUM               , LINK_VMS_UID
+             , CCTV_OSVT_X      , CCTV_OSVT_Y     , RECORDING_YN   , TVO_TRGT_YN    )
+        values
+             ( 'LINK_SERVICE_WD_WIDE'             , NOW()
+             , 'LINK_SERVICE_WD_WIDE'             , NOW()
+             , #{dstrtCd}       , #{cctvId}       , #{cctvNm}
+             , #{cctvUsedCd}    , #{pointX}       , #{pointY}
+             , #{lotNumAddr}    , #{roadNmAddr}
+             , 'CTV'            , #{cctvTy}       , #{cctvMstrTy}
+             , #{cctvStatus}    , #{useYn}        , #{sysCd}
+             , #{presetBdwStartNum}               , #{vrsCctvUid}
+             , #{osvtPointX}    , #{osvtPointY}   , #{recordingYn} , #{tvoTrgtYn}  )
+    </insert>
+
+    <update id="updateCctv" parameterType="cmlMap2">
+    /* updateCctv */
+        UPDATE CM_FACILITY
+           SET UPD_USER_ID = 'LINK_SERVICE_WD_WIDE'
+             , UPD_DATE    = NOW()
+           <if test='sysCd             != null'> , SYS_CD               = #{sysCd}             </if>
+           <if test='cctvNm            != null'> , FCLT_LBL_NM          = #{cctvNm}            </if>
+           <if test='cctvUsedCd        != null'> , FCLT_USED_TY_CD      = #{cctvUsedCd}        </if>
+           <if test='pointX            != null'> , POINT_X              = #{pointX}            </if>
+           <if test='pointY            != null'> , POINT_Y              = #{pointY}            </if>
+           <if test='lotNumAddr        != null'> , LOTNO_ADRES_NM       = #{lotNumAddr}        </if>
+           <if test='roadNmAddr        != null'> , ROAD_ADRES_NM        = #{roadNmAddr}        </if>
+           <if test='cctvTy            != null'> , FCLT_KND_DTL_CD      = #{cctvTy}            </if>
+           <if test='cctvMstrTy        != null'> , FCLT_GDSDT_TY        = #{cctvMstrTy}        </if>
+           <if test='cctvStatus        != null'> , FCLT_STTUS           = #{cctvStatus}        </if>
+           <if test='useYn             != null'> , USE_TY_CD            = #{useYn}             </if>
+           <if test='presetBdwStartNum != null'> , PRESET_BDW_START_NUM = #{presetBdwStartNum} </if>
+           <if test='vrsCctvUid        != null'> , LINK_VMS_UID         = #{vrsCctvUid}        </if>
+           <if test='osvtPointX        != null'> , CCTV_OSVT_X          = #{osvtPointX}        </if>
+           <if test='osvtPointY        != null'> , CCTV_OSVT_Y          = #{osvtPointY}        </if>
+           <if test='recordingYn       != null'> , RECORDING_YN         = #{recordingYn}       </if>
+           <if test='tvoTrgtYn         != null'> , TVO_TRGT_YN          = #{tvoTrgtYn}         </if>
+         where FCLT_ID  = #{cctvId}
+           and DSTRT_CD = #{dstrtCd}
+    </update>
+    
+</mapper>

@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ucp.sheet.service.SheetyeardifferMapper">
+
+    <select id="selectSheetyeardiffer" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectSheetyeardiffer */
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingHeader"/>
+        select (#{stanYmd}) AS STAN_YMD
+             , CASE WHEN X.ACCT_GB IN ('1','2','3','4','5','7')
+                    THEN X.ACCT_GB
+                    ELSE '99'
+               END ACCT_GB
+             , CASE WHEN X.ACCT_GB IN ('1','2','3','4','5','7')
+                    THEN (SELECT ACCT_GB_NAME from TB_ACCT_GB A where A.ACCT_GB = X.ACCT_GB)
+                    ELSE '99'
+               END ACCT_GB_NAME
+             , X.SEQ_NO
+             , CASE WHEN X.ACCT_GB = '1' and X.SEQ_NO = 1  THEN '십일조'
+                    WHEN X.ACCT_GB = '1' and X.SEQ_NO = 2  THEN '주 일'
+                    WHEN X.ACCT_GB = '1' and X.SEQ_NO = 3  THEN '구 제'
+                    WHEN X.ACCT_GB = '1' and X.SEQ_NO = 9  THEN '기 타'
+                    WHEN X.ACCT_GB = '1' and X.SEQ_NO = 99 THEN '재정지원'
+                      WHEN X.ACCT_GB = '2' and X.SEQ_NO = 1  THEN '감 사'
+                      WHEN X.ACCT_GB = '2' and X.SEQ_NO = 9  THEN '기 타'
+                      WHEN X.ACCT_GB = '2' and X.SEQ_NO = 99 THEN '재정지원'
+                    WHEN X.ACCT_GB = '3' and X.SEQ_NO = 1  THEN '선 교'
+                    WHEN X.ACCT_GB = '3' and X.SEQ_NO = 2  THEN '구 역'
+                    WHEN X.ACCT_GB = '3' and X.SEQ_NO = 9  THEN '기 타'
+                    WHEN X.ACCT_GB = '3' and X.SEQ_NO = 99 THEN '재정지원'
+                      WHEN X.ACCT_GB = '4' and X.SEQ_NO = 1  THEN '코로나헌금'
+                      WHEN X.ACCT_GB = '4' and X.SEQ_NO = 2  THEN '코로나후원'
+                      WHEN X.ACCT_GB = '4' and X.SEQ_NO = 9  THEN '기 타'
+                    WHEN X.ACCT_GB = '5' and X.SEQ_NO = 1  THEN '십일조'
+                    WHEN X.ACCT_GB = '5' and X.SEQ_NO = 2  THEN '주 일'
+                    WHEN X.ACCT_GB = '5' and X.SEQ_NO = 3  THEN '감 사'
+                    WHEN X.ACCT_GB = '5' and X.SEQ_NO = 4  THEN '선 교'
+                    WHEN X.ACCT_GB = '5' and X.SEQ_NO = 9  THEN '기 타' 
+                      WHEN X.ACCT_GB = '7' and X.SEQ_NO = 1  THEN '건 축'
+                      WHEN X.ACCT_GB = '7' and X.SEQ_NO = 9  THEN '기 타'
+                END AS ACCT_NAME
+             , CASE WHEN X.ACCT_GB IN ('1','2','3','4','5','7') and X.SEQ_NO =1 THEN MAX(z.PRE_AMT) 
+                    WHEN X.ACCT_GB NOT IN ('1','2','3','4','5','7')             THEN MAX(z.PRE_AMT) 
+                    ELSE NULL
+                END AS PRE_AMT
+             , SUM(Y.IN_AMT) AS MONEY_AMT
+             , CASE WHEN X.ACCT_GB IN ('1','2','3','4','5','7') and X.SEQ_NO =1 THEN MAX(z.IN_AMT) 
+                    WHEN X.ACCT_GB NOT IN ('1','2','3','4','5','7')             THEN MAX(z.IN_AMT) 
+                    ELSE NULL
+               END AS IN_AMT
+             , CASE WHEN X.ACCT_GB IN ('1','2','3','4','5','7')
+                    THEN (CASE X.SEQ_NO WHEN 1  THEN MAX(z.OUT_AMT)
+                                  WHEN 99 THEN SUM(Y.OUT_AMT) END)
+                    WHEN X.ACCT_GB NOT IN ('1','2','3','4','5','7')
+                    THEN MAX(z.OUT_AMT)
+                    ELSE NULL
+                END AS OUT_AMT
+          from ( select A.ACCT_GB 
+                      , A.ACCT_CODE, A.ACCT_NAME
+                      , CASE WHEN A.ACCT_GB = '1' and A.ACCT_CODE = '000100' THEN 1
+                             WHEN A.ACCT_GB = '1' and A.ACCT_CODE = '000200' THEN 2
+                             WHEN A.ACCT_GB = '1' and A.ACCT_CODE = '000400' THEN 3
+                             WHEN A.ACCT_GB = '1' and A.ACCT_CODE NOT IN ('000100' , '000200', '000400') THEN 9
+                               WHEN A.ACCT_GB = '2' and A.ACCT_CODE = '000100'  THEN 1
+                               WHEN A.ACCT_GB = '2' and A.ACCT_CODE NOT IN ( '000100' )        THEN 9
+                             WHEN A.ACCT_GB = '3' and A.ACCT_CODE = '000100'  THEN 1
+                             WHEN A.ACCT_GB = '3' and A.ACCT_CODE = '000200'  THEN 2
+                             WHEN A.ACCT_GB = '3' and A.ACCT_CODE NOT IN ('000100','000200') THEN 9
+                               WHEN A.ACCT_GB = '4' and A.ACCT_CODE = '010100'  THEN 1 
+                               WHEN A.ACCT_GB = '4' and A.ACCT_CODE = '010200'  THEN 2 
+                               WHEN A.ACCT_GB = '4' and A.ACCT_CODE NOT IN ('010100','010200') THEN 9
+                             WHEN A.ACCT_GB = '5' and A.ACCT_CODE = '010100' THEN 1
+                             WHEN A.ACCT_GB = '5' and A.ACCT_CODE = '010200' THEN 2
+                             WHEN A.ACCT_GB = '5' and A.ACCT_CODE = '010300' THEN 3
+                             WHEN A.ACCT_GB = '5' and A.ACCT_CODE = '010400' THEN 4
+                             WHEN A.ACCT_GB = '5' and A.ACCT_CODE NOT IN ('010100' , '010200', '010200', '010400') THEN 9
+                               WHEN A.ACCT_GB = '7' and A.ACCT_CODE = '000100'  THEN 1 
+                               WHEN A.ACCT_GB = '7' and A.ACCT_CODE NOT IN ('000100') THEN 9
+                             WHEN A.ACCT_GB NOT IN ('1','2','3','4','7') THEN 9
+                          END AS SEQ_NO   
+                      , A.IN_TYPE, A.INOUT_GB
+                   from TB_ACCTCODE     A
+                      , TB_ACCTYEAR     B
+                  where A.STAN_YY   = B.STAN_YY
+                    and (A.INOUT_GB  = '수입' and A.IN_TYPE not IN ('2'))
+                    and A.SUM_YN = 'N'
+                    and #{stanYmd}  BETWEEN B.FROM_YMD and B.END_YMD
+                    and a.acct_gb not in ('A', '9')
+                  UNION
+                 select A.ACCT_GB, A.ACCT_CODE, A.ACCT_NAME
+                      , ( 99 ) AS SEQ_NO   
+                      , A.IN_TYPE, A.INOUT_GB
+                   from TB_ACCTCODE     A
+                      , TB_ACCTYEAR     B
+                  where A.STAN_YY   = B.STAN_YY
+                    and A.IN_TYPE IN ('2')
+                    and A.SUM_YN = 'N'
+                    and #{stanYmd}  BETWEEN B.FROM_YMD and B.END_YMD
+                    and a.acct_gb not in ('A', '9')
+               order by 1,2,3
+               ) X
+             , ( select A.STAN_YMD , A.ACCT_GB , A.ACCT_CODE
+                      , DECODE(X.INOUT_GB,'수입', A.MONEY_AMT, 0) AS IN_AMT
+                      , DECODE(X.INOUT_GB,'지출', A.MONEY_AMT, 0) AS OUT_AMT
+                      , X.INOUT_GB
+                   from TB_MAST_ACCT    A
+                      , ( select B.STAN_YY, B.ACCT_GB, B.ACCT_CODE, B.INOUT_GB 
+                            from TB_ACCTCODE     B
+                               , TB_ACCTYEAR     C
+                           where B.STAN_YY   = C.STAN_YY
+                             and #{stanYmd} BETWEEN C.FROM_YMD and C.END_YMD
+                        ) X
+                  where A.STAN_YMD  = #{stanYmd} 
+                    and A.ACCT_GB   = X.ACCT_GB
+                    and A.ACCT_CODE = X.ACCT_CODE
+               order by 1,2,3
+               ) Y
+             , ( select * from TB_MAST_WEEKSUM 
+                  where STAN_YMD = #{stanYmd}
+               ) Z
+         where X.ACCT_GB   =   Y.ACCT_GB(+)
+           and X.ACCT_CODE =   Y.ACCT_CODE(+)
+           and X.ACCT_GB   =   Z.ACCT_GB(+)
+           and X.ACCT_GB not in ('A')
+      group by X.ACCT_GB , X.SEQ_NO
+      order by  1,2,3,4
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingBottom"/>
+    </select>
+
+    <insert id="insertSheet" parameterType="java.util.HashMap">
+    /* insertSheet */
+        insert into TB_MEMBER
+             ( MEMBER_ID       , MEMBER_NO       , MEMBER_NAME
+             , SEX_TYPE        , TEL_NO          , HPHONE_NO 
+             , POSITION_CODE   , DEPT_CODE       , REGION_CODE
+             , ADDR            , FAMILY_REMARK   , USE_YN        , REG_TIME )
+        values
+             ( #{memberId}     , #{memberNo}     , #{memberName}  
+             , #{sexType}      , #{telNo}        , #{hphoneNo}  
+             , #{positionCode} , #{deptCode}     , #{regionCode}
+             , #{addr}         , #{familyRemark} , #{useYn}      , SYSDATE  )
+    </insert>
+    
+    <update id="updateSheet" parameterType="java.util.HashMap">
+    /* updateSheet */
+        update TB_MEMBER
+           set MEMBER_ID     = #{memberId}
+             , MEMBER_NO     = #{memberNo}
+             , MEMBER_NAME   = #{memberName}
+             , SEX_TYPE      = #{sexType}
+             , TEL_NO        = #{telNo}
+             , HPHONE_NO     = #{hphoneNo}
+             , POSITION_CODE = #{positionCode}
+             , DEPT_CODE     = #{deptCode}
+             , REGION_CODE   = #{regionCode}
+             , ADDR          = #{addr}
+             , FAMILY_REMARK = #{familyRemark}
+             , USE_YN        = #{useYn}
+         where MEMBER_ID = #{memberId}
+    </update>
+
+    <delete id="deleteSheet" parameterType="java.util.HashMap">
+    /* deleteSheet */
+        delete from TB_MEMBER
+         where MEMBER_ID = #{memberId}
+           and MEMBER_NO = #{memberNo}
+    </delete>
+    
+</mapper>

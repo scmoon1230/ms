@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ucp.env.service.AcctyearMapper">
+
+    <select id="selectAcctyear" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectAcctyear */
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingHeader"/>
+        select P.STAN_YY
+             , TO_CHAR(TO_DATE(P.FROM_YMD, 'YYYYMMDD'), 'YYYY-MM-DD') FROM_YMD
+             , TO_CHAR(TO_DATE(P.END_YMD, 'YYYYMMDD'), 'YYYY-MM-DD')  END_YMD
+          from TB_ACCTYEAR P
+         where 1 = 1
+           <if test="stanYy != null and stanYy != '' "> and STAN_YY LIKE #{stanYy} || '%' </if>
+      order by ${sidx} ${sord}
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingBottom"/>
+    </select>
+
+    <insert id="insertAcctyear" parameterType="java.util.HashMap">
+    /* insertAcctyear */
+        insert into TB_ACCTYEAR
+             ( STAN_YY      , FROM_YMD    , END_YMD     )
+        values
+             ( #{stanYy}    , #{fromYmd}  , #{endYmd}   )
+    </insert>
+    
+    <update id="updateAcctyear" parameterType="java.util.HashMap">
+    /* updateAcctyear */
+        update TB_ACCTYEAR
+           set STAN_YY  = #{stanYy}
+             , FROM_YMD = #{fromYmd}
+             , END_YMD  = #{endYmd}
+         where STAN_YY = #{stanYy}
+    </update>
+
+    <delete id="deleteAcctyear" parameterType="java.util.HashMap">
+    /* deleteAcctyear */
+        delete from TB_ACCTYEAR
+         where STAN_YY = #{stanYy}
+    </delete>
+    
+</mapper>

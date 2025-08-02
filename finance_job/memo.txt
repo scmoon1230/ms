@@ -1,0 +1,7 @@
+finance_job
+
+영상반출 공통
+1. 영상암호화 요청
+2. result.xml 처리
+3. order.xml 생성 => 안씀
+

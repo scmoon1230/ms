@@ -1,0 +1,376 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.co.ucp.wrks.wrkmng.msgmng.service.MsgmngSmsTmpMapper">
+
+    <!-- SMS 임시 목록 -->
+    <select id="list" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+        <![CDATA[
+            select A.*
+                ,(  select COUNT(*)
+                    from UW_SMS_SEND
+                    where 1 = 1
+        ]]>
+               <if test="smsTrmsTyCd  != null and smsTrmsTyCd  != '' "> and SMS_TRMS_TY_CD = #{smsTrmsTyCd} </if>
+               <if test="smsNtfctTyCd != null and smsNtfctTyCd != '' "> and SMS_NTFCT_TY_CD = #{smsNtfctTyCd} </if>
+               <if test="smsTrmsNm    != null and smsTrmsNm    != '' "> and SMS_TRMS_NM LIKE CONCAT('%', #{smsTrmsNm}, '%') </if>
+               <if test="smsTrmsConts != null and smsTrmsConts != '' "> and SMS_TRMS_CONTS LIKE CONCAT('%', #{smsTrmsConts}, '%') </if>
+               <if test="strDateStart != null and strDateStart != '' and strDateEnd != null and strDateEnd != '' ">
+                   and SMS_RSVT_TRMS_YMD_HMS between CONCAT(REPLACE(#{strDateStart}, '-', '') , '000000') and CONCAT(REPLACE(#{strDateEnd}, '-', '') , '999999')
+               </if>
+        <![CDATA[
+                ) ROWCNT
+            from(
+                select
+                    ROW_NUMBER() OVER(order by ${sidx} ${sord}) as RK
+                    , A.*
+                from(
+                     select A.SMS_ID
+                            , A.SMS_TRMS_TY_CD
+                            , B.CD_NM_KO SMS_TRMS_TY_NM
+                            , A.SMS_TRMS_CONTS
+                            , TO_CHAR(TO_TIMESTAMP(A.SMS_RSVT_TRMS_YMD_HMS, 'YYYYMMDDHH24MISS'), 'YYYY-MM-DD HH24:MI:SS') SMS_RSVT_TRMS_YMD_HMS
+                            , A.SMS_NTFCT_TY_CD
+                            , C.CD_NM_KO SMS_NTFCT_TY_NM
+                            , A.SMS_TRMS_ID
+                            , A.SMS_TRMS_NM
+                            , A.SMS_TRMS_STTUS
+                            , A.SMS_RCV_ID
+                            , A.RGS_USER_ID
+                            , TO_CHAR(A.RGS_DATE, 'YYYY-MM-DD HH24:MI') RGS_DATE
+                            , A.UPD_USER_ID
+                            , TO_CHAR(A.UPD_DATE, 'YYYY-MM-DD HH24:MI') UPD_DATE
+                    from    UW_SMS_SEND A
+                  left join (select CD_ID, CD_NM_KO from CM_TC_CODE where CD_GRP_ID = 'SMS_TRMS_TY' and CD_TY = 'C') B
+                         on A.SMS_TRMS_TY_CD = B.CD_ID
+                  left join (select CD_ID, CD_NM_KO from CM_TC_CODE where CD_GRP_ID = 'NTFCT_TY' and CD_TY = 'C') C
+                         on A.SMS_NTFCT_TY_CD = C.CD_ID
+                      where 1 = 1
+        ]]>
+               <if test="smsTrmsTyCd  != null and smsTrmsTyCd  != '' "> and A.SMS_TRMS_TY_CD = #{smsTrmsTyCd} </if>
+               <if test="smsNtfctTyCd != null and smsNtfctTyCd != '' "> and A.SMS_NTFCT_TY_CD = #{smsNtfctTyCd} </if>
+               <if test="smsTrmsNm    != null and smsTrmsNm    != '' "> and A.SMS_TRMS_NM LIKE CONCAT('%', #{smsTrmsNm}, '%') </if>
+               <if test="smsTrmsConts != null and smsTrmsConts != '' "> and A.SMS_TRMS_CONTS LIKE CONCAT('%', #{smsTrmsConts}, '%') </if>
+               <if test="strDateStart != null and strDateStart != '' and strDateEnd != null and strDateEnd != '' ">
+                   and SMS_RSVT_TRMS_YMD_HMS between CONCAT(REPLACE(#{strDateStart}, '-', ''), '000000') and CONCAT(REPLACE(#{strDateEnd}, '-', ''), '999999')
+               </if>
+        <![CDATA[
+                    ) A
+                ) A
+			 OFFSET ((#{pageNo}::integer - 1) * #{rowsPerPage}::integer)
+			 LIMIT #{rowsPerPage}::integer
+        ]]>
+    </select>
+
+    <!-- SMS 임시 발송 수신목록 -->
+    <select id="list_rcv" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+        <![CDATA[
+            select *
+            from(
+                select
+                    SMS_RCV_ID
+                    , SMS_RCV_NM
+                    , SMS_RCV_MOBL_NO
+                from
+                    UW_SMS_RECV
+                where
+                    SMS_ID = #{smsId}
+                ) A
+         order by ${sidx} ${sord}
+        ]]>
+    </select>
+
+    <!-- SMS 임시 ID얻기 -->
+    <select id="select_sms_sms_id" resultType="String">
+        <![CDATA[
+        select LPAD(CAST(IFNULL(MAX(SMS_ID), 0) as UNSIGNED) + 1, 40, '0') from UW_SMS_SEND
+        ]]>
+    </select>
+
+	<!-- SMS 수신자 선택 -->
+<select id="list_grp" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+			select
+	            DISTINCT
+	            F.DSTRT_NM
+	            , F.DSTRT_CD
+	            , A.GRP_ID || '_' ||  A.AUTH_LVL as PRNT_GRP_ID
+	            , A.USER_ID || '_' || A.GRP_ID || A.AUTH_LVL as GRP_ID
+	            , A.USER_ID as GRP_ID_KEY
+	            , B.USER_NM_KO
+	            , B.MOBL_NO
+	            , A.AUTH_LVL
+	            , C.GRP_NM_KO
+	            , E.AUTH_LVL_NM
+	         from CM_GRP_USER A
+	            , CM_USER B
+	            , CM_GROUP C
+	            , CM_GRP_AUTH_LVL E
+	            , CM_DSTRT_CD_MNG F
+	         where 1 = 1
+	            and A.USER_ID = B.USER_ID
+	            and A.GRP_ID = C.GRP_ID
+	            and A.GRP_ID = E.GRP_ID
+	            and A.AUTH_LVL = E.AUTH_LVL
+	            and C.DSTRT_CD = F.DSTRT_CD
+            	and B.USE_TY_CD = 'Y'
+               and B.MOBL_NO != '--'
+</select>
+
+
+<!--  SMS 수신자 선택 계층형 Tibero 쿼리-->
+	<!-- <select id="list_grp" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+		<![CDATA[
+			select
+				DSTRT_NM
+		]]>
+				<if test="CHECK_RCV_ID != null">
+					, (CASE WHEN GRP_ID_KEY = #{CHECK_RCV_ID}
+                  		THEN 'true'
+                  		ELSE 'false'
+              		 END) as TAG
+				</if>
+		<![CDATA[
+				, DSTRT_CD
+				, PRNT_GRP_ID
+				, GRP_ID
+				, GRP_ID_KEY
+				, GRP_NM_KO
+				, GRP_NM_KO_DESC
+				, MOBL_NO
+				, AUTH_LVL
+				, AUTH_LVL_NM
+				, LEVEL as LVL
+				, ISLF
+				, 'true' as EXPD
+			from
+			 (
+				select
+					DSTRT_NM
+				    , DSTRT_CD
+				    , '' as PRNT_GRP_ID
+				    , DSTRT_CD as GRP_ID
+				    , DSTRT_CD as GRP_ID_KEY
+				    , DSTRT_NM as GRP_NM_KO
+				    , '' as GRP_NM_KO_DESC
+				    , '' as MOBL_NO
+				    , NULL as AUTH_LVL
+				    , '' as AUTH_LVL_NM
+				    , (CASE WHEN (select COUNT(*) from CM_GROUP  where USE_TY_CD = 'Y' and A.DSTRT_CD = DSTRT_CD) > 0
+				       THEN 'false'
+				         ELSE 'true'
+				         END) as ISLF
+			 	from
+			 		CM_DSTRT_CD_MNG A
+			 	where
+			 		USE_TY_CD = 'Y'
+
+			 union all
+
+			 select
+			 	B.DSTRT_NM
+			    , A.DSTRT_CD
+			    , B.DSTRT_CD as PRNT_GRP_ID
+			    , A.GRP_ID || '_P' as GRP_ID
+			    , A.GRP_ID as GRP_ID_KEY
+			    , A.GRP_NM_KO
+			    , '' as GRP_NM_KO_DESC
+			    , '' as MOBL_NO
+			    , NULL as AUTH_LVL
+			    , '' as AUTH_LVL_NM
+			    , (CASE WHEN (select COUNT(*) from CM_GRP_AUTH_LVL  where A.USE_TY_CD = 'Y' and A.GRP_ID = GRP_ID) > 0
+			      THEN 'false'
+			      ELSE 'true'
+			      END) as ISLF
+			 from
+			 	CM_GROUP A
+			 	, CM_DSTRT_CD_MNG B
+			 where
+			 	A.USE_TY_CD = 'Y'
+			    and A.DSTRT_CD = B.DSTRT_CD
+
+
+			 union all
+
+			 select
+			 	C.DSTRT_NM
+			    , A.DSTRT_CD
+			    , A.GRP_ID || '_P' as PRNT_GRP_ID
+			    , B.GRP_ID || '_' || B.AUTH_LVL as GRP_ID
+			    , A.GRP_ID as GRP_ID_KEY
+			    , B.AUTH_LVL_NM as GRP_NM_KO
+			    , ''  as GRP_NM_KO_DESC
+			    , '' as MOBL_NO
+			    , B.AUTH_LVL
+			    , B.AUTH_LVL_NM
+			 	, (CASE WHEN (select COUNT(*) from CM_GRP_USER AA , CM_USER BB where 1 = 1
+			 					and BB.USE_TY_CD = 'Y'
+								and AA.USER_ID = BB.USER_ID
+			 					and AA.GRP_ID =  A.GRP_ID
+			 	            	and AA.AUTH_LVL = B.AUTH_LVL
+  					          )> 0
+			              THEN 'false'
+			              ELSE 'true'
+			              END) as ISLF
+
+
+			 from
+			 	CM_GROUP A
+			 	, CM_GRP_AUTH_LVL B
+			 	, CM_DSTRT_CD_MNG C
+			 where
+			 	A.GRP_ID = B.GRP_ID
+			    and A.DSTRT_CD = C.DSTRT_CD
+
+			union all
+
+	         select
+	            DISTINCT
+	            F.DSTRT_NM
+	            , F.DSTRT_CD
+	            , A.GRP_ID || '_' ||  A.AUTH_LVL as PRNT_GRP_ID
+	            , A.USER_ID || '_' || A.GRP_ID || A.AUTH_LVL as GRP_ID
+	            , A.USER_ID as GRP_ID_KEY
+	            , B.USER_NM_KO as GRP_NM_KO
+	            , B.USER_ID || ' / ' || B.DEPT_NM || ' / ' || B.RANK_NM || ' / ' || B.RPSB_WORK as GRP_NM_KO_DESC
+	            , B.MOBL_NO
+	            , A.AUTH_LVL
+	            , E.AUTH_LVL_NM
+	            , 'true' as ISLF
+
+
+	         from CM_GRP_USER A
+	            , CM_USER B
+	            , CM_GROUP C
+	            , CM_GRP_AUTH_LVL E
+	            , CM_DSTRT_CD_MNG F
+	         where 1 = 1
+	            and A.USER_ID = B.USER_ID
+	            and A.GRP_ID = C.GRP_ID
+	            and A.GRP_ID = E.GRP_ID
+	            and A.AUTH_LVL = E.AUTH_LVL
+	            and C.DSTRT_CD = F.DSTRT_CD
+            	and B.USE_TY_CD = 'Y'
+		]]>
+			<if test="USER_NM_KO != null and USER_NM_KO != '' ">
+			 	and B.USER_NM_KO LIKE CONCAT('%', #{USER_NM_KO}, '%')
+			</if>
+		<![CDATA[
+
+			 )A
+			 where 1 = 1
+
+			 START WITH PRNT_GRP_ID  IS NULL
+			 CONNECT BY PRIOR GRP_ID = PRNT_GRP_ID
+			 ORDER SIBLINGS BY AUTH_LVL asc
+		]]>
+	</select>
+ -->
+
+    <!-- SMS 임시 등록 -->
+    <insert id="insert_sms" parameterType="java.util.HashMap">
+        <![CDATA[
+            insert into UW_SMS_SEND
+            (
+                SMS_ID
+                , SMS_TRMS_TY_CD
+                , SMS_TRMS_CONTS
+                , SMS_RSVT_TRMS_YMD_HMS
+                , SMS_NTFCT_TY_CD
+                , SMS_TRMS_ID
+                , SMS_TRMS_NM
+                , SMS_TRMS_STTUS
+                , RGS_USER_ID
+                , RGS_DATE
+                , UPD_USER_ID
+                , UPD_DATE
+            )
+            values
+            (
+                #{smsId}
+                , #{smsTrmsTyCd}
+                , #{smsTrmsConts}
+                , TO_CHAR(NOW(), 'YYYYMMDDHH24MISS')
+                , #{smsNtfctTyCd}
+                , #{smsTrmsId}
+                , #{smsTrmsNm}
+                , #{smsTrmsSttus}
+                , #{rgsUserId}
+                , NOW()
+                , #{updUserId}
+                , NOW()
+            )
+        ]]>
+    </insert>
+
+    <!-- SMS 임시 삭제 -->
+    <delete id="delete" parameterType="java.util.HashMap">
+        <![CDATA[
+            delete from UW_SMS_SEND
+            where
+                SMS_ID = #{smsId}
+        ]]>
+    </delete>
+
+    <!-- SMS 임시 수정 -->
+    <update id="update" parameterType="java.util.HashMap">
+            update UW_SMS_SEND
+                set
+                    UPD_USER_ID = #{updUserId}
+                    , UPD_DATE = NOW()
+                    <if test="smsNtfctTyCd != null and smsNtfctTyCd != ''">
+                    , SMS_NTFCT_TY_CD = #{smsNtfctTyCd}
+                    </if>
+                    <if test="smsTrmsConts != null and smsTrmsConts != ''">
+                    , SMS_TRMS_CONTS = #{smsTrmsConts}
+                    </if>
+                    <if test="smsTrmsSttus != null and smsTrmsSttus != ''">
+                    , SMS_TRMS_STTUS = #{smsTrmsSttus}
+                    </if>
+            where   1 = 1
+                and SMS_ID = #{smsId}
+    </update>
+
+    <!-- SMS 임시 수정 -->
+    <update id="update_sms_status_ok" parameterType="java.util.HashMap">
+            update UW_SMS_SEND
+                set
+                    UPD_USER_ID = #{updUserId}
+                    , UPD_DATE = NOW()
+                    , SMS_TRMS_TY_CD = 'C'
+            where   1 = 1
+                and SMS_ID = #{smsId}
+    </update>
+
+
+    <!-- SMS 임시 수신자 등록 -->
+    <insert id="insert_rcv" parameterType="java.util.HashMap">
+            insert into UW_SMS_RECV
+            (
+                SMS_ID
+                , SMS_RCV_ID
+                , SMS_RCV_MOBL_NO
+                , SMS_RCV_NM
+                , SMS_TRMS_STTUS
+                , SMS_RCV_YMD_HMS
+            )
+            values
+            (
+                #{smsId}
+                , #{smsRcvId}
+                , #{smsRcvMoblNo}
+                , #{smsRcvNm}
+                , #{smsTrmsSttus}
+                , TO_CHAR(NOW(), 'YYYYMMDDHH24MISS')
+            )
+    </insert>
+
+    <!-- SMS 임시 수신자 삭제 -->
+    <delete id="delete_rcv" parameterType="java.util.HashMap">
+        <![CDATA[
+            delete from UW_SMS_RECV
+            where
+                SMS_ID = #{smsId}
+        ]]>
+    </delete>
+
+</mapper>

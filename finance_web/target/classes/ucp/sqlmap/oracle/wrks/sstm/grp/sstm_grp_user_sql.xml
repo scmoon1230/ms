@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.co.ucp.wrks.sstm.grp.service.GrpUserMapper">
+
+    <!-- 지구명 -->
+    <select id="list_cm_dstrt_cd_mng" parameterType="java.util.HashMap" resultType="egovMap">
+            select
+                 DSTRT_CD
+                , DSTRT_NM
+            from CM_DSTRT_CD_MNG
+            where USE_TY_CD = 'Y'
+            order by DSTRT_NM
+    </select>
+
+    <!-- 그룹명 -->
+    <select id="list_cm_group" parameterType="java.util.HashMap" resultType="egovMap">
+    /* GrpUserMapper.list_cm_group */
+        select *
+          from (
+                select A.GRP_ID             , A.GRP_NM_KO
+                     , B.AUTH_LVL           , B.AUTH_LVL_NM
+                <!-- , C.DSTRT_CD , C.DSTRT_NM -->
+                 from CM_GROUP A
+                 join CM_GRP_AUTH_LVL B on A.GRP_ID = B.GRP_ID and B.USE_TY_CD = 'Y'
+            <!-- join CM_DSTRT_CD_MNG C on A.DSTRT_CD = C.DSTRT_CD and A.USE_TY_CD = 'Y' -->
+                where A.USE_TY_CD = 'Y'
+                  <if test="dstrtCd != null and dstrtCd != '' "> and C.DSTRT_CD = #{dstrtCd}        </if>
+                  <if test='grpId   != null and grpId   != ""'>  and UPPER(A.GRP_ID)LIKE CONCAT('%', #{grpId}, '%')        </if>
+                  <if test="grpNm   != null and grpNm   != '' "> and A.GRP_NM_KO LIKE CONCAT('%', #{grpNm}, '%')        </if>
+               ) as A
+        order by ${sidx} ${sord}, AUTH_LVL asc
+    </select>
+
+    <select id="list_cm_grp_user" parameterType="java.util.HashMap" resultType="egovMap">
+    /* GrpUserMapper.list_cm_grp_user */
+        select VU.USER_ID
+           <if test="saltText == null ">
+             , VU.USER_NM_KO
+             , VU.MOBL_NO
+             , VU.EMAIL
+           </if>
+           <if test="saltText != null ">
+             , convert_from(decrypt(decode(VU.USER_NM_KO,'hex')::bytea,#{saltText}::bytea,'aes'),'utf8') as USER_NM_KO
+             , convert_from(decrypt(decode(VU.MOBL_NO,'hex')::bytea,#{saltText}::bytea,'aes'),'utf8')    as MOBL_NO
+             , convert_from(decrypt(decode(VU.EMAIL,'hex')::bytea,#{saltText}::bytea,'aes'),'utf8')      as EMAIL
+           </if>
+             , VU.GRP_ID
+             , VU.GRP_NM_KO
+             , VU.AUTH_LVL
+             , VU.AUTH_LVL_NM
+             , VU.DSTRT_CD
+             , VU.DSTRT_NM
+             , VU.DEPT_NM
+             , VU.RPSB_WORK
+             , VU.USE_NM
+             , VU.USE_TY_CD
+          from VW_USER VU
+         where 1 = 1
+           <if test='grpId   != null and grpId   != ""'>  and VU.GRP_ID   = #{grpId}        </if>
+           <if test='authLvl != null and authLvl != ""'>  and VU.AUTH_LVL = #{authLvl}::numeric        </if>
+           <if test='userId  != null and userId  != ""'>  and UPPER(VU.USER_ID) LIKE UPPER(CONCAT('%', #{userId}, '%'))    </if>
+           <if test='userNm  != null and userNm  != ""'>  and UPPER(VU.USER_NM_KO) LIKE UPPER(CONCAT('%', #{userNm}, '%')) </if>
+      order by ${sidx} ${sord}
+    </select>
+
+</mapper>

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE configuration PUBLIC "-//mybatis.org//DTD Config 3.0//EN" "http://mybatis.org/dtd/mybatis-3-config.dtd">
+
+<configuration>
+
+	<settings>
+		<setting name="callSettersOnNulls" value="true" />
+		<setting name="jdbcTypeForNull" value="NULL" />
+	</settings>
+
+	<typeAliases>
+		<typeAlias alias="egovMap"      type="egovframework.rte.psl.dataaccess.util.EgovMap" />
+		<typeAlias alias="map"          type="java.util.Map" />
+		<typeAlias alias="hMap"         type="java.util.HashMap" />
+		<typeAlias alias="lhMap"        type="java.util.LinkedHashMap" />
+		<typeAlias alias="cmlMap"       type="kr.co.ucp.cmm.CamelMap" />
+		<typeAlias alias="cmlMap2"      type="kr.co.ucp.cmmn.CamelMap" />
+		<!-- MNTR -->
+		<typeAlias alias="lgn"          type="kr.co.ucp.cmm.LoginVO" />
+		<typeAlias alias="FileVO"       type="kr.co.ucp.cmm.service.FileVO" />
+		<typeAlias alias="apiSrchVO"    type="kr.co.ucp.mntr.api.service.ApiSrchVO" />
+		<typeAlias alias="common"       type="kr.co.ucp.mntr.cmm.service.CommonVO" />
+		<typeAlias alias="cmmCode"      type="kr.co.ucp.mntr.cmm.service.CmmCodeVO" />
+		<typeAlias alias="configure"    type="kr.co.ucp.mntr.cmm.service.ConfigureVO" />
+		<typeAlias alias="fclt"         type="kr.co.ucp.mntr.cmm.service.FcltVO" />
+		<typeAlias alias="fcltSrchVO"   type="kr.co.ucp.mntr.fclt.service.FcltSrchVO" />
+		<typeAlias alias="fcltDetail"   type="kr.co.ucp.mntr.fclt.service.FcltVO" />
+		<typeAlias alias="div"          type="kr.co.ucp.mntr.main.service.DivVO" />
+		<typeAlias alias="mngSrchVO"    type="kr.co.ucp.mntr.mng.service.MngSrchVO" />
+		<typeAlias alias="vmsLog"       type="kr.co.ucp.mntr.vms.service.VmsLogVO" />
+		<!-- TVO -->
+		<typeAlias alias="viewRqstVO"   type="kr.co.ucp.tvo.view.service.ViewRqstVO" />
+		<typeAlias alias="viewSrchVO"   type="kr.co.ucp.tvo.view.service.ViewSrchVO" />
+		<typeAlias alias="outSrchVO"    type="kr.co.ucp.tvo.out.service.OutSrchVO" />
+	</typeAliases>
+	
+</configuration>

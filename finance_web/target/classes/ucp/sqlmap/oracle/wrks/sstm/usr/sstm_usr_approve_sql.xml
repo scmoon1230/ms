@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.co.ucp.wrks.sstm.usr.service.UsrApproveMapper">
+
+	<update id="approve" parameterType="java.util.HashMap">
+		UPDATE CM_USER
+		SET   USER_APPROVE_TY = '2'
+			, APPROVE_USER_ID = #{updUserId}
+			, USER_APPROVE_DT = NOW()
+		WHERE 1 = 1
+		AND USER_ID IN
+               <foreach item="userId" index="index" collection="userId" open="(" separator="," close=")">
+                   #{userId}
+               </foreach>
+        and USER_APPROVE_TY = '0'
+	</update>
+	
+	<update id="notApprove" parameterType="java.util.HashMap">
+		UPDATE CM_USER
+		SET   USER_APPROVE_TY 	= '0'
+			, APPROVE_USER_ID 	= #{updUserId}
+			, USER_APPROVE_DT 	= NOW()
+		WHERE 1 = 1
+		AND	  USER_ID IN
+               <foreach item="userId" index="index" collection="userId" open="(" separator="," close=")">
+                   #{userId}
+               </foreach>
+		AND   (USER_APPROVE_TY 	= '1' OR USER_APPROVE_TY =  '2')
+	</update>
+	<!-- 
+    <select id="selectCmGroupList" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectCmGroupList */
+        select A.*
+            , (
+                select COUNT(*)
+                from CM_GROUP
+                where 1 = 1
+                  <if test="USER_ID != null and USER_ID != '' "> and GRP_ID NOT IN ( select GRP_ID from CM_GRP_USER where USER_ID = #{USER_ID} ) </if>
+                  <if test="GRP_ID  != null and GRP_ID  != '' "> and GRP_ID   = #{GRP_ID}                             </if>
+                ) as ROWCNT
+            from
+            (
+                select A.*
+                    , ROW_NUMBER() OVER (order by A.${sidx} ${sord}) as RK
+            from
+            (
+        <![CDATA[
+                select
+                  A.GRP_ID
+                  , B.DSTRT_CD
+                  , A.GRP_NM_KO
+                  , A.GRP_NM_EN
+                  , A.GRP_DSCRT
+                  , A.USE_TY_CD
+                  , B.DSTRT_NM
+                  , C.CD_NM_KO as USE_TY_NM
+                  , CONCAT('{"ID":"", "ROWS":' , REPLACE(D.AUTH_LVL, '&rec', ',') , '}') as AUTH_LVL_SELECT
+               from
+                  CM_GROUP A
+             left join CM_DSTRT_CD_MNG B
+                     on A.DSTRT_CD = B.DSTRT_CD
+             left join ( select CD_ID, CD_NM_KO from CM_TC_CODE where CD_GRP_ID = 'USE_TY' and CD_TY = 'C' ) C
+                     on A.USE_TY_CD = C.CD_ID
+                  ,(
+                    select v.GRP_ID, CONCAT('[',  v.AUTH_LVL ,']') as AUTH_LVL from
+                    (
+                         WITH RECURSIVE W1(RNUM, GRP_ID, VAL) AS
+                         (
+                         select a.RNUM, a.GRP_ID, a.VAL
+                         from (
+                            select ROW_NUMBER() OVER(PARTITION BY GRP_ID order by AUTH_LVL) as RNUM
+                               , GRP_ID, CONCAT('{"CD_ID":"' , AUTH_LVL,  '", "CD_NM":"' , AUTH_LVL_NM , '"}') as VAL
+                            from CM_GRP_AUTH_LVL
+                         ) a
+                         where a.RNUM = 1
+                         union all
+                         select c.RNUM, c.GRP_ID, CONCAT(w.VAL, '&rec', c.VAL)
+                         from (
+                            select ROW_NUMBER() OVER(PARTITION BY GRP_ID order by AUTH_LVL) as  RNUM
+                               , GRP_ID, CONCAT('{"CD_ID":"' , AUTH_LVL,  '", "CD_NM":"' , AUTH_LVL_NM , '"}') as VAL
+                            from CM_GRP_AUTH_LVL 
+                         ) c, W1 w
+                         where c.GRP_ID = w.GRP_ID and c.RNUM -1 = w.RNUM
+                         )
+                         select GRP_ID,MAX(VAL) as AUTH_LVL, MAX(RNUM) as RNUM from W1 group by grp_id
+                     ) v
+                  ) D
+               where
+                  1 = 1
+                  and A.USE_TY_CD = 'Y'
+                  and A.GRP_ID = D.GRP_ID
+        ]]>
+                  <if test="USER_ID != null and USER_ID != '' "> and A.GRP_ID NOT IN ( select GRP_ID from CM_GRP_USER where USER_ID = #{USER_ID} ) </if>
+                  <if test="GRP_ID  != null and GRP_ID  != '' "> and A.GRP_ID   = #{GRP_ID}                             </if>
+                ) A
+            ) A
+             OFFSET ((#{pageNo}::integer - 1) * #{rowsPerPage}::integer)
+             LIMIT #{rowsPerPage}::integer
+    </select>
+	 -->
+    <select id="selectCmGrpUserList" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectCmGrpUserList */
+        <![CDATA[
+            select
+                A.*
+                , (
+                    select COUNT(*) from CM_GRP_USER where 1 = 1
+                ]]>
+                <if test="USER_ID != null and USER_ID != '' "> and USER_ID = #{USER_ID} </if>
+                <![CDATA[
+            ) as ROWCNT
+            from
+            (
+                    select
+                        A.*
+                        , B.GRP_NM_KO
+                        , C.CD_NM_KO as USE_TY_NM
+                        , D.DSTRT_CD
+                        , D.DSTRT_NM
+                        , ROW_NUMBER() OVER (order by B.${sidx} ${sord}) as RK
+                        , E.AUTH_LVL_NM
+                        , CONCAT('{"ID":"' , A.AUTH_LVL , '", "ROWS":' , REPLACE(F.AUTH_LVL, '&rec', ',') , '}') as AUTH_LVL_SELECT
+                    from
+                        CM_GRP_USER A
+                   left join CM_GROUP B on A.GRP_ID = B.GRP_ID
+                   left join ( select CD_ID, CD_NM_KO from CM_TC_CODE where CD_GRP_ID = 'USE_TY' and CD_TY = 'C' ) C
+                            on A.USE_TY_CD = C.CD_ID
+                   left join CM_DSTRT_CD_MNG D on B.DSTRT_CD = D.DSTRT_CD
+                        , CM_GRP_AUTH_LVL E
+                        ,(
+                            select v.GRP_ID, CONCAT('[',  v.AUTH_LVL ,']') as AUTH_LVL from
+                            (
+                                 WITH RECURSIVE W1(RNUM, GRP_ID, VAL) AS
+                                 (
+                                 select a.RNUM, a.GRP_ID, a.VAL
+                                 from (
+                                    select ROW_NUMBER() OVER(PARTITION BY GRP_ID order by AUTH_LVL) as RNUM
+                                       , GRP_ID, CONCAT('{"CD_ID":"' , AUTH_LVL,  '", "CD_NM":"' , AUTH_LVL_NM , '"}') as VAL
+                                    from CM_GRP_AUTH_LVL
+                                 ) a
+                                 where a.RNUM = 1
+                                 union all
+                                 select c.RNUM, c.GRP_ID, CONCAT(w.VAL, '&rec', c.VAL)
+                                 from (
+                                    select ROW_NUMBER() OVER(PARTITION BY GRP_ID order by AUTH_LVL) as  RNUM
+                                       , GRP_ID, CONCAT('{"CD_ID":"' , AUTH_LVL,  '", "CD_NM":"' , AUTH_LVL_NM , '"}') as VAL
+                                    from CM_GRP_AUTH_LVL 
+                                 ) c, W1 w
+                                 where c.GRP_ID = w.GRP_ID and c.RNUM -1 = w.RNUM
+                                 )
+                                 select GRP_ID,MAX(VAL) as AUTH_LVL, MAX(RNUM) as RNUM from W1 group by grp_id
+                             ) v
+                        ) F
+                    where
+                        1 = 1
+                        and A.GRP_ID = E.GRP_ID
+                        and A.AUTH_LVL = E.AUTH_LVL
+                        and A.GRP_ID = F.GRP_ID
+                ]]>
+                <if test="USER_ID != null and USER_ID != '' "> and A.USER_ID = #{USER_ID} </if>
+        <![CDATA[
+            ) A
+             OFFSET ((#{pageNo}::integer - 1) * #{rowsPerPage}::integer)
+             LIMIT #{rowsPerPage}::integer
+        ]]>
+    </select>
+    
+</mapper>

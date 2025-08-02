@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ucp.env.service.DigitalmoneyMapper">
+
+    <select id="selectDigitalmoney" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectDigitalmoney */
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingHeader"/>
+        select DMT.STAN_GB       , TO_NUMBER(DMT.MONEY_TYPE) MONEY_TYPE       , DMT.MONEY_NAME
+             , DMT.MONEY_CODE
+             , (SELECT MONEY_NAME from TB_MONEY M where M.MONEY_CODE = DMT.MONEY_CODE) ORIG_MONEY_NAME
+             , DMT.USE_YN
+          from TB_DIGITAL_MONEY_TYPE DMT
+         where 1 = 1
+           <if test="stanGb    != null and stanGb    != '' "> and STAN_GB    = #{stanGb}       </if>
+           <if test="moneyType != null and moneyType != '' "> and MONEY_TYPE = #{moneyType}    </if>
+           <if test="moneyName != null and moneyName != '' "> and MONEY_NAME LIKE #{moneyName} || '%' </if>
+      order by ${sidx} ${sord}
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingBottom"/>
+    </select>
+
+    <select id="selectDigitalmoneyExt" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectDigitalmoneyExt */
+        select DMT.STAN_GB       , TO_NUMBER(DMT.MONEY_TYPE) MONEY_TYPE       , DMT.MONEY_NAME
+             , DMT.MONEY_CODE
+             , (SELECT MONEY_NAME from TB_MONEY M where M.MONEY_CODE = DMT.MONEY_CODE) ORIG_MONEY_NAME
+             , DMT.USE_YN
+          from TB_DIGITAL_MONEY_TYPE DMT
+         where 1 = 1
+           <if test="stanGb    != null and stanGb    != '' "> and STAN_GB    = #{stanGb}       </if>
+           <if test="moneyType != null and moneyType != '' "> and MONEY_TYPE = #{moneyType}    </if>
+           <if test="moneyName != null and moneyName != '' "> and MONEY_NAME LIKE #{moneyName} || '%' </if>
+    </select>
+
+    <insert id="insertDigitalmoney" parameterType="java.util.HashMap">
+    /* insertDigitalmoney */
+        insert into TB_DIGITAL_MONEY_TYPE
+             ( STAN_GB         , MONEY_TYPE
+             , MONEY_NAME      , MONEY_CODE     , USE_YN   )
+        values
+             ( #{stanGb}       , #{moneyType}
+             , #{moneyName}    , #{moneyCode}   , #{useYn} )
+    </insert>
+    
+    <update id="updateDigitalmoney" parameterType="java.util.HashMap">
+    /* updateDigitalmoney */
+        update TB_DIGITAL_MONEY_TYPE
+           set STAN_GB    = #{stanGb}
+             , MONEY_TYPE = #{moneyType}
+             , MONEY_NAME = #{moneyName}
+             , MONEY_CODE = #{moneyCode}
+             , USE_YN     = #{useYn}
+         where STAN_GB    = #{stanGb}
+           and MONEY_TYPE = #{moneyType}
+    </update>
+
+    <delete id="deleteDigitalmoney" parameterType="java.util.HashMap">
+    /* deleteDigitalmoney */
+        delete from TB_DIGITAL_MONEY_TYPE
+         where STAN_GB    = #{stanGb}
+           and MONEY_TYPE = #{moneyType}
+    </delete>
+    
+</mapper>

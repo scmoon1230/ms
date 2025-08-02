@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:p="http://www.springframework.org/schema/p"
+       xmlns:beans="http://www.springframework.org/schema/beans" xmlns:context="http://www.springframework.org/schema/context" xmlns:websocket="http://www.springframework.org/schema/websocket"
+       xmlns:mvc="http://www.springframework.org/schema/mvc"
+       xsi:schemaLocation="http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-4.3.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.3.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.3.xsd
+		http://www.springframework.org/schema/websocket http://www.springframework.org/schema/websocket/spring-websocket-4.3.xsd
+		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.3.xsd">
+
+    <context:component-scan base-package="kr.co.ucp" use-default-filters="false">
+        <context:include-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
+        <context:exclude-filter type="annotation" expression="org.springframework.stereotype.Service"/>
+        <context:exclude-filter type="annotation" expression="org.springframework.stereotype.Repository"/>
+    </context:component-scan>
+
+	<mvc:annotation-driven />
+	<bean class="org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping">
+		<property name="interceptors">
+			<list>
+				<ref bean="localeChangeInterceptor" />
+			</list>
+		</property>
+		<property name="order" value="0" />
+
+	</bean>
+	<bean class="egovframework.rte.ptl.mvc.bind.annotation.EgovRequestMappingHandlerAdapter">
+		<property name="customArgumentResolvers">
+			<list>
+				<bean class="egovframework.rte.ptl.mvc.bind.AnnotationCommandMapArgumentResolver" />
+			</list>
+		</property>
+		<property name="messageConverters">
+			<list>
+				<bean class="org.springframework.http.converter.StringHttpMessageConverter">
+					<property name="supportedMediaTypes">
+						<list>
+							<value>text/plain;charset=UTF-8</value>
+						</list>
+					</property>
+				</bean>
+				<ref bean="jsonHttpMessageConverter"/>
+			</list>
+		</property>
+	</bean>
+	<bean id="jsonHttpMessageConverter" class="org.springframework.http.converter.json.MappingJackson2HttpMessageConverter"/>
+
+
+	<bean id="localeResolver" class="org.springframework.web.servlet.i18n.SessionLocaleResolver" />
+	<bean id="localeChangeInterceptor" class="org.springframework.web.servlet.i18n.LocaleChangeInterceptor">
+		<property name="paramName" value="language" />
+	</bean>
+
+	<!-- error handle --><!--
+	<bean class="org.springframework.web.servlet.handler.SimpleMappingExceptionResolver">
+		<property name="defaultErrorView" value="cmmn/egovError" />
+		<property name="exceptionMappings">
+			<props>
+				<prop key="org.springframework.dao.DataAccessException">cmmn/dataAccessFailure</prop>
+				<prop key="org.springframework.transaction.TransactionException">cmmn/transactionFailure</prop>
+				<prop key="egovframework.rte.fdl.cmmn.exception.EgovBizException">cmmn/egovError</prop>
+				<prop key="org.springframework.security.AccessDeniedException">cmmn/egovError</prop>
+			</props>
+		</property>
+	</bean> -->
+
+	<!-- ViewResolver -->
+	<bean class="org.springframework.web.servlet.view.ContentNegotiatingViewResolver"  p:order="1">
+	
+		<property name="contentNegotiationManager">
+			<bean id="contentNegotiationManager" class="org.springframework.web.accept.ContentNegotiationManagerFactoryBean">
+				<property name="mediaTypes">
+					<value>
+						html=text/html
+						json=application/json
+						js=text/javascript
+						css=text/css
+					</value>
+				</property>
+			</bean>
+		</property>
+		
+        <property name="viewResolvers">
+            <list>
+                <bean id="beanNameView" class="org.springframework.web.servlet.view.BeanNameViewResolver">
+                    <property name="order" value="0"></property>
+                </bean>
+                <bean id="tilesView" class="org.springframework.web.servlet.view.tiles3.TilesViewResolver">
+                    <property name="viewClass" value="org.springframework.web.servlet.view.tiles3.TilesView"/>
+                    <property name="order" value="1"></property>
+                </bean>
+                <bean class="org.springframework.web.servlet.view.UrlBasedViewResolver">
+                    <property name="viewClass" value="org.springframework.web.servlet.view.JstlView"/>
+                    <property name="order" value="2"/>
+                    <property name="prefix" value="/WEB-INF/jsp/"/>
+                    <property name="suffix" value=".jsp"/>
+                </bean>
+            </list>
+        </property>
+	</bean>
+
+	<bean id="jsonView"	class="org.springframework.web.servlet.view.json.MappingJackson2JsonView" />
+	
+	<!-- TilesConfigurer -->
+	<bean id="tilesConfigurer" class="org.springframework.web.servlet.view.tiles3.TilesConfigurer">
+		<property name="definitions" value="classpath:/ucp/tiles/tiles*.xml" />
+	</bean>
+
+	<bean class="org.springframework.web.servlet.view.BeanNameViewResolver" p:order="0"/>
+
+	<!-- File Download -->
+	<bean name="downloadView" class="kr.co.ucp.cmm.DownloadView" />
+	<!-- Excel: xls -->
+	<bean name="excelView" class="kr.co.ucp.cmm.ExcelView"/>
+	<bean name="excelDown" class="kr.co.ucp.cmm.ExcelDown"/>
+
+	<bean id="drmDownload" class="kr.co.ucp.tvo.cmn.util.DownloadView"/>
+
+    <!-- Web Socket -->
+    <!-- WebSocket Handshake : 웹소켓 핸들러 클래스(echoHandler)가 호출되기전에 HttpSession에 접속하여  -->
+    <!-- '이용자 아이디를 추출하는 기능' 등을 인터셉터가 수행하도록 설정 -->
+    <websocket:handlers>
+        <websocket:mapping path="/ws/evt.do" handler="wsEvtHandler"/>
+        <websocket:handshake-interceptors>
+            <bean class="org.springframework.web.socket.server.support.HttpSessionHandshakeInterceptor"/>
+        </websocket:handshake-interceptors>
+    </websocket:handlers>
+    <bean id="wsEvtHandler" class="kr.co.ucp.swip.cmn.websocket.handler.WsEvtHandler"/>
+
+
+	<mvc:view-controller path="/cmmn/validator.do" view-name="cmmn/validator" />
+	<!-- 로그인 체크가 필요한 URL과 로그인 여부를 체크해준다 -->
+	<mvc:interceptors>
+        <mvc:interceptor>
+            <mvc:mapping path="/**"/>
+            <bean class="kr.co.ucp.cmm.interceptor.MenuInterceptor"/>
+        </mvc:interceptor>
+		<mvc:interceptor>
+			<mvc:mapping path="/**" />
+            <mvc:exclude-mapping path="/validator.do"/>
+			<mvc:exclude-mapping path="/wrks/lgn/login.do" />
+			<mvc:exclude-mapping path="/wrks/lgn/login_sso.do" />
+			<mvc:exclude-mapping path="/wrks/lgn/login.json" />
+			<mvc:exclude-mapping path="/wrks/lgn/logout.do" />
+            <mvc:exclude-mapping path="/wrks/lgn/goHome.do"/>
+			<mvc:exclude-mapping path="/wrks/lgn/getmenu.json" />
+			<mvc:exclude-mapping path="/wrks/lgn/redirect.do" />
+			<mvc:exclude-mapping path="/wrks/lgn/selfrgsuser.do" />
+			<mvc:exclude-mapping path="/wrks/lgn/apply.json" />
+			<mvc:exclude-mapping path="/wrks/lgn/findpwd.do" />
+			<mvc:exclude-mapping path="/wrks/lgn/findpwd.json" />
+			<mvc:exclude-mapping path="/wrks/lgn/changepwd.do" />
+			<mvc:exclude-mapping path="/wrks/lgn/changepwd.json" />
+			<mvc:exclude-mapping path="/wrks/lgn/myinfo.do" />
+			<mvc:exclude-mapping path="/wrks/lgn/myinfo.json" />
+			<mvc:exclude-mapping path="/wrks/lgn/sitemap.do" />
+			<mvc:exclude-mapping path="/wrks/sstm/usr/info/checkUserId.json" />
+
+			<!-- 관제에서 호출하기 위해 임시로 추가 SSO적용되면 삭제 -->
+			<mvc:exclude-mapping path="/cmm/getImage.image" />
+			<mvc:exclude-mapping path="/cmm/getImageEvnt.image" />
+			<mvc:exclude-mapping path="/cmm/getImageFclt.image" />
+			<!--
+			<mvc:exclude-mapping path="/wrks/sstm/code/selectSggcd.json" /> 
+			 -->
+			<mvc:exclude-mapping path="/wrks/fcltmng/fclt/info/fcltKndDtlList.json" />
+
+			<mvc:exclude-mapping path="/mntr/api/**"/>
+			<mvc:exclude-mapping path="/link/base/**"/>
+
+			<mvc:exclude-mapping path="/api/requestOrgVdo.xx"/>
+			<mvc:exclude-mapping path="/api/requestEncVdo.xx"/>
+			<mvc:exclude-mapping path="/api/responseOrgVdo.xx"/>
+			<mvc:exclude-mapping path="/api/responseEncVdo.xx"/>
+			<mvc:exclude-mapping path="/api/responseMasking.xx"/>
+			<mvc:exclude-mapping path="/api/encryptStatus.xx"/>
+			
+            <!-- 웹소켓 -->
+            <mvc:exclude-mapping path="/ws/evt.do"/>
+
+			<mvc:exclude-mapping path="/tvo/downloadChromeFile.do"/>
+			
+			<bean class="kr.co.ucp.cmm.interceptor.AuthenticInterceptor" />
+		</mvc:interceptor>
+	</mvc:interceptors>
+</beans>

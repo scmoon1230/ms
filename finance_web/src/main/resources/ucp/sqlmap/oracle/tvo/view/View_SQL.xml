@@ -1,0 +1,511 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ucp.tvo.view.service.ViewMapper">
+
+    <select id="selectViewRqstList" parameterType="viewSrchVO" resultType="egovMap">
+    /* selectViewRqstList */
+        select TVR.DSTRT_CD               , (select dstrt_nm from cm_dstrt_cd_mng cdcm where cdcm.dstrt_cd = tvr.dstrt_cd) dstrt_nm
+             , TVR.VIEW_RQST_NO           , TVR.VIEW_RQST_YMDHMS
+             , TVR.EVT_NO                 , TVR.EVT_NM
+             , TVR.RQST_RSN_TY_CD         , FN_GET_TC_CODE('RQST_RSN_TY', COALESCE(TVR.RQST_RSN_TY_CD, '')) as RQST_RSN_TY_NM
+             , TVR.RQST_RSN_DTL
+             , TVR.EVT_YMDHMS             , TVR.EVT_ADDR
+             , TVR.EVT_POINT_X            , TVR.EVT_POINT_Y          , TVR.EVT_DSTRT_CD
+             , TVR.EMRG_YN                , TVR.EMRG_RSN
+             , TVR.PAPER_NO               , TVR.PAPER_NM             , TVR.PAPER_FILE_NM
+             , TVR.VIEW_END_YMDHMS_WANT   , TVR.VIEW_END_YMDHMS
+             , TVR.VIEW_RQST_USER_ID      , TVR.VIEW_APRV_USER_ID
+           <if test="saltText == null ">
+             , COALESCE(FN_USER_NM(TVR.VIEW_RQST_USER_ID), TVR.VIEW_RQST_USER_ID) as VIEW_RQST_USER_NM
+             , COALESCE(FN_USER_NM(TVR.VIEW_APRV_USER_ID), TVR.VIEW_APRV_USER_ID) as VIEW_APRV_USER_NM
+           </if>
+           <if test="saltText != null ">
+             , COALESCE(FN_USER_NM_DEC(TVR.VIEW_RQST_USER_ID, #{saltText}::bytea), TVR.VIEW_RQST_USER_ID) as VIEW_RQST_USER_NM
+             , COALESCE(FN_USER_NM_DEC(TVR.VIEW_APRV_USER_ID, #{saltText}::bytea), TVR.VIEW_APRV_USER_ID) as VIEW_APRV_USER_NM
+           </if>
+             , TVR.TVO_PRGRS_CD           , FN_GET_TC_CODE('VIEW_PRGRS', COALESCE(TVR.TVO_PRGRS_CD, '')) as TVO_PRGRS_NM
+             , TVR.TVO_PRGRS_DTL          , TVR.TVO_PRGRS_YMDHMS
+             , TVR.VIEW_RESULT_TY_CD      , FN_GET_TC_CODE('VIEW_RESULT_TY', COALESCE(TVR.VIEW_RESULT_TY_CD, '')) as VIEW_RESULT_TY_NM
+             , TVR.VIEW_RESULT_TY_DTL
+             , TVR.RQST_SYS_CD
+             , case when VIEW_END_YMDHMS <![CDATA[ < ]]> TO_CHAR(NOW(), 'YYYYMMDDHH24MISS') then 'Y' else 'N'                                           end as VIEW_END_YN /*열람종료여부*/
+             , case when (TVR.TVO_PRGRS_CD = '50' or TVR.TVO_PRGRS_CD = '51') and (TO_CHAR(NOW(), 'YYYYMMDDHH24MISS') <![CDATA[ <= ]]> VIEW_END_YMDHMS)
+                    then 'Y' else 'N'                                                                                                                   end as VIEW_PMS_YN /*열람허용여부*/
+             , case when (TVR.TVO_PRGRS_CD != '50' and TVR.TVO_PRGRS_CD != '51')      then ''
+                    when (TVR.TVO_PRGRS_CD = '50' or TVR.TVO_PRGRS_CD = '51') and (TO_CHAR(NOW(), 'YYYYMMDDHH24MISS') <![CDATA[ <= ]]> VIEW_END_YMDHMS)
+                    then '가능' else '불가능'                                                                                                              end as VIEW_PMS_YN_NM /*열람허용여부*/
+          from TVO_VIEW_RQST TVR
+         where 1 = 1
+           <if test="dstrtCd          != null and dstrtCd          != ''"> and TVR.DSTRT_CD          = #{dstrtCd}        </if>
+           <if test="viewRqstUserId   != null and viewRqstUserId   != ''"> and TVR.VIEW_RQST_USER_ID = #{viewRqstUserId} </if>
+           <if test="rqstRsnTyCd      != null and rqstRsnTyCd      != ''"> and TVR.RQST_RSN_TY_CD    = #{rqstRsnTyCd}    </if>
+           <if test="tvoPrgrsCd       != null and tvoPrgrsCd       != ''"> and TVR.TVO_PRGRS_CD      = #{tvoPrgrsCd}     </if>
+           <if test="viewRqstYmdhms   != null and viewRqstYmdhms   != ''"> and TVR.VIEW_RQST_YMDHMS LIKE CONCAT(#{viewRqstYmdhms}, '%')                                 </if>
+           <if test="viewRqstYmdhmsFr != null and viewRqstYmdhmsFr != ''"> and CONCAT(#{viewRqstYmdhmsFr}, '000000') <![CDATA[ <= ]]> TVR.VIEW_RQST_YMDHMS              </if>
+           <if test="viewRqstYmdhmsTo != null and viewRqstYmdhmsTo != ''"> and TVR.VIEW_RQST_YMDHMS <![CDATA[ <= ]]> CONCAT(#{viewRqstYmdhmsTo}, '235959')              </if>
+           <if test="viewEndYmdhms    != null and viewEndYmdhms    != ''"> and COALESCE(TVR.VIEW_END_YMDHMS, TVR.VIEW_END_YMDHMS_WANT) LIKE CONCAT(#{viewEndYmdhms}, '%') </if>
+           <if test="evtNo            != null and evtNo            != ''"> and TVR.EVT_NO         LIKE CONCAT('%', #{evtNo}, '%')                                         </if>
+           <if test="evtNm            != null and evtNm            != ''"> and TVR.EVT_NM         LIKE CONCAT('%', #{evtNm}, '%')                                         </if>
+           <if test="evtDstrtCd       != null and evtDstrtCd       != ''"> and TVR.EVT_DSTRT_CD      = #{evtDstrtCd}     </if>
+        order by VIEW_RQST_NO desc
+        offset #{firstRecordIndex} limit #{recordCountPerPage}
+    </select>
+
+    <select id="selectViewRqstListTotCnt" parameterType="viewSrchVO" resultType="int">
+    /* selectViewRqstListTotCnt */
+    select COUNT(1) as CNT from (
+        select TVR.DSTRT_CD               , TVR.VIEW_RQST_NO           , TVR.VIEW_RQST_YMDHMS
+            from TVO_VIEW_RQST TVR
+         where 1 = 1
+           <if test="dstrtCd          != null and dstrtCd          != ''"> and TVR.DSTRT_CD          = #{dstrtCd}        </if>
+           <if test="viewRqstUserId   != null and viewRqstUserId   != ''"> and TVR.VIEW_RQST_USER_ID = #{viewRqstUserId} </if>
+           <if test="rqstRsnTyCd      != null and rqstRsnTyCd      != ''"> and TVR.RQST_RSN_TY_CD    = #{rqstRsnTyCd}    </if>
+           <if test="tvoPrgrsCd       != null and tvoPrgrsCd       != ''"> and TVR.TVO_PRGRS_CD      = #{tvoPrgrsCd}     </if>
+           <if test="viewRqstYmdhms   != null and viewRqstYmdhms   != ''"> and TVR.VIEW_RQST_YMDHMS LIKE CONCAT(#{viewRqstYmdhms}, '%')                                 </if>
+           <if test="viewRqstYmdhmsFr != null and viewRqstYmdhmsFr != ''"> and CONCAT(#{viewRqstYmdhmsFr}, '000000') <![CDATA[ <= ]]> TVR.VIEW_RQST_YMDHMS              </if>
+           <if test="viewRqstYmdhmsTo != null and viewRqstYmdhmsTo != ''"> and TVR.VIEW_RQST_YMDHMS <![CDATA[ <= ]]> CONCAT(#{viewRqstYmdhmsTo}, '235959')              </if>
+           <if test="viewEndYmdhms    != null and viewEndYmdhms    != ''"> and COALESCE(TVR.VIEW_END_YMDHMS, TVR.VIEW_END_YMDHMS_WANT) LIKE CONCAT(#{viewEndYmdhms}, '%') </if>
+           <if test="evtNo            != null and evtNo            != ''"> and TVR.EVT_NO         LIKE CONCAT('%', #{evtNo}, '%')                                         </if>
+           <if test="evtNm            != null and evtNm            != ''"> and TVR.EVT_NM         LIKE CONCAT('%', #{evtNm}, '%')                                         </if>
+           <if test="evtDstrtCd       != null and evtDstrtCd       != ''"> and TVR.EVT_DSTRT_CD      = #{evtDstrtCd}     </if>
+    ) CNT
+    </select>
+    
+    
+    
+    
+    <select id="selectViewRqstDtl" parameterType="map" resultType="egovMap">
+    /* selectViewRqstDtl */
+        select TVR.DSTRT_CD               , (select dstrt_nm from cm_dstrt_cd_mng cdcm where cdcm.dstrt_cd = tvr.dstrt_cd) dstrt_nm
+             , TVR.VIEW_RQST_NO
+             , TVR.VIEW_RQST_YMDHMS
+             , CASE WHEN VIEW_RQST_YMDHMS IS NULL                                   THEN ''
+                    ELSE TO_CHAR(TO_TIMESTAMP(VIEW_RQST_YMDHMS, 'YYYYMMDDHH24MISS'), 'YYYY-MM-DD HH24:MI:SS')         END as VIEW_RQST_YMD_HMS
+             , EVT_NO
+             , EVT_NM
+             , EVT_YMDHMS as EVT_YMDHMS_ORGN
+             , CASE WHEN EVT_YMDHMS IS NULL                                         THEN ''
+                    ELSE TO_CHAR(TO_TIMESTAMP(EVT_YMDHMS, 'YYYYMMDDHH24MISS'), 'YYYY-MM-DD HH24:MI:SS')               END as EVT_YMD_HMS
+             , EVT_ADDR
+             , substring(cast(EVT_POINT_X as text), 1, 10) as EVT_POINT_X
+             , substring(cast(EVT_POINT_Y as text), 1, 9)  as EVT_POINT_Y
+             , TVR.EVT_DSTRT_CD
+             , RQST_RSN_TY_CD
+             , FN_GET_TC_CODE('RQST_RSN_TY', COALESCE(RQST_RSN_TY_CD, '')) as RQST_RSN_TY_NM
+             , RQST_RSN_DTL
+             , EMRG_YN
+             , FN_GET_TC_CODE('EMRG_YN', COALESCE(EMRG_YN, '')) as EMRG_YN_NM
+             , COALESCE(EMRG_RSN, '')     as EMRG_RSN
+             , PAPER_NO
+             , COALESCE(PAPER_NM,'')      as PAPER_NM
+             , COALESCE(PAPER_FILE_NM,'') as PAPER_FILE_NM
+             , VIEW_RQST_USER_ID
+             , VIEW_APRV_USER_ID
+           <if test="saltText == null ">
+             , COALESCE(FN_USER_NM(VIEW_RQST_USER_ID), VIEW_RQST_USER_ID) as VIEW_RQST_USER_NM
+             , COALESCE(FN_USER_NM(VIEW_APRV_USER_ID), VIEW_APRV_USER_ID) as VIEW_APRV_USER_NM
+           </if>
+           <if test="saltText != null ">
+             , COALESCE(FN_USER_NM_DEC(VIEW_RQST_USER_ID, #{saltText}::bytea), VIEW_RQST_USER_ID) as VIEW_RQST_USER_NM
+             , COALESCE(FN_USER_NM_DEC(VIEW_APRV_USER_ID, #{saltText}::bytea), VIEW_APRV_USER_ID) as VIEW_APRV_USER_NM
+           </if>
+             , TVO_PRGRS_YMDHMS as TVO_PRGRS_YMDHMS_ORGN
+             , CASE WHEN TVO_PRGRS_YMDHMS IS NULL                                     THEN ''
+                    ELSE TO_CHAR(TO_TIMESTAMP(TVO_PRGRS_YMDHMS, 'YYYYMMDDHH24MISS'), 'YYYY-MM-DD HH24:MI:SS')         END as TVO_PRGRS_YMD_HMS
+             , TVO_PRGRS_CD
+             , FN_GET_TC_CODE('VIEW_PRGRS', COALESCE(TVO_PRGRS_CD, '')) as TVO_PRGRS_NM
+             , COALESCE(TVO_PRGRS_DTL,'')                               as TVO_PRGRS_DTL
+             , VIEW_END_YMDHMS_WANT
+             , VIEW_END_YMDHMS_WANT                                     as VIEW_END_YMDHMS_WANT_ORGN
+             , CASE WHEN VIEW_END_YMDHMS_WANT IS NULL                                 THEN ''
+                    ELSE TO_CHAR(TO_TIMESTAMP(VIEW_END_YMDHMS_WANT, 'YYYYMMDDHH24MISS'), 'YYYY-MM-DD HH24:MI:SS')     END as VIEW_END_YMD_HMS_WANT
+             , VIEW_END_YMDHMS as VIEW_END_YMDHMS_ORGN
+             , CASE WHEN (VIEW_END_YMDHMS IS NULL or VIEW_END_YMDHMS = '')            THEN ''
+                    ELSE TO_CHAR(TO_TIMESTAMP(VIEW_END_YMDHMS, 'YYYYMMDDHH24MISS'), 'YYYY-MM-DD HH24:MI:SS')          END as VIEW_END_YMD_HMS
+             , case when (TVR.TVO_PRGRS_CD = '50' or TVR.TVO_PRGRS_CD = '51') and (TO_CHAR(NOW(), 'YYYYMMDDHH24MISS') <![CDATA[ <= ]]> VIEW_END_YMDHMS)
+                    then 'Y' else 'N'                                                                            end as VIEW_PMS_YN /*열람허용여부*/
+             , case when VIEW_END_YMDHMS <![CDATA[ < ]]> TO_CHAR(NOW(), 'YYYYMMDDHH24MISS') then 'Y' else 'N'    end as VIEW_END_YN
+             , TVR.VIEW_RESULT_TY_CD
+             , FN_GET_TC_CODE('VIEW_RESULT_TY', COALESCE(TVR.VIEW_RESULT_TY_CD, '')) as VIEW_RESULT_TY_NM
+             , TVR.VIEW_RESULT_TY_DTL
+             , RQST_SYS_CD
+             , TO_CHAR(NOW(), 'YYYY-MM-DD') PLAY_START_YMD                                               /*재생시작일*/
+           <if test="outFilePlayProd   != null and outFilePlayProd   != ''">
+             , TO_CHAR(NOW() + interval '${outFilePlayProd}', 'YYYY-MM-DD') PLAY_END_YMD            /*재생종료일*/
+           </if>
+           <if test="outFilePlayProdThird   != null and outFilePlayProdThird   != ''">
+             , TO_CHAR(NOW() + interval '${outFilePlayProdThird}', 'YYYY-MM-DD') PLAY_END_YMD_THIRD /*3자재생종료일*/
+           </if>     
+        <!-- , TVR.VIEW_RESULT_TY -->
+        <!-- , RQST_TY_CD -->
+        <!-- , USE_RSLT_RGST_YN -->
+          from TVO_VIEW_RQST TVR
+         where TVR.DSTRT_CD     = #{dstrtCd}
+           and TVR.VIEW_RQST_NO = #{viewRqstNo}
+    </select>
+    
+    <select id="selectNewViewRqstNo" parameterType="map" resultType="egovMap">
+    /* selectNewViewRqstNo */
+        select LPAD(CAST(CAST(VIEW_RQST_NO as integer)+1 as text), '6','0') as VIEW_RQST_NO
+          from ( select RIGHT(VIEW_RQST_NO,6) VIEW_RQST_NO
+                   from TVO_VIEW_RQST
+                  where DSTRT_CD = #{dstrtCd}
+                  UNION ALL
+                 select '000000' VIEW_RQST_NO
+               order by VIEW_RQST_NO desc LIMIT 1
+               ) TB
+    </select>
+    
+    <insert id="insertTvoViewRqst" parameterType="viewRqstVO">
+    /* insertTvoViewRqst */
+        insert into TVO_VIEW_RQST
+             ( DSTRT_CD              , VIEW_RQST_NO          , VIEW_RQST_YMDHMS
+             , EVT_NO                , EVT_NM           <!-- , EVT_GRD          , EVT_TY -->
+             , EVT_YMDHMS            , EVT_ADDR
+             , EVT_POINT_X           , EVT_POINT_Y           , EVT_DSTRT_CD
+             , RQST_RSN_TY_CD        , RQST_RSN_DTL          , EMRG_YN          , EMRG_RSN
+             , PAPER_NO              , PAPER_FILE_NM         , PAPER_NM
+             , VIEW_RQST_USER_ID     , VIEW_APRV_USER_ID
+             , TVO_PRGRS_CD          , TVO_PRGRS_DTL         , TVO_PRGRS_YMDHMS
+             , VIEW_END_YMDHMS_WANT
+             <if test="viewEndYmdhms != null">               , VIEW_END_YMDHMS        </if>
+             , RQST_SYS_CD           <!-- , RQST_TY_CD -->
+             )
+        values
+             ( #{dstrtCd}            , #{viewRqstNo}         , #{viewRqstYmdhms}
+             , #{evtNo}              , #{evtNm}         <!-- , #{evtGrd}        , #{evtTy} -->
+             , #{evtYmdhms}          , #{evtAddr}
+             , #{evtPointX}::numeric , #{evtPointY}::numeric , #{evtDstrtCd}
+             , #{rqstRsnTyCd}        , #{rqstRsnDtl}         , #{emrgYn}        , #{emrgRsn}
+             , #{paperNo}            , #{paperFileNm}        , #{paperNm}
+             , #{viewRqstUserId}     , #{viewAprvUserId}
+             , #{tvoPrgrsCd}         , #{tvoPrgrsDtl}        , #{viewRqstYmdhms}
+             , #{viewEndYmdhmsWant}
+             <if test="viewEndYmdhms != null">               , #{viewEndYmdhms}       </if>
+             , #{rqstSysCd}          <!-- , #{rqstTyCd} -->
+             )
+    </insert>
+
+    <update id="updateTvoViewRqst" parameterType="viewRqstVO" >
+    /* updateTvoViewRqst */
+        update TVO_VIEW_RQST
+           set DSTRT_CD     = #{dstrtCd}
+             , VIEW_RQST_NO = #{viewRqstNo}
+           <if test="evtNo             != null"> , EVT_NO               = #{evtNo}             </if>
+           <if test="evtNm             != null"> , EVT_NM               = #{evtNm}             </if>
+      <!-- <if test="evtGrd            != null"> , EVT_GRD              = #{evtGrd}            </if>
+           <if test="evtTy             != null"> , EVT_TY               = #{evtTy}             </if> -->
+           <if test="evtYmdhms         != null"> , EVT_YMDHMS           = #{evtYmdhms}         </if>
+           <if test="evtAddr           != null"> , EVT_ADDR             = #{evtAddr}           </if>
+           <if test="evtPointX         != null"> , EVT_POINT_X          = #{evtPointX}::numeric </if>
+           <if test="evtPointY         != null"> , EVT_POINT_Y          = #{evtPointY}::numeric </if>
+           <if test="rqstRsnTyCd       != null"> , RQST_RSN_TY_CD       = #{rqstRsnTyCd}       </if>
+           <if test="rqstRsnDtl        != null"> , RQST_RSN_DTL         = #{rqstRsnDtl}        </if>
+           <if test="emrgYn            != null"> , EMRG_YN              = #{emrgYn}            </if>
+           <if test="emrgRsn           != null"> , EMRG_RSN             = #{emrgRsn}           </if>
+             
+           <if test="paperNo           != null"> , PAPER_NO             = #{paperNo}           </if>
+           <if test="paperNm           != null"> , PAPER_NM             = #{paperNm}           </if>
+           <if test="paperFileNm       != null"> , PAPER_FILE_NM        = #{paperFileNm}       </if>
+           <if test="viewRqstUserId    != null"> , VIEW_RQST_USER_ID    = #{viewRqstUserId}    </if>
+           <if test="viewAprvUserId    != null"> , VIEW_APRV_USER_ID    = #{viewAprvUserId}    </if>
+             
+           <if test="tvoPrgrsYmdhms    != null"> , TVO_PRGRS_YMDHMS     = #{tvoPrgrsYmdhms}    </if>
+           <if test="tvoPrgrsYmdhms    == null"> , TVO_PRGRS_YMDHMS     = TO_CHAR(NOW(), 'YYYYMMDDHH24MISS') </if>
+            
+           <if test="tvoPrgrsCd        != null"> , TVO_PRGRS_CD         = #{tvoPrgrsCd}        </if>
+           <if test="tvoPrgrsDtl       != null"> , TVO_PRGRS_DTL        = #{tvoPrgrsDtl}       </if>
+           <if test="viewEndYmdhmsWant != null"> , VIEW_END_YMDHMS_WANT = #{viewEndYmdhmsWant} </if>
+           <if test="viewEndYmdhms     != null"> , VIEW_END_YMDHMS      = #{viewEndYmdhms}     </if>
+             
+           <if test="viewResultTyCd    != null"> , VIEW_RESULT_TY_CD    = #{viewResultTyCd}    </if>
+           <if test="viewResultTyDtl   != null"> , VIEW_RESULT_TY_DTL   = #{viewResultTyDtl}   </if>
+           <if test="rqstSysCd         != null"> , RQST_SYS_CD          = #{rqstSysCd}         </if>
+      <!-- <if test="useRsltRgstYn     != null"> , USE_RSLT_RGST_YN     = #{useRsltRgstYn}     </if>
+           <if test="rqstTyCd          != null"> , RQST_TY_CD           = #{rqstTyCd}          </if> -->
+        where DSTRT_CD     = #{dstrtCd}
+          and VIEW_RQST_NO = #{viewRqstNo}
+    </update>
+
+    <delete id="deleteTvoViewRqst" parameterType="viewRqstVO">
+    /* deleteTvoViewRqst */
+        delete from TVO_VIEW_RQST
+         where DSTRT_CD     = #{dstrtCd}
+           and VIEW_RQST_NO = #{viewRqstNo}
+    </delete>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <!-- 열람연장 신청 -->
+    <sql id="selectViewExtnListSql">
+        select TVRE.DSTRT_CD        , (select dstrt_nm from cm_dstrt_cd_mng cdcm where cdcm.dstrt_cd = tvre.dstrt_cd) dstrt_nm
+             , TVRE.VIEW_RQST_NO    , TVRE.VIEW_EXTN_RQST_YMDHMS      , TVRE.RQST_VIEW_END_YMDHMS
+             , VIEW_EXTN_RQST_RSN   , VIEW_EXTN_RQST_USER_ID
+           <if test="saltText == null ">
+             , COALESCE(FN_USER_NM(TVRE.VIEW_EXTN_RQST_USER_ID),TVRE.VIEW_EXTN_RQST_USER_ID)                       as VIEW_EXTN_RQST_USER_NM
+           </if>
+           <if test="saltText != null ">
+             , COALESCE(FN_USER_NM_DEC(TVRE.VIEW_EXTN_RQST_USER_ID, #{saltText}::bytea),TVRE.VIEW_EXTN_RQST_USER_ID) as VIEW_EXTN_RQST_USER_NM
+           </if>
+             , APRV_VIEW_END_YMDHMS
+             , TVRE.TVO_PRGRS_CD
+             , FN_GET_TC_CODE('VIEW_PRGRS', COALESCE(TVRE.TVO_PRGRS_CD, '')) as TVO_PRGRS_NM
+             , TVRE.TVO_PRGRS_DTL
+             , TVRE.TVO_PRGRS_YMDHMS
+             , TVR.EVT_NO
+             , TVR.EVT_NM
+             , TVR.VIEW_END_YMDHMS
+          from TVO_VIEW_RQST_EXTN TVRE
+          join TVO_VIEW_RQST TVR on TVRE.DSTRT_CD     = TVR.DSTRT_CD
+                                and TVRE.VIEW_RQST_NO = TVR.VIEW_RQST_NO
+           <if test="viewEndYmdhms != null and viewEndYmdhms != ''"> and TVR.VIEW_END_YMDHMS  LIKE CONCAT(#{viewEndYmdhms}, '%') </if>
+           <if test="evtNo         != null and evtNo         != ''"> and TVR.EVT_NO           = #{evtNo}               </if>
+         where 1 = 1
+           <if test="viewExtnRqstUserId != null and viewExtnRqstUserId != ''"> and VIEW_EXTN_RQST_USER_ID = #{viewExtnRqstUserId}           </if>
+           <if test="viewExtnRqstYmdhms != null and viewExtnRqstYmdhms != ''"> and TVRE.VIEW_EXTN_RQST_YMDHMS LIKE CONCAT(#{viewExtnRqstYmdhms}, '%') </if>
+           <if test="viewExtnRqstRsn    != null and viewExtnRqstRsn    != ''"> and VIEW_EXTN_RQST_RSN    LIKE CONCAT('%', #{viewExtnRqstRsn}, '%')    </if>
+           <if test="tvoPrgrsCd         != null and tvoPrgrsCd         != ''"> and TVRE.TVO_PRGRS_CD           = #{tvoPrgrsCd}                        </if>
+    </sql>
+
+    <select id="selectViewExtnList" parameterType="viewSrchVO" resultType="egovMap">
+    /* selectViewExtnList */
+        <include refid="selectViewExtnListSql"/>
+        order by VIEW_EXTN_RQST_YMDHMS DESC
+        offset #{firstRecordIndex} limit #{recordCountPerPage}
+    </select>
+
+    <select id="selectViewExtnListTotCnt" parameterType="viewSrchVO" resultType="int">
+    /* selectViewExtnListTotCnt */
+        select COUNT(1) as CNT from (
+            <include refid="selectViewExtnListSql"/>
+        ) CNT
+    </select>
+    
+    
+    
+    <select id="selectViewExtnHisListTotCnt" parameterType="viewSrchVO" resultType="int">
+    /* selectViewExtnHisListTotCnt */
+        select COUNT(1) as CNT
+          from ( select DSTRT_CD , VIEW_RQST_NO , VIEW_EXTN_RQST_YMDHMS
+                   from TVO_VIEW_RQST_EXTN
+                  where DSTRT_CD     = #{dstrtCd}
+                    and VIEW_RQST_NO = #{viewRqstNo}
+                    <if test="viewExtnRqstUserId != null and viewExtnRqstUserId != ''"> and VIEW_EXTN_RQST_USER_ID = #{viewExtnRqstUserId}           </if>
+        ) CNT
+    </select>
+
+    <select id="selectViewExtnHisList" parameterType="viewSrchVO" resultType="egovMap">
+    /* selectViewExtnHisList */
+        select DSTRT_CD    , (select dstrt_nm from cm_dstrt_cd_mng cdcm where cdcm.dstrt_cd = tvre.dstrt_cd) dstrt_nm 
+             , VIEW_RQST_NO         , VIEW_EXTN_RQST_YMDHMS    , VIEW_EXTN_RQST_RSN
+             , RQST_VIEW_END_YMDHMS , APRV_VIEW_END_YMDHMS     , VIEW_EXTN_RQST_USER_ID
+             , TVO_PRGRS_CD         , FN_GET_TC_CODE('VIEW_PRGRS', COALESCE(TVO_PRGRS_CD, '')) as TVO_PRGRS_NM
+             , TVO_PRGRS_DTL        , TVO_PRGRS_YMDHMS
+          from TVO_VIEW_RQST_EXTN tvre
+         where DSTRT_CD     = #{dstrtCd}
+           and VIEW_RQST_NO = #{viewRqstNo}
+           <if test="viewExtnRqstUserId != null and viewExtnRqstUserId != ''"> and VIEW_EXTN_RQST_USER_ID = #{viewExtnRqstUserId}           </if>
+        order by VIEW_EXTN_RQST_YMDHMS DESC
+        offset #{firstRecordIndex} limit #{recordCountPerPage}
+    </select>
+
+
+
+
+
+    <select id="selectViewExtnDtl" parameterType="map" resultType="egovMap">
+    /* selectViewExtnDtl */
+        select TVRE.DSTRT_CD      , (select dstrt_nm from cm_dstrt_cd_mng cdcm where cdcm.dstrt_cd = tvre.dstrt_cd) dstrt_nm
+             , TVRE.VIEW_RQST_NO     , VIEW_EXTN_RQST_YMDHMS        , VIEW_EXTN_RQST_YMDHMS as VIEW_EXTN_RQST_YMDHMS_ORGN
+             , CASE WHEN VIEW_EXTN_RQST_YMDHMS IS NULL                                THEN ''
+                    ELSE TO_CHAR(TO_TIMESTAMP(VIEW_EXTN_RQST_YMDHMS, 'YYYYMMDDHH24MISS'), 'YYYY-MM-DD HH24:MI:SS') END as VIEW_EXTN_RQST_YMD_HMS
+             , RQST_VIEW_END_YMDHMS as RQST_VIEW_END_YMDHMS_ORGN
+             , CASE WHEN RQST_VIEW_END_YMDHMS IS NULL                                 THEN ''
+                    ELSE TO_CHAR(TO_TIMESTAMP(RQST_VIEW_END_YMDHMS, 'YYYYMMDDHH24MISS'), 'YYYY-MM-DD HH24:MI:SS')  END as RQST_VIEW_END_YMD_HMS
+             , VIEW_EXTN_RQST_RSN
+             , VIEW_EXTN_RQST_USER_ID             , VIEW_EXTN_APRV_USER_ID
+           <if test="saltText == null ">
+             , COALESCE(FN_USER_NM(VIEW_EXTN_RQST_USER_ID), VIEW_EXTN_RQST_USER_ID) as VIEW_EXTN_RQST_USER_NM
+             , COALESCE(FN_USER_NM(VIEW_EXTN_APRV_USER_ID), VIEW_EXTN_APRV_USER_ID) as VIEW_EXTN_APRV_USER_NM
+           </if>
+           <if test="saltText != null ">
+             , COALESCE(FN_USER_NM_DEC(VIEW_EXTN_RQST_USER_ID, #{saltText}::bytea), VIEW_EXTN_RQST_USER_ID) as VIEW_EXTN_RQST_USER_NM
+             , COALESCE(FN_USER_NM_DEC(VIEW_EXTN_APRV_USER_ID, #{saltText}::bytea), VIEW_EXTN_APRV_USER_ID) as VIEW_EXTN_APRV_USER_NM
+           </if>
+             , APRV_VIEW_END_YMDHMS as APRV_VIEW_END_YMDHMS_ORGN
+             , CASE WHEN ( APRV_VIEW_END_YMDHMS IS NULL or APRV_VIEW_END_YMDHMS = '' ) THEN ''
+                    ELSE TO_CHAR(TO_TIMESTAMP(APRV_VIEW_END_YMDHMS, 'YYYYMMDDHH24MISS'), 'YYYY-MM-DD HH24:MI:SS')  END as APRV_VIEW_END_YMD_HMS
+             , TVRE.TVO_PRGRS_CD
+             , FN_GET_TC_CODE('VIEW_PRGRS', COALESCE(TVRE.TVO_PRGRS_CD, '')) as TVO_PRGRS_NM
+             , TVRE.TVO_PRGRS_DTL
+             , TVRE.TVO_PRGRS_YMDHMS as TVO_PRGRS_YMDHMS_ORGN
+             , CASE WHEN TVRE.TVO_PRGRS_YMDHMS IS NULL                                THEN ''
+                    ELSE TO_CHAR(TO_TIMESTAMP(TVRE.TVO_PRGRS_YMDHMS, 'YYYYMMDDHH24MISS'), 'YYYY-MM-DD HH24:MI:SS') END as TVO_PRGRS_YMD_HMS
+             , TVR.VIEW_END_YMDHMS as VIEW_END_YMDHMS_ORGN
+             , CASE WHEN TVR.VIEW_END_YMDHMS IS NULL                                  THEN ''
+                    ELSE TO_CHAR(TO_TIMESTAMP(TVR.VIEW_END_YMDHMS, 'YYYYMMDDHH24MISS'), 'YYYY-MM-DD HH24:MI:SS')   END as VIEW_END_YMD_HMS
+             , TVR.EVT_NO
+             , TVR.EVT_NM
+          from TVO_VIEW_RQST_EXTN TVRE
+          join TVO_VIEW_RQST TVR on TVRE.VIEW_RQST_NO = TVR.VIEW_RQST_NO
+         where TVRE.DSTRT_CD              = #{dstrtCd}
+           and TVRE.VIEW_RQST_NO          = #{viewRqstNo}
+           and TVRE.VIEW_EXTN_RQST_YMDHMS = #{viewExtnRqstYmdhms}
+    </select>
+
+    <insert id="insertTvoViewProdExtn" parameterType="map">
+    /* insertTvoViewProdExtn */
+        insert into TVO_VIEW_RQST_EXTN
+             ( DSTRT_CD
+             , VIEW_RQST_NO                 , VIEW_EXTN_RQST_YMDHMS
+             , TVO_PRGRS_CD                 , TVO_PRGRS_YMDHMS
+             , RQST_VIEW_END_YMDHMS         , VIEW_EXTN_RQST_RSN
+             , VIEW_EXTN_RQST_USER_ID       , VIEW_EXTN_APRV_USER_ID
+             )
+        values
+             ( #{dstrtCd}
+             , #{viewRqstNo}                , TO_CHAR(NOW(), 'YYYYMMDDHH24MISS')
+             , #{tvoPrgrsCd}                , TO_CHAR(NOW(), 'YYYYMMDDHH24MISS')
+             , #{rqstViewEndYmdhms}         , #{viewExtnRqstRsn}
+             , #{viewExtnRqstUserId}        , #{viewExtnAprvUserId}
+             )
+    </insert>
+
+    <update id="updateTvoViewProdExtn" parameterType="map">
+    /* updateTvoViewProdExtn */
+        update TVO_VIEW_RQST_EXTN
+           set TVO_PRGRS_YMDHMS = TO_CHAR(NOW(), 'YYYYMMDDHH24MISS')
+           <if test="tvoPrgrsCd         != null"> , TVO_PRGRS_CD           = #{tvoPrgrsCd}         </if>
+           <if test="tvoPrgrsDtl        != null"> , TVO_PRGRS_DTL          = #{tvoPrgrsDtl}        </if>
+           <if test="aprvViewEndYmdhms  != null"> , APRV_VIEW_END_YMDHMS   = #{aprvViewEndYmdhms}  </if>
+           <if test="viewExtnRqstRsn    != null"> , VIEW_EXTN_RQST_RSN     = #{viewExtnRqstRsn}    </if>
+           <if test="viewExtnAprvUserId != null"> , VIEW_EXTN_APRV_USER_ID = #{viewExtnAprvUserId} </if>
+         where DSTRT_CD              = #{dstrtCd}
+           and VIEW_RQST_NO          = #{viewRqstNo}
+           and VIEW_EXTN_RQST_YMDHMS = #{viewExtnRqstYmdhms}
+    </update>
+    
+    <delete id="deleteTvoViewProdExtn" parameterType="map">
+    /* deleteTvoViewProdExtn */
+        delete from TVO_VIEW_RQST_EXTN
+         where DSTRT_CD     = #{dstrtCd}
+           and VIEW_RQST_NO = #{viewRqstNo}
+           <if test="viewExtnRqstYmdhms != null and viewExtnRqstYmdhms != ''"> and VIEW_EXTN_RQST_YMDHMS = #{viewExtnRqstYmdhms} </if>
+         <!-- and VIEW_RQST_USER_ID = #{viewRqstUserId} -->
+    </delete>
+    
+
+
+    <select id="selectAllTypeRqstList" parameterType="viewSrchVO" resultType="egovMap">
+    /* selectAllTypeRqstList */
+        select 'VIEW'               as TY          /*열람신청*/
+             , TVR.VIEW_RQST_YMDHMS as RQST_YMDHMS
+             , TVR.EVT_NM                                               as NM
+             , FN_GET_TC_CODE('VIEW_PRGRS', COALESCE(TVO_PRGRS_CD, '')) as PRGRS_NM
+             , TVR.TVO_PRGRS_CD                                         as PRGRS_CD
+               <![CDATA[
+             , (select concat('/','tvo/view/viewAprv.do?top=',prnt_pgm_menu_id,'&m=', pgm_menu_id) from cm_pgm_menu cpm 
+                 where pgm_id = ( select pgm_id from cm_program cp where pgm_url ='tvo/view/viewAprv.do' )
+                ) URL
+               ]]>
+          from TVO_VIEW_RQST TVR
+         where (TVO_PRGRS_CD = '10'         /* 신청 */
+               or ( (TVO_PRGRS_CD = '51')   /* 자동승인 */
+                    and (TO_CHAR(TO_TIMESTAMP(TVR.VIEW_RQST_YMDHMS, 'YYYYMMDDHH24MISS'), 'YYYYMMDD') = TO_CHAR(NOW(), 'YYYYMMDD'))
+                  )
+               )
+         union all
+        select 'VIEWEXTN'                 as TY          /*열람연장신청*/
+             , TVRE.VIEW_EXTN_RQST_YMDHMS as RQST_YMDHMS
+             , (select EVT_NM from TVO_VIEW_RQST TVR where TVR.VIEW_RQST_NO =TVRE.VIEW_RQST_NO ) as NM
+             , FN_GET_TC_CODE('VIEW_PRGRS', COALESCE(TVO_PRGRS_CD, ''))                          as PRGRS_NM
+             , TVRE.TVO_PRGRS_CD                                                                 as PRGRS_CD
+               <![CDATA[
+             , (select concat('/','tvo/view/viewExtnAprv.do?top=',prnt_pgm_menu_id,'&m=', pgm_menu_id) from cm_pgm_menu cpm
+                 where pgm_id = ( select pgm_id from cm_program cp where pgm_url ='tvo/view/viewExtnAprv.do' )
+                ) URL
+               ]]>
+          from TVO_VIEW_RQST_EXTN TVRE
+         where (TVO_PRGRS_CD = '10'        /* 신청 */
+               or ( (TVO_PRGRS_CD = '51')  /* 자동승인 */
+                    and (TO_CHAR(TO_TIMESTAMP(TVRE.VIEW_EXTN_RQST_YMDHMS, 'YYYYMMDDHH24MISS'), 'YYYYMMDD') = TO_CHAR(NOW(), 'YYYYMMDD'))
+                  )
+               )
+         union all
+        select 'OUT'               as TY          /*반출신청*/
+             , TOR.OUT_RQST_YMDHMS as RQST_YMDHMS
+             , (select FCLT_LBL_NM  from cm_facility cf where cf.FCLT_ID = TOR.CCTV_ID) as NM
+             , FN_GET_TC_CODE('OUT_PRGRS', COALESCE(TVO_PRGRS_CD, ''))                  as PRGRS_NM
+             , TOR.TVO_PRGRS_CD                                                         as PRGRS_CD
+               <![CDATA[
+             , (select concat('/','tvo/out/outAprv.do?top=',prnt_pgm_menu_id,'&m=', pgm_menu_id) from cm_pgm_menu cpm
+                 where pgm_id = ( select pgm_id from cm_program cp where pgm_url ='tvo/out/outAprv.do' )
+               ) URL
+               ]]>
+          from TVO_OUT_RQST TOR
+         where (TVO_PRGRS_CD ='10'                               /* 신청 */
+               or ( (TVO_PRGRS_CD = '51' or TVO_PRGRS_CD = '71') /* 입수자동승인, 반출자동승인 */ 
+                    and (TO_CHAR(TO_TIMESTAMP(TOR.OUT_RQST_YMDHMS, 'YYYYMMDDHH24MISS'), 'YYYYMMDD') = TO_CHAR(NOW(), 'YYYYMMDD'))
+                  )
+               )
+         union all
+        select 'OUTEXTN'                 as TY          /*반출연장신청*/
+             , TORE.OUT_EXTN_RQST_YMDHMS as RQST_YMDHMS
+             , (select FCLT_LBL_NM  from cm_facility cf where cf.FCLT_ID = 
+                  (select CCTV_ID from TVO_OUT_RQST TOR where TOR.OUT_RQST_NO = TORE.OUT_RQST_NO)
+               )                                                                               as NM
+             , FN_GET_TC_CODE('OUT_PRGRS', COALESCE(TVO_PRGRS_CD, ''))                       as PRGRS_NM
+             , TORE.TVO_PRGRS_CD                                                             as PRGRS_CD
+               <![CDATA[
+             , (select concat('/','tvo/out/outExtnAprv.do?top=',prnt_pgm_menu_id,'&m=', pgm_menu_id) from cm_pgm_menu cpm
+                 where pgm_id = ( select pgm_id from cm_program cp where pgm_url ='tvo/out/outExtnAprv.do' )
+               ) URL
+               ]]>
+          from TVO_OUT_RQST_EXTN TORE
+         where (TVO_PRGRS_CD = '10'        /* 신청 */
+               or ( (TVO_PRGRS_CD = '51')  /* 자동승인 */
+                    and (TO_CHAR(TO_TIMESTAMP(TORE.OUT_EXTN_RQST_YMDHMS, 'YYYYMMDDHH24MISS'), 'YYYYMMDD') = TO_CHAR(NOW(), 'YYYYMMDD'))
+                  )
+               )
+         union all
+        select 'APPLY'                                 as TY          /*회원가입신청*/
+             , TO_CHAR(CU.RGS_DATE,'YYYYMMDDHH24MISS') as RQST_YMDHMS
+           <if test="saltText == null ">
+             , CU.USER_NM_KO ||'('|| fn_get_tc_code('USER_INSTT_NM',CU.INSTT_CD) ||')' as NM
+           </if>
+           <if test="saltText != null ">
+             , convert_from(decrypt(decode(CU.USER_NM_KO,'hex')::bytea,#{saltText}::bytea,'aes'),'utf8') ||'('|| fn_get_tc_code('USER_INSTT_NM',CU.INSTT_CD) ||')' as NM
+           </if>
+             , '신청' as PRGRS_NM
+             , '10' as TVO_PRGRS_CD
+               <![CDATA[
+             , (select concat('/','wrks/sstm/usr/usrApprove.do?top=','d70879cc-6a3e-4296-4e655308','&left=',prnt_pgm_menu_id,'&m=', pgm_menu_id) from cm_pgm_menu cpm
+                 where pgm_id = ( select pgm_id from cm_program cp where pgm_url ='wrks/sstm/usr/usrApprove.do' )
+               ) URL
+               ]]>
+          from CM_USER CU
+     left join CM_GRP_USER GU on CU.USER_ID = GU.USER_ID and CU.DSTRT_CD = GU.DSTRT_CD
+         where CU.USER_ID != 'sys'
+           and CU.USE_TY_CD = 'Y'
+           and CU.USER_APPROVE_TY = '0'
+         order by RQST_YMDHMS desc
+         offset #{firstRecordIndex} limit #{recordCountPerPage}
+    </select>
+
+</mapper>

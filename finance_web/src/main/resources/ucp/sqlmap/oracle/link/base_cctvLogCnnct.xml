@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.co.ucp.link.base.cctvlog.service.BaseCctvLogCnnctMapper">
+
+    <update id="updateCctvLogCnnct" parameterType="hMap">
+    /* updateCctvLogCnnct */
+        insert into UM_CCTV_VIEW_LOG
+             ( SEQ_NO
+             , USER_ID   , DSTRT_CD    , FCLT_ID    , EVT_OCR_NO
+             , CONN_DATE
+             , END_DATE
+             )
+        values
+             ( #{seqNo}::numeric
+             , #{userId}  , #{wDstrtCd}  , #{cctvId}  , #{ocrNo}
+        <choose>
+            <when test='cnnctYmdHms != null and cnnctYmdHms != ""'>
+                , TO_TIMESTAMP(#{cnnctYmdHms},'YYYYMMDDHH24MISS')
+            </when>
+            <otherwise>            , NOW()            </otherwise>
+        </choose>
+        <choose>
+            <when test='endYmdHms   != null and endYmdHms   != ""'>
+                , TO_TIMESTAMP(#{endYmdHms},'YYYYMMDDHH24MISS')
+            </when>
+            <otherwise>            , NOW()            </otherwise>
+        </choose>
+        )
+    </update>
+    
+</mapper>

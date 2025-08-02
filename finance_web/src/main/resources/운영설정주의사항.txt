@@ -1,0 +1,7 @@
+## context-common.xml
+  	 REAL 활성화
+  	<import resource="import-datasource-REAL.xml" />
+  	 DEV 주석처리
+  	 <!--
+  	<import resource="import-datasource-DEV.xml" />
+  	-->

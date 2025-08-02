@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.co.ucp.cmm.service.CmmMapper">
+
+    <sql id="pagingHeader">SELECT *
+			FROM (
+				SELECT	COUNT(*) OVER() AS ROWCNT
+						, ROWNUM AS RK
+						, R.*
+				FROM 	(
+    </sql>
+    <sql id="pagingBottom">
+				) R
+			)
+		WHERE  RK BETWEEN ((TO_NUMBER(#{pageNo}) - 1) * TO_NUMBER(#{rowsPerPage})) + 1
+		AND (TO_NUMBER(#{pageNo}) * TO_NUMBER(#{rowsPerPage}))
+    </sql>
+
+    <select id="getYmdHms"  resultType="egovMap">
+        select TO_CHAR(NOW(), 'YYYYMMDDHH24MISS')      AS YMD_HMS
+             , TO_CHAR(NOW(), 'YYYYMMDD')              AS YMD
+             , TO_CHAR(NOW(), 'HH24')                  AS HH
+             , TO_CHAR(NOW(), 'MI')                    AS MI
+             , TO_CHAR(NOW(), 'SS')                    AS SS
+             , TO_CHAR(NOW(), 'YYYY-MM-DD HH24:MI:SS') AS FMT_YMD_HMS
+             , TO_CHAR(NOW(), 'YYYY-MM-DD')            AS FMT_YMD
+             , TO_CHAR(NOW(), 'HH24:MI:SS')            AS FMT_HMS
+    </select>
+
+    <!--
+    WITH A AS (
+                  select PG_ATTRIBUTE.ATTNAME
+                       , FORMAT_TYPE(PG_ATTRIBUTE.ATTTYPID, PG_ATTRIBUTE.ATTTYPMOD)
+                  from PG_INDEX
+                     , PG_CLASS
+                     , PG_ATTRIBUTE
+                     , PG_NAMESPACE
+                  where PG_CLASS.OID = 'CM_CCTV_CTL_USED_TY'::REGCLASS
+                    and INDRELID = PG_CLASS.OID
+                    and NSPNAME = 'public'
+                    and PG_CLASS.RELNAMESPACE = PG_NAMESPACE.OID
+                    and PG_ATTRIBUTE.ATTRELID = PG_CLASS.OID
+                    and PG_ATTRIBUTE.ATTNUM = ANY (PG_INDEX.INDKEY)
+                    and INDISPRIMARY
+              )
+
+    select COL.TABLE_NAME
+         , COL.COLUMN_NAME
+         , ( select CASE WHEN A.attname IS NULL THEN 'N' ELSE 'Y' END from A where COL.COLUMN_NAME = A.ATTNAME ) AS PRIMARY_KEY_YN
+         , I.COLUMN_COMMENT
+         , CASE
+               WHEN COL.DATA_TYPE = 'character varying' THEN 'varchar'
+               WHEN COL.DATA_TYPE = 'character' THEN 'char'
+               WHEN COL.DATA_TYPE = 'numeric' THEN 'number'
+               WHEN COL.DATA_TYPE = 'double precision' THEN 'number'
+               ELSE COL.DATA_TYPE
+        END  AS DATA_TYPE
+         , CASE WHEN COL.DATA_TYPE LIKE '%character%' THEN COL.CHARACTER_MAXIMUM_LENGTH ELSE COL.NUMERIC_PRECISION END  AS DATA_LENGTH
+         , CASE WHEN COL.IS_NULLABLE = 'YES' THEN 'Y' ELSE 'N' END  AS NULLABLE
+         , COL.DATA_TYPE
+         , COL.CHARACTER_MAXIMUM_LENGTH
+         , COL.NUMERIC_PRECISION
+         , TC.*
+    from INFORMATION_SCHEMA.COLUMNS                COL
+    JOIN      (
+                  select PS.RELNAME     AS TABLE_NAME
+                       , PA.ATTNAME     AS COLUMN_NAME
+                       , PD.DESCRIPTION AS COLUMN_COMMENT
+                  from PG_STAT_ALL_TABLES PS
+                     , PG_DESCRIPTION     PD
+                     , PG_ATTRIBUTE       PA
+                  where PS.SCHEMANAME = ( select SCHEMANAME from PG_STAT_USER_TABLES where RELNAME = #{tableName} )
+                    and PS.RELNAME = #{tableName}
+                    and PS.RELID = PD.OBJOID
+                    and PD.OBJSUBID != 0
+                    and PD.OBJOID = PA.ATTRELID
+                    and PD.OBJSUBID = PA.ATTNUM
+              )                                    I
+              ON COL.TABLE_NAME = I.TABLE_NAME and COL.COLUMN_NAME = I.COLUMN_NAME
+    left join INFORMATION_SCHEMA.TABLE_CONSTRAINTS TC ON TC.TABLE_NAME = #{tableName} and TC.TABLE_SCHEMA = #{schemaName}
+    where COL.TABLE_CATALOG = #{schemaName}
+      and COL.TABLE_NAME = #{tableName}
+    order by COL.ORDINAL_POSITION
+    -->
+
+    <select id="selectTableInfoList"  resultType="egovMap">
+        select COL.TABLE_NAME
+             , COL.COLUMN_NAME
+             , I.COLUMN_COMMENT
+             , CASE WHEN COL.DATA_TYPE = 'character varying' THEN 'varchar'
+                    WHEN COL.DATA_TYPE = 'character'         THEN 'char'
+                    WHEN COL.DATA_TYPE = 'numeric'           THEN 'number'
+                    WHEN COL.DATA_TYPE = 'double precision'  THEN 'number'
+                    ELSE COL.DATA_TYPE
+               END  AS DATA_TYPE
+             , CASE WHEN COL.DATA_TYPE LIKE '%character%' THEN COL.CHARACTER_MAXIMUM_LENGTH ELSE COL.NUMERIC_PRECISION END  AS DATA_LENGTH
+             , CASE WHEN COL.IS_NULLABLE = 'YES' THEN 'Y' ELSE 'N' END  AS NULLABLE
+             , COL.DATA_TYPE
+             , COL.CHARACTER_MAXIMUM_LENGTH
+             , COL.NUMERIC_PRECISION
+             , TC.*
+        from INFORMATION_SCHEMA.COLUMNS                COL
+        JOIN      (
+                      select PS.RELNAME     AS TABLE_NAME
+                           , PA.ATTNAME     AS COLUMN_NAME
+                           , PD.DESCRIPTION AS COLUMN_COMMENT
+                      from PG_STAT_ALL_TABLES PS
+                         , PG_DESCRIPTION     PD
+                         , PG_ATTRIBUTE       PA
+                      where PS.SCHEMANAME = ( select SCHEMANAME from PG_STAT_USER_TABLES where RELNAME = #{tableName} )
+                        and PS.RELNAME = #{tableName}
+                        and PS.RELID = PD.OBJOID
+                        and PD.OBJSUBID != 0
+                        and PD.OBJOID = PA.ATTRELID
+                        and PD.OBJSUBID = PA.ATTNUM
+                  )                                    I
+                  ON COL.TABLE_NAME = I.TABLE_NAME and COL.COLUMN_NAME = I.COLUMN_NAME
+        left join INFORMATION_SCHEMA.TABLE_CONSTRAINTS TC ON TC.TABLE_NAME = #{tableName} and TC.TABLE_SCHEMA = #{schemaName}
+        where COL.TABLE_CATALOG = #{schemaName}
+          and COL.TABLE_NAME = #{tableName}
+        order by COL.ORDINAL_POSITION
+    </select>
+
+    <update id="updateUserPwd" parameterType="hMap">
+        UPDATE CM_USER
+            SET PASSWORD     = #{password}
+              , UPD_USER_ID  = #{userId}
+              , UPD_DATE     = NOW()
+              , PW_CHG_DT_SYS = NOW()
+        where USER_ID = #{userId}
+    </update>
+
+    <select id="getCdInfo" parameterType="hMap" resultType="egovMap">
+        select CD_ID
+            , CD_NM_KO
+            , CD_NM_EN
+            , CD_DSCRT
+            , CD_GRP_ID
+            , CD_GRP_NM
+        from CM_TC_CODE
+        where CD_ID = #{cdId}
+          and CD_GRP_ID = #{cdGrpId}
+         limit 1
+    </select>
+
+    <select id="getSeqDt" resultType="String">
+            select FN_SEQ_DT()
+    </select>
+
+    <select id="getSeqNo" parameterType="String"  resultType="String">
+            select fn_seq_no(#{value})
+    </select>
+    
+</mapper>

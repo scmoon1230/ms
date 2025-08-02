@@ -1,0 +1,274 @@
+section#body article {
+	padding: 0px;
+	overflow-x: hidden;
+	overflow-y: hidden;
+}
+
+#map {
+	position: absolute;
+	top: 40px;
+	right: 0px;
+	bottom: 0px;
+	left: 0px;
+	margin: 0px;
+	padding: 0px;
+}
+
+#container-map .navbar {
+	min-height: 40px;
+	z-index: 1;
+}
+
+#container-map .navbar-form {
+	margin-top: 4px;
+	margin-bottom: 4px;
+}
+
+.ol-overlay.panel {
+	display: none;
+}
+
+.ol-overlay.panel .panel-heading, .ol-overlay.panel .panel-body {
+	padding: 5px;
+}
+
+.ol-overlay.panel .panel-heading button.close {
+	font-size: 15px;
+}
+
+.ol-overlay.panel .panel-body table.table {
+	margin-bottom: 0px;
+}
+
+.ol-overlay.panel .panel-body table.table th {
+	text-align: left;
+}
+
+button.ol-overlay-new-window {
+	font-size: 15px;
+	opacity: 0.8;
+	margin: 0px 4px 4px 0px;
+}
+
+button.ol-overlay-close {
+	font-size: 15px;
+	opacity: 0.8;
+	margin-bottom: 4px;
+}
+
+button.ol-overlay-close:focus {
+	outline: 0;
+}
+
+#map .ol-overlay-container.ol-selectable {
+	z-index: 0;
+}
+
+.ol-overlay-container .popover-title, .ol-overlay-container .popover-content {
+    min-width: 320px;
+    font-size: 11px;
+}
+
+.ol-overlay-container .popover-title {
+    padding: 5px;
+}
+
+.ol-overlay-container .popover-content {
+    padding: 5px 5px 0 5px;
+}
+
+.ol-overlay-container .popover-content .web-rtc-view-container {
+    width: 100%;
+    height: 100%;
+    background-color: #000;
+}
+
+.ol-overlay-container .popover-content .web-rtc-view-container video {
+    display: block;
+}
+
+.ol-overlay-container .popover-content .web-rtc-view-container .web-rtc-view-container-buttons {
+    display: none;
+}
+
+.ol-overlay-container .popover-content .web-rtc-view-container:hover .web-rtc-view-container-buttons {
+    display: none;
+}
+
+#map .popover {
+	max-width: 480px;
+}
+
+#map-index-container {
+	position: absolute;
+	right: 5px;
+	bottom: 5px;
+	padding: 2px;
+	border-radius: 4px;
+	border: solid 1px #8e8e8e;
+	min-height: 24px;
+	min-width: 24px;
+	opacity: 0.8;
+}
+
+#map-index-container:hover {
+	opacity: 1;
+}
+
+#map-index-container button {
+	position: absolute;
+	display: block;
+	left: 1px;
+	top: 1px;
+	right: 1px;
+	bottom: 1px;
+	margin: 1px;
+	padding: 2px 0px 0px 0px;
+	color: #fff;
+	font-size: 1.14em;
+	font-weight: 700;
+	text-decoration: none;
+	text-align: center;
+	height: 18px;
+	width: 18px;
+	line-height: .4em;
+	background-color: rgba(0, 60, 136, .5);
+	border: none;
+	border-radius: 2px;
+	display: block;
+	margin: 1px;
+}
+
+#map-index-container button:hover {
+	background-color: rgba(0, 60, 136, 1);
+}
+
+#map-index-container button:focus {
+	outline: none;
+}
+
+#map-index {
+	width: 300px;
+	height: 300px;
+}
+
+#table-pointermove-fclt tbody tr td, #table-pointermove-event tbody tr td,
+	#table-click-fclt tbody tr td, #table-click-event tbody tr td {
+	vertical-align: middle;
+}
+
+#table-pointermove-fclt tbody tr td.td-fclt-lbl-nm, #table-click-fclt tbody tr td.td-fclt-lbl-nm {
+	min-width: 150px;
+	max-width: 233px;
+}
+
+#table-pointermove-fclt tbody tr td.td-fclt-lbl-nm i.fas.fa-sync-alt,
+#table-click-fclt tbody tr td.td-fclt-lbl-nm  i.fas.fa-sync-alt {
+	position: relative;
+	top: -1px;
+}
+
+#table-pointermove-fclt tbody tr td.td-fclt-lbl-nm, #table-click-fclt tbody tr td.td-fclt-knd-nm {
+	max-width: 150px;
+}
+
+#table-pointermove-fclt caption, #table-click-fclt caption,
+	#table-pointermove-event caption, #table-click-event caption,
+	#table-pointermove-extra caption, #table-click-extra caption {
+	text-align: left;
+}
+
+.ol-overlay-container.ol-selectable table tr th,
+.ol-overlay-container.ol-selectable table tr td {
+	white-space: nowrap;
+}
+
+#container-pointermove-extra, #container-click-extra {
+	display: none;
+}
+
+.ol-tooltip {
+	position: relative;
+	background: rgba(0, 0, 0, 0.5);
+	border-radius: 4px;
+	color: white;
+	padding: 4px 8px;
+	opacity: 0.7;
+	white-space: nowrap;
+}
+
+.tooltip-measure {
+	opacity: 1;
+	font-weight: bold;
+}
+
+.tooltip-static {
+	background-color: #ffcc33;
+	color: black;
+	border: 1px solid white;
+}
+
+.tooltip-search {
+	background-color: #fff;
+	color: black;
+	opacity: 1;
+	border: 1px solid white;
+}
+
+.tooltip-measure:before, .tooltip-static:before, .tooltip-search:before
+	{
+	border-top: 6px solid rgba(0, 0, 0, 0.5);
+	border-right: 6px solid transparent;
+	border-left: 6px solid transparent;
+	content: "";
+	position: absolute;
+	bottom: -6px;
+	margin-left: -7px;
+	left: 50%;
+}
+
+.tooltip-static:before {
+	border-top-color: #ffcc33;
+}
+
+.tooltip-search:before {
+	border-top-color: #fff;
+}
+
+.ol-zoom button, .ol-overviewmap button {
+	padding-top: 2px;
+}
+
+.ol-zoom button:focus, .ol-overviewmap button:focus {
+	outline: 0;
+}
+
+/**
+  * The zoomslider in the second map shall be placed between the zoom-in and
+  * zoom-out buttons.
+  */
+#map .ol-zoom .ol-zoom-out {
+	margin-top: 104px;
+}
+
+#map .ol-zoomslider {
+	background-color: transparent;
+	top: 2.3em;
+	height: 100px;
+}
+
+#map .ol-touch .ol-zoom .ol-zoom-out {
+	margin-top: 112px;
+}
+
+#map .ol-touch .ol-zoomslider {
+	top: 2.75em;
+}
+
+#map .ol-zoom-in.ol-has-tooltip:hover [role=tooltip], #map .ol-zoom-in.ol-has-tooltip:focus [role=tooltip] {
+	top: 3px;
+}
+
+#map .ol-zoom-out.ol-has-tooltip:hover [role=tooltip], #map .ol-zoom-out.ol-has-tooltip:focus [role=tooltip] {
+	top: 132px;
+}

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.co.ucp.swip.mapper.SwipMapper">
+
+    <select id="selectCmTcFcltUsed" parameterType="hMap" resultType="cmlMap">
+    /* selectCmTcFcltUsed */
+        SELECT FCLT_USED_TY_CD
+             , FCLT_USED_TY_NM
+             , FCLT_KND_CD
+             , USE_TY_CD
+          FROM CM_TC_FCLT_USED
+         WHERE FCLT_KND_CD = 'CTV'
+           <if test="fcltUsedTyNm != null and fcltUsedTyNm != ''"> AND FCLT_USED_TY_NM = #{fcltUsedTyNm} </if>
+    </select>
+
+    <select id="selectCmFacility"  resultType="cmlMap">
+    /* selectCmFacility */
+    select FCLT_ID,           FCLT_UID,          FCLT_LBL_NM,       SIGUNGU_CD,
+           FCLT_KND_CD,       FCLT_KND_DTL_CD,   SYS_CD,            FCLT_USED_TY_CD,
+           FCLT_GDSDT_TY,     LOTNO_ADRES_NM,    ROAD_ADRES_NM,
+           POINT_X,           POINT_Y,           POINT_Z,           USE_TY_CD,    FCLT_ICON_URL_0,
+           FCLT_ICON_URL_1,   FCLT_ICON_URL_2,   FCLT_STTUS,        FCLT_MNGR_TEL_NO,
+           CONN_IP,           CONN_PORT,         CONN_ID,           CONN_PW,
+           FCLT_MAC_ADRES,    GATE_WAY,          SUBNET,            FCLT_INSTL_YMD,
+           SVR_CONN_IP,       SVR_CONN_PORT,     SVR_CONN_ID,       SVR_CONN_PW,
+           DVC_SEE_CCTV_IP,   DVC_SEE_CCTV_PORT, DVC_SEE_CCTV_ID,   DVC_SEE_CCTV_PW,
+           TRA_LINK_ID,       CTR_CD,            DSTRT_CD,          ICON_GIS_DSP_YN,
+           BEFORE_FCLT_ID,    LPR_CCTV_YN,       PRNT_FCLT_ID,      CPLT_PRDT_TY,
+           VT_POINT_TEL_NO,   VT_CENTER_TEL_NO,  MNG_AREA_CD,       CCTV_DUE_NT_AG,
+           CCTV_OSVT_DSTC,    CCTV_OSVT_X,       CCTV_OSVT_Y,       CCTV_OSVT_Z,
+           CCTV_OSVT_AG,      CCTV_HEIGHT,       CCTV_VIEW_AG,      CCTV_VOD_ID,
+           EGB_YN,            PLC_PTR_DIV_CD,    ETC,               DONG_CD,
+           DONG_NM,           LG_DONG_CD,        LG_DONG_NM,        CCTV_AG_YN,
+           MNG_SN,            LINK_VMS_UID,      PRESET_BDW_START_NUM,    CCTV_CHANNEL,    IVA_TY 
+      from CM_FACILITY
+    </select>
+
+</mapper>

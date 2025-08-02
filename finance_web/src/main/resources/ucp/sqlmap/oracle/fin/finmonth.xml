@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ucp.fin.service.FinmonthMapper">
+
+    <select id="selectFinmonth" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectFinmonth */
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingHeader"/>
+        select GB.ACCT_GB , GB.ASSET_GB
+             , (SELECT ACCT_GB_NAME from TB_ACCT_GB A where A.ACCT_GB = GB.ACCT_GB) ACCT_GB_NAME
+             , CASE WHEN GB.ASSET_GB = '1' THEN '정기예적금' WHEN GB.ASSET_GB = '2' THEN '일반예금'
+                    WHEN GB.ASSET_GB = '3' THEN '대여금'    WHEN GB.ASSET_GB = '9' THEN '기타'      ELSE '-'
+                END AS ASSET_GB_NAME
+             , PREV.PREV_AMT
+             , CASE WHEN LAST.LAST_AMT - PREV.PREV_AMT <![CDATA[>]]> 0 THEN LAST.LAST_AMT - PREV.PREV_AMT END PLUS_AMT
+             , CASE WHEN LAST.LAST_AMT - PREV.PREV_AMT <![CDATA[<]]> 0 THEN LAST.LAST_AMT - PREV.PREV_AMT END MINUS_AMT
+             , LAST.LAST_AMT
+          from ( select A.ACCT_GB, B.ASSET_GB
+                   from ( select * from TB_ACCT_GB where ACCT_GB <![CDATA[<=]]> '9' ) A
+                      , ( select '1' AS ASSET_GB from DUAL UNION select '2' AS ASSET_GB from DUAL UNION
+                          select '3' AS ASSET_GB from DUAL UNION select '9' AS ASSET_GB from DUAL ) B
+               ) GB
+     left join ( select ACCT_GB, ASSET_GB, SUM(MONEY_AMT) PREV_AMT
+                   from ( select FI.ACCT_GB, FI.ASSET_GB, FM.ASSET_CODE, (FM.INIT_AMT+FM.ADD_AMT) MONEY_AMT
+                            from TB_FINANCE_MAST FM
+                       left join TB_FINANCE_INFO FI ON FI.ASSET_CODE = FM.ASSET_CODE
+                               , ( select MAX(FM.STAN_YMD) PREV_YMD
+                                     from TB_FINANCE_MAST FM
+                                    where FM.STAN_YMD LIKE TO_CHAR(ADD_MONTHS(TO_DATE(#{stanYmd},'YYYYMMDD'),-1),'YYYYMM')||'%'
+                                 ) TB
+                           where FM.STAN_YMD = TB.PREV_YMD
+                        ) TBB
+               group by ACCT_GB, ASSET_GB
+               ) PREV ON GB.ACCT_GB = PREV.ACCT_GB and GB.ASSET_GB = PREV.ASSET_GB
+     left join ( select ACCT_GB, ASSET_GB, SUM(MONEY_AMT) LAST_AMT
+                   from ( select FI.ACCT_GB, FI.ASSET_GB, FM.ASSET_CODE, (FM.INIT_AMT+FM.ADD_AMT) MONEY_AMT
+                            from TB_FINANCE_MAST FM 
+                       left join TB_FINANCE_INFO FI ON FI.ASSET_CODE = FM.ASSET_CODE
+                               , ( select MAX(FM.STAN_YMD) LAST_YMD
+                                     from TB_FINANCE_MAST FM
+                                    where FM.STAN_YMD LIKE TO_CHAR(TO_DATE(#{stanYmd},'YYYYMMDD'),'YYYYMM')||'%'
+                                      and FM.STAN_YMD <![CDATA[<=]]> #{stanYmd}
+                                 ) TB
+                           where FM.STAN_YMD = TB.LAST_YMD
+                        ) TBB
+               group by ACCT_GB, ASSET_GB
+               ) LAST ON GB.ACCT_GB = LAST.ACCT_GB and GB.ASSET_GB = LAST.ASSET_GB
+      order by ${sidx} ${sord}
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingBottom"/>
+    </select>
+
+</mapper>

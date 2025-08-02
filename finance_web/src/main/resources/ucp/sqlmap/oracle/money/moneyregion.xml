@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ucp.money.service.MoneyregionMapper">
+
+    <select id="selectMoneyRegion" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectMoneyRegion */
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingHeader"/>
+        select TO_CHAR(TO_DATE(MM.STAN_YMD, 'YYYYMMDD'), 'YYYY-MM-DD') STAN_YMD      , MM.DET_SEQ
+             , MM.WORSHIP_CODE    , W.WORSHIP_NAME              , MM.MONEY_CODE      , M.MONEY_NAME
+             , MM.DEPT_CODE       , MM.DEPT_CODE||'교구'   DEPT_NAME
+             , MM.REGION_CODE     , MM.REGION_CODE||'구역' REGION_NAME
+             , MM.MEMBER_ID       , MM.MONEY_AMT      , MM.CLOSE_YN
+             , MM.USER_ID         , U.USER_NAME       , MM.INPUT_TIME 
+          from TB_MAST_MONEY MM
+             , TB_MONEY   M
+             , TB_WORSHIP W
+             , TB_USER    U
+         where MM.MONEY_CODE     = M.MONEY_CODE
+           and MM.WORSHIP_CODE   = W.WORSHIP_CODE(+)
+           and MM.USER_ID        = U.USER_ID(+)
+           <if test="stanYmd    != null and stanYmd    != '' "> and MM.STAN_YMD    = #{stanYmd}    </if>
+           <if test="moneyCode  != null and moneyCode  != '' "> and MM.MONEY_CODE  = #{moneyCode}  </if>
+           <if test="deptCode   != null and deptCode   != '' "> and MM.DEPT_CODE   = #{deptCode}   </if>
+           <if test="regionCode != null and regionCode != '' "> and MM.REGION_CODE = #{regionCode} </if>
+           <if test="userId     != null and userId     != '' "> and MM.USER_ID     = #{userId}     </if>
+      order by ${sidx} ${sord}
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingBottom"/>
+    </select>
+
+    <select id="selectTotalAmnt" parameterType="java.util.HashMap" resultType="String">
+    /* selectTotalAmnt */
+        select nvl(sum(MONEY_AMT),'0') MONEY_AMT
+          from ( select MM.STAN_YMD
+                      , MM.MONEY_CODE  , M.MONEY_NAME
+                      , MM.USER_ID     , u.USER_NAME   , MM.MONEY_AMT
+                   from TB_MAST_MONEY MM
+                      , TB_MONEY   M
+                      , TB_USER    U
+                  where MM.MONEY_CODE     = M.MONEY_CODE
+                    and MM.USER_ID        = U.USER_ID(+)
+                    <if test="stanYmd    != null and stanYmd    != '' "> and MM.STAN_YMD    = #{stanYmd}    </if>
+                    <if test="moneyCode  != null and moneyCode  != '' "> and MM.MONEY_CODE  = #{moneyCode}  </if>
+                    <if test="deptCode   != null and deptCode   != '' "> and MM.DEPT_CODE   = #{deptCode}   </if>
+                    <if test="regionCode != null and regionCode != '' "> and MM.REGION_CODE = #{regionCode} </if>
+                    <if test="userId     != null and userId     != '' "> and MM.USER_ID     = #{userId}     </if>
+               ) TB
+    </select>
+
+    <insert id="insertMoney" parameterType="java.util.HashMap">
+    /* insertMoney */
+        insert into TB_MAST_MONEY
+             ( STAN_YMD
+             , DET_SEQ
+             , MONEY_CODE      , WORSHIP_CODE
+             , MEMBER_ID       , MEMBER_NAME     , DEPT_CODE     , REGION_CODE
+             , MONEY_AMT       , USER_ID
+             , INPUT_TIME
+             , ID_EXIST        , CLOSE_YN        )
+        values
+             ( #{stanYmd}
+             , (SELECT NVL(MAX(DET_SEQ),0)+1 from TB_MAST_MONEY where STAN_YMD = #{stanYmd} and MONEY_CODE = #{moneyCode})
+             , #{moneyCode}    , #{worshipCode}
+             , #{memberId}     , #{memberName}   , #{deptCode}   , #{regionCode}
+             , #{moneyAmt}     , #{userId}
+             , (SELECT TO_CHAR(SYSTIMESTAMP, 'YYYYMMDDHH24MISSFF2') || '-' || #{index} from DUAL)
+             , 'N'             , 'N'             )
+    </insert>
+    
+    <update id="updateMoney" parameterType="java.util.HashMap">
+    /* updateMoney */
+        update TB_MAST_MONEY
+           set MONEY_AMT     = #{moneyAmt}
+         where STAN_YMD   = #{stanYmd}
+           and MONEY_CODE = #{moneyCode}
+           and DET_SEQ    = #{detSeq}
+    </update>
+
+    <delete id="deleteMoneyRegion" parameterType="java.util.HashMap">
+    /* deleteMoneyRegion */
+        delete from TB_MAST_MONEY
+         where STAN_YMD   = #{stanYmd}
+           and MONEY_CODE = #{moneyCode}
+           and DET_SEQ    = #{detSeq}
+    </delete>
+    
+</mapper>

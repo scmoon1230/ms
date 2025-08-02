@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ucp.env.service.PositionMapper">
+
+    <select id="selectPosition" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectPosition */
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingHeader"/>
+        select P.POSITION_CODE       , P.POSITION_NAME       , P.SORT_ORDER
+          from TB_POSITION P
+         where 1 = 1
+           <if test="positionName != null and positionName != '' "> and POSITION_NAME LIKE #{positionName} || '%' </if>
+      order by ${sidx} ${sord}
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingBottom"/>
+    </select>
+
+    <insert id="insertPosition" parameterType="java.util.HashMap">
+    /* insertPosition */
+        insert into TB_POSITION
+             ( POSITION_CODE      , POSITION_NAME    , SORT_ORDER     )
+        values
+             ( #{positionCode}    , #{positionName}  , #{sortOrder}   )
+    </insert>
+    
+    <update id="updatePosition" parameterType="java.util.HashMap">
+    /* updatePosition */
+        update TB_POSITION
+           set POSITION_CODE = #{positionCode}
+             , POSITION_NAME = #{positionName}
+             , SORT_ORDER    = #{sortOrder}
+         where POSITION_CODE = #{positionCode}
+    </update>
+
+    <delete id="deletePosition" parameterType="java.util.HashMap">
+    /* deletePosition */
+        delete from TB_POSITION
+         where POSITION_CODE = #{positionCode}
+    </delete>
+    
+</mapper>

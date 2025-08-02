@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ucp.env.service.UserMapper">
+
+    <select id="selectUser" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectUser */
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingHeader"/>
+        select USER_ID       , USER_NAME      , USER_PWD
+             , TEL_NO        , USER_GB
+             , POSITION_CODE
+             , (SELECT POSITION_NAME from TB_POSITION P where P.POSITION_CODE = U.POSITION_CODE) POSITION_NAME
+             , ACCT_GB
+             , (SELECT ACCT_GB_NAME from TB_ACCT_GB A where A.ACCT_GB = U.ACCT_GB) ACCT_GB_NAME
+             , USE_YN
+          from TB_USER U
+         where 1 = 1
+           <if test="userName     != null and userName     != '' "> and USER_NAME LIKE #{userName} || '%' </if>
+           <if test="positionCode != null and positionCode != '' "> and POSITION_CODE = #{positionCode} </if>
+           <if test="acctGb       != null and acctGb       != '' "> and ACCT_GB       = #{acctGb}       </if>
+           <if test="userGb       != null and userGb       != '' "> and USER_GB       = #{userGb}       </if>
+           <if test="useYn        != null and useYn        != '' "> and USE_YN        = #{useYn}        </if>
+           <if test="stanYmd      != null and stanYmd      != '' ">
+           and USER_ID in ( SELECT DISTINCT USER_ID FROM TB_MAST_MONEY WHERE STAN_YMD = #{stanYmd} )        
+           </if>
+      order by ${sidx} ${sord}
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingBottom"/>
+    </select>
+
+    <insert id="insertUser" parameterType="java.util.HashMap">
+    /* insertUser */
+        insert into TB_USER
+             ( USER_ID         , USER_NAME      , USER_PWD
+             , TEL_NO          , USER_GB
+             , POSITION_CODE   , ACCT_GB        , USE_YN    )
+        values
+             ( #{userId}       , #{userName}    , #{userPwd}  
+             , #{telNo}        , #{userGb} 
+             , #{positionCode} , #{acctGb}      , #{useYn}  )
+    </insert>
+    
+    <update id="updateUser" parameterType="java.util.HashMap">
+    /* updateUser */
+        update TB_USER
+           set USER_ID       = #{userId}
+             , USER_NAME     = #{userName}
+           <if test="userPwd != null and userPwd != '' "> , USER_PWD  = #{userPwd} </if>
+             , TEL_NO        = #{telNo}
+             , USER_GB       = #{userGb}
+             , POSITION_CODE = #{positionCode}
+             , ACCT_GB       = #{acctGb}
+             , USE_YN        = #{useYn}
+         where USER_ID = #{userId}
+    </update>
+
+    <delete id="deleteUser" parameterType="java.util.HashMap">
+    /* deleteUser */
+        delete from TB_USER
+         where USER_ID = #{userId}
+    </delete>
+    
+    <select id="selectUserIdCnt" parameterType="java.util.HashMap" resultType="int">
+    /* selectUserIdCnt */
+        select count(USER_ID)
+        from TB_USER
+        where USER_ID  = #{userId}
+    </select>
+    
+</mapper>

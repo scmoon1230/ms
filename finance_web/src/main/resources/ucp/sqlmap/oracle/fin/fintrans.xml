@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ucp.fin.service.FintransMapper">
+
+    <select id="selectFintrans" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectFintrans */
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingHeader"/>
+        select TO_CHAR(TO_DATE(FT.STAN_YMD, 'YYYYMMDD'), 'YYYY-MM-DD') STAN_YMD    
+             , FT.DET_SEQ
+             , FT.INOUT_GB
+             , CASE WHEN FT.INOUT_GB ='I' THEN '입금(예금)'      WHEN FT.INOUT_GB ='O' THEN '출금(상환)'
+                    ELSE '-'
+                END AS INOUT_GB_NAME
+             , FT.ASSET_CODE     , FT.ACCT_GB        , AG.ACCT_GB_NAME
+             , FI.ASSET_NAME     , FI.BANK_NAME      , FI.ACCOUNT_NO
+             , FI.ASSET_GB 
+             , CASE WHEN FI.ASSET_GB = '1' THEN '정기예적금' WHEN FI.ASSET_GB = '2' THEN '일반예금'
+                    WHEN FI.ASSET_GB = '3' THEN '대여금'    WHEN FI.ASSET_GB = '9' THEN '기타'
+                    ELSE '-'
+                END AS ASSET_GB_NAME
+             , FT.MONEY_AMT      , FT.INT_AMT        , FT.REMARK
+             , FT.ACCT_CODE      , B.ACCT_NAME
+             , FT.ACCT_PROC_GB
+             , CASE WHEN FT.ACCT_PROC_GB = '0' THEN '해당없음' WHEN FT.ACCT_PROC_GB = '1' THEN '원금'
+                    WHEN FT.ACCT_PROC_GB = '2' THEN '이자'    WHEN FT.ACCT_PROC_GB = '3' THEN '원금/이자'
+                    ELSE '-'
+                END AS ACCT_PROC_GB_NAME
+             , FT.CLOSE_YN       , FT.ACCT_YN        , FT.ACCT_YMD        , FT.SEQ_NO 
+             , FT.USER_ID        , U.USER_NAME
+             , FT.REG_TIME       , TO_CHAR(FT.REG_TIME,'YYYY-MM-DD HH24:MI:SS') REG_YMD_HMS
+          from TB_FINANCE_TR   FT
+     left join TB_FINANCE_INFO FI ON FI.ASSET_CODE = FT.ASSET_CODE 
+     left join TB_ACCT_GB      AG ON AG.ACCT_GB = FT.ACCT_GB 
+     left join TB_USER         U  ON U.USER_ID  = FT.USER_ID
+     left join ( select X.ACCT_GB    , X.STAN_YY   , Z.FROM_YMD   , Z.END_YMD
+                      , X.ACCT_CODE  , X.ACCT_NAME , X.PRINT_NAME , X.INOUT_GB
+                   from TB_ACCTCODE X
+                      , TB_ACCTYEAR Z
+                  where X.STAN_YY = Z.STAN_YY
+               ) B  ON FT.ACCT_GB   = B.ACCT_GB
+                   and FT.ACCT_CODE = B.ACCT_CODE
+                   and FT.STAN_YMD  BETWEEN B.FROM_YMD and B.END_YMD 
+         where FT.STAN_YMD = #{stanYmd}
+           <if test="acctGb  != null and acctGb  != '' "> and FT.ACCT_GB  = #{acctGb}  </if>
+           <if test="inoutGb != null and inoutGb != '' "> and FT.INOUT_GB = #{inoutGb} </if>
+      <!-- <if test="acctYn  != null and acctYn  != '' "> and FT.ACCT_YN  = #{acctYn}  </if> -->
+      order by ${sidx} ${sord}
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingBottom"/>
+    </select>
+
+    <select id="selectFintransAmt" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectFintransAmt */
+        SELECT INOUT_GB , MONEY_AMT
+          FROM TB_FINANCE_TR
+         WHERE STAN_YMD   = #{stanYmd}
+           AND ASSET_CODE = #{assetCode}
+    </select>
+    
+    <select id="selectTotalAmnt" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectTotalAmnt */
+        select NVL(SUM(IN_AMNT),0) IN_TOTAL_AMNT
+             , NVL(SUM(INT_AMNT),0) INT_TOTAL_AMNT
+             , NVL(SUM(OUT_AMNT),0) OUT_TOTAL_AMNT
+             , NVL(SUM(IN_AMNT),0) - NVL(SUM(OUT_AMNT),0) TOTAL_AMNT
+          from ( select SUM(IN_AMT) IN_AMNT , SUM(INT_AMT) INT_AMNT , SUM(OUT_AMT) OUT_AMNT
+                   from ( select FT.STAN_YMD , FT.ACCT_GB , FT.INOUT_GB, FT.INT_AMT
+                               , CASE WHEN FT.INOUT_GB ='I' THEN FT.MONEY_AMT ELSE 0 END AS IN_AMT
+                               , CASE WHEN FT.INOUT_GB ='O' THEN FT.MONEY_AMT ELSE 0 END AS OUT_AMT
+                            from TB_FINANCE_TR   FT
+                           where FT.STAN_YMD = #{stanYmd}
+                             <if test="acctGb  != null and acctGb  != '' "> and FT.ACCT_GB  = #{acctGb}  </if>
+                             <if test="inoutGb != null and inoutGb != '' "> and FT.INOUT_GB = #{inoutGb} </if>
+		                ) TB
+               group by INOUT_GB
+               ) TBB
+    </select>
+
+    <select id="selectNewDetSeq" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectNewDetSeq */
+        select COALESCE(MAX(FT.DET_SEQ)+1,1) DET_SEQ
+          from TB_FINANCE_TR   FT
+         where FT.STAN_YMD = #{stanYmd}
+    </select>
+
+    <insert id="insertFintrans" parameterType="java.util.HashMap">
+    /* insertFintrans */
+        insert into TB_FINANCE_TR
+             ( STAN_YMD     , DET_SEQ       , INOUT_GB
+             , ASSET_CODE   , MONEY_AMT     , INT_AMT
+             , ACCT_GB
+             , REMARK       , ACCT_PROC_GB  , CLOSE_YN
+             , ACCT_CODE    , ACCT_YN       <!-- , ACCT_YMD      , SEQ_NO -->
+             , USER_ID      , REG_TIME    )
+        values
+             ( #{stanYmd}   , #{detSeq}     , #{inoutGb}
+             , #{assetCode} , #{moneyAmt}   , #{intAmt}
+             , (SELECT ACCT_GB from TB_FINANCE_INFO where ASSET_CODE = #{assetCode})
+             , #{remark}    , #{acctProcGb} , 'N'
+             , #{acctCode}  , 'N'           <!-- , #{acctYmd}    , #{seqNo} -->
+             , #{userId}    , SYSDATE     )
+    </insert>
+    
+    <update id="updateFintrans" parameterType="java.util.HashMap">
+    /* updateFintrans */
+        update TB_FINANCE_TR
+           set STAN_YMD     = #{stanYmd}
+             , DET_SEQ      = #{detSeq}
+           <if test="inoutGb    != null "> , INOUT_GB     = #{inoutGb} </if>
+           <if test="assetCode  != null "> , ASSET_CODE   = #{assetCode}
+                                           , ACCT_GB      = (SELECT ACCT_GB from TB_FINANCE_INFO where ASSET_CODE = #{assetCode})
+            </if>
+           <if test="moneyAmt   != null "> , MONEY_AMT    = #{moneyAmt} </if>
+           <if test="intAmt     != null "> , INT_AMT      = #{intAmt} </if>
+           <if test="remark     != null "> , REMARK       = #{remark} </if>
+           <if test="acctProcGb != null "> , ACCT_PROC_GB = #{acctProcGb} </if>
+           <if test="closeYn    != null "> , CLOSE_YN     = #{closeYn} </if>
+           <if test="acctCode   != null "> , ACCT_CODE    = #{acctCode} </if>
+           <if test="acctYn     != null "> , ACCT_YN      = #{acctYn} </if>
+           <if test="acctYmd    != null "> , ACCT_YMD     = #{acctYmd} </if>
+           <if test="seqNo      != null "> , SEQ_NO       = #{seqNo} </if>
+           <if test="userId     != null "> , USER_ID      = #{userId} </if>
+         where STAN_YMD   = #{stanYmd}
+           and DET_SEQ    = #{detSeq}
+      <!-- and ASSET_CODE = #{assetCode} -->
+    </update>
+
+    <delete id="deleteFintrans" parameterType="java.util.HashMap">
+    /* deleteFintrans */
+        delete from TB_FINANCE_TR
+         where STAN_YMD   = #{stanYmd}
+           and DET_SEQ    = #{detSeq}
+      <!-- and ASSET_CODE = #{assetCode} -->
+    </delete>
+    
+    <select id="selectFintransCloseCnt" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectFintransCloseCnt */
+        select COUNT(CLOSE_YN) CLOSE_CNT
+          from TB_FINANCE_TR
+         where STAN_YMD = #{stanYmd}
+           and CLOSE_YN = #{closeYn}
+      <!-- and ACCT_GB  = #{acctGb}
+           and #{startYmd} <![CDATA[<=]]> STAN_YMD and STAN_YMD <![CDATA[<=]]> #{endYmd}
+           and MONEY_CODE IN ( select MONEY_CODE from TB_MONEY where ACCT_GB = #{acctGb} ) -->   
+    </select>
+    
+    <update id="updateFintransClose" parameterType="java.util.HashMap">
+    /* updateFintransClose */
+        update TB_FINANCE_TR
+           set CLOSE_YN    = #{closeYn}
+           <if test="acctYmd    != null "> , ACCT_YMD     = #{acctYmd} </if>
+           <if test="seqNo      != null "> , SEQ_NO       = #{seqNo} </if>
+         where STAN_YMD   = #{stanYmd}
+    </update>
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+</mapper>

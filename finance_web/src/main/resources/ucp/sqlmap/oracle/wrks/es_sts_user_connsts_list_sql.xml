@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ucp.wrks.info.sts.service.UserConnStsMapper" >
+
+    <sql id="getUserConnStatsMonthSql">
+        select CASE WHEN A.USER_ID = '-'
+                    THEN'- 합계 -'
+                <if test="saltText == null ">
+                    ELSE COALESCE ( NULLIF ( ( select concat(USER_NM,'(',USER_ID,')') from VW_USER where USER_ID = A.USER_ID ),''), A.USER_ID )
+                </if>
+                <if test="saltText != null ">
+                    else concat(FN_USER_NM_DEC(A.USER_ID, #{saltText}::bytea), '(', USER_ID, ')')
+                </if>
+                END AS USER_NM
+             , A.*
+          from ( select CASE WHEN USER_ID IS NULL THEN'-' ELSE USER_ID END AS USER_ID
+                      , SUM(CASE WHEN MM = '1'   THEN SUM_CNT ELSE 0 END) AS M_01
+                      , SUM(CASE WHEN MM = '2'   THEN SUM_CNT ELSE 0 END) AS M_02
+                      , SUM(CASE WHEN MM = '3'   THEN SUM_CNT ELSE 0 END) AS M_03
+                      , SUM(CASE WHEN MM = '4'   THEN SUM_CNT ELSE 0 END) AS M_04
+                      , SUM(CASE WHEN MM = '5'   THEN SUM_CNT ELSE 0 END) AS M_05
+                      , SUM(CASE WHEN MM = '6'   THEN SUM_CNT ELSE 0 END) AS M_06
+                      , SUM(CASE WHEN MM = '7'   THEN SUM_CNT ELSE 0 END) AS M_07
+                      , SUM(CASE WHEN MM = '8'   THEN SUM_CNT ELSE 0 END) AS M_08
+                      , SUM(CASE WHEN MM = '9'   THEN SUM_CNT ELSE 0 END) AS M_09
+                      , SUM(CASE WHEN MM = '10'  THEN SUM_CNT ELSE 0 END) AS M_10
+                      , SUM(CASE WHEN MM = '11'  THEN SUM_CNT ELSE 0 END) AS M_11
+                      , SUM(CASE WHEN MM = '12'  THEN SUM_CNT ELSE 0 END) AS M_12
+                      , SUM(CASE WHEN MM IS NULL THEN 0 ELSE SUM_CNT END) AS M_TT
+                   from (
+                          select null USER_ID, NULL MM, count(S.USER_ID) SUM_CNT
+                            from CM_HIS_USER_CONNECT S
+                            join VW_USER VU on s.dstrt_cd = vu.dstrt_cd and S.USER_ID = VU.USER_ID and VU.TEST_YN = 'N'
+                           where extract(year from S.LOGIN_TIME) = #{searchYear}::numeric
+                           union all
+                          select S.USER_ID, extract(month from S.LOGIN_TIME) MM, count(S.USER_ID) SUM_CNT
+                            from CM_HIS_USER_CONNECT S
+                            join VW_USER VU on s.dstrt_cd = vu.dstrt_cd and S.USER_ID = VU.USER_ID and VU.TEST_YN = 'N'
+                           where extract(year from S.LOGIN_TIME) = #{searchYear}::numeric
+                        group by S.USER_ID, extract(month from S.LOGIN_TIME)
+                           union all
+                          select S.USER_ID, NULL MM, count(S.USER_ID) SUM_CNT
+                            from CM_HIS_USER_CONNECT S
+                            join VW_USER VU on s.dstrt_cd = vu.dstrt_cd and S.USER_ID = VU.USER_ID and VU.TEST_YN = 'N'
+                           where extract(year from S.LOGIN_TIME) = #{searchYear}::numeric
+                        group by S.USER_ID
+                           union all
+                          select null USER_ID, extract(month from S.LOGIN_TIME) MM, count(S.USER_ID) SUM_CNT
+                            from CM_HIS_USER_CONNECT S
+                            join VW_USER VU on s.dstrt_cd = vu.dstrt_cd and S.USER_ID = VU.USER_ID and VU.TEST_YN = 'N'
+                           where extract(year from S.LOGIN_TIME) = #{searchYear}::numeric
+                        group by extract(month from S.LOGIN_TIME)
+                      <!--SELECT S.USER_ID
+                               , S.CONNECT_MONTH AS MM
+                               , SUM(S.CONNECT_NUM) AS SUM_CNT
+                            from CM_STS_USER_CONNECT S
+                            JOIN VW_USER VU ON S.USER_ID = VU.USER_ID and VU.TEST_YN = 'N'
+                           where 1 = 1
+                             and S.CONNECT_YEAR = #{searchYear}
+                             <if test='sysId != "COM" and sysId != "BASE" and sysId != "WIDE"'>
+                             and VU.GRP_ID    = #{sysId}
+                             </if>
+                        group by CUBE(S.USER_ID, S.CONNECT_MONTH)-->
+            ) A
+            group by USER_ID
+        ) A
+    </sql>
+
+    <select id="getUserConnStatsMonthData" parameterType="java.util.HashMap" resultType="egovMap">
+    /* getUserConnStatsMonthData */
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingHeader"/>
+        <include refid="getUserConnStatsMonthSql"/>
+        order by ${sidx} ${sord}
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingBottom"/>
+    </select>
+
+    <select id="getUserConnStatsMonthExcelData" parameterType="java.util.HashMap" resultType="egovMap">
+    /* getUserConnStatsMonthExcelData */
+        <include refid="getUserConnStatsMonthSql"/>
+        order by USER_NM
+    </select>
+
+
+
+
+    <sql id="getUserConnStatsDaySql">
+        select CASE WHEN A.USER_ID = '-'
+                    THEN '- 합계 -'
+                <if test="saltText == null ">
+                    ELSE COALESCE ( NULLIF ( ( select concat(USER_NM,'(',USER_ID,')') from VW_USER where USER_ID = A.USER_ID ),''), A.USER_ID )
+                </if>
+                <if test="saltText != null ">
+                    else concat(FN_USER_NM_DEC(A.USER_ID, #{saltText}::bytea), '(', USER_ID, ')')
+                </if>
+                END AS USER_NM
+             , A.*
+          from ( select CASE WHEN USER_ID IS NULL THEN '-' ELSE USER_ID END AS USER_ID
+                      , SUM( CASE WHEN DD = '1'   THEN SUM_CNT ELSE 0 END ) AS DAY_01
+                      , SUM( CASE WHEN DD = '2'   THEN SUM_CNT ELSE 0 END ) AS DAY_02
+                      , SUM( CASE WHEN DD = '3'   THEN SUM_CNT ELSE 0 END ) AS DAY_03
+                      , SUM( CASE WHEN DD = '4'   THEN SUM_CNT ELSE 0 END ) AS DAY_04
+                      , SUM( CASE WHEN DD = '5'   THEN SUM_CNT ELSE 0 END ) AS DAY_05
+                      , SUM( CASE WHEN DD = '6'   THEN SUM_CNT ELSE 0 END ) AS DAY_06
+                      , SUM( CASE WHEN DD = '7'   THEN SUM_CNT ELSE 0 END ) AS DAY_07
+                      , SUM( CASE WHEN DD = '8'   THEN SUM_CNT ELSE 0 END ) AS DAY_08
+                      , SUM( CASE WHEN DD = '9'   THEN SUM_CNT ELSE 0 END ) AS DAY_09
+                      , SUM( CASE WHEN DD = '10'  THEN SUM_CNT ELSE 0 END ) AS DAY_10
+                      , SUM( CASE WHEN DD = '11'  THEN SUM_CNT ELSE 0 END ) AS DAY_11
+                      , SUM( CASE WHEN DD = '12'  THEN SUM_CNT ELSE 0 END ) AS DAY_12
+                      , SUM( CASE WHEN DD = '13'  THEN SUM_CNT ELSE 0 END ) AS DAY_13
+                      , SUM( CASE WHEN DD = '14'  THEN SUM_CNT ELSE 0 END ) AS DAY_14
+                      , SUM( CASE WHEN DD = '15'  THEN SUM_CNT ELSE 0 END ) AS DAY_15
+                      , SUM( CASE WHEN DD = '16'  THEN SUM_CNT ELSE 0 END ) AS DAY_16
+                      , SUM( CASE WHEN DD = '17'  THEN SUM_CNT ELSE 0 END ) AS DAY_17
+                      , SUM( CASE WHEN DD = '18'  THEN SUM_CNT ELSE 0 END ) AS DAY_18
+                      , SUM( CASE WHEN DD = '19'  THEN SUM_CNT ELSE 0 END ) AS DAY_19
+                      , SUM( CASE WHEN DD = '20'  THEN SUM_CNT ELSE 0 END ) AS DAY_20
+                      , SUM( CASE WHEN DD = '21'  THEN SUM_CNT ELSE 0 END ) AS DAY_21
+                      , SUM( CASE WHEN DD = '22'  THEN SUM_CNT ELSE 0 END ) AS DAY_22
+                      , SUM( CASE WHEN DD = '23'  THEN SUM_CNT ELSE 0 END ) AS DAY_23
+                      , SUM( CASE WHEN DD = '24'  THEN SUM_CNT ELSE 0 END ) AS DAY_24
+                      , SUM( CASE WHEN DD = '25'  THEN SUM_CNT ELSE 0 END ) AS DAY_25
+                      , SUM( CASE WHEN DD = '26'  THEN SUM_CNT ELSE 0 END ) AS DAY_26
+                      , SUM( CASE WHEN DD = '27'  THEN SUM_CNT ELSE 0 END ) AS DAY_27
+                      , SUM( CASE WHEN DD = '28'  THEN SUM_CNT ELSE 0 END ) AS DAY_28
+                      , SUM( CASE WHEN DD = '29'  THEN SUM_CNT ELSE 0 END ) AS DAY_29
+                      , SUM( CASE WHEN DD = '30'  THEN SUM_CNT ELSE 0 END ) AS DAY_30
+                      , SUM( CASE WHEN DD = '31'  THEN SUM_CNT ELSE 0 END ) AS DAY_31
+                      , SUM( CASE WHEN DD IS NULL THEN 0 ELSE SUM_CNT END) AS DAY_TT
+                   from (
+                          select null USER_ID, NULL DD, count(S.USER_ID) SUM_CNT
+                            from CM_HIS_USER_CONNECT S
+                            join VW_USER VU on s.dstrt_cd = vu.dstrt_cd and S.USER_ID = VU.USER_ID and VU.TEST_YN = 'N'
+                           where extract(year from S.LOGIN_TIME) = #{searchYear}::numeric and extract(month from S.LOGIN_TIME) = #{searchMonth}::numeric
+                           union all
+                          select S.USER_ID, extract(day from S.LOGIN_TIME) DD, count(S.USER_ID) SUM_CNT
+                            from CM_HIS_USER_CONNECT S
+                            join VW_USER VU on s.dstrt_cd = vu.dstrt_cd and S.USER_ID = VU.USER_ID and VU.TEST_YN = 'N'
+                           where extract(year from S.LOGIN_TIME) = #{searchYear}::numeric and extract(month from S.LOGIN_TIME) = #{searchMonth}::numeric
+                        group by S.USER_ID, extract(day from S.LOGIN_TIME)
+                           union all
+                          select S.USER_ID, NULL DD, count(S.USER_ID) SUM_CNT
+                            from CM_HIS_USER_CONNECT S
+                            join VW_USER VU on s.dstrt_cd = vu.dstrt_cd and S.USER_ID = VU.USER_ID and VU.TEST_YN = 'N'
+                           where extract(year from S.LOGIN_TIME) = #{searchYear}::numeric and extract(month from S.LOGIN_TIME) = #{searchMonth}::numeric
+                        group by S.USER_ID
+                           union all
+                          select null USER_ID, extract(day from S.LOGIN_TIME) DD, count(S.USER_ID) SUM_CNT
+                            from CM_HIS_USER_CONNECT S
+                            join VW_USER VU on s.dstrt_cd = vu.dstrt_cd and S.USER_ID = VU.USER_ID and VU.TEST_YN = 'N'
+                           where extract(year from S.LOGIN_TIME) = #{searchYear}::numeric and extract(month from S.LOGIN_TIME) = #{searchMonth}::numeric
+                        group by extract(day from S.LOGIN_TIME)
+                      <!--SELECT S.USER_ID
+                               , S.CONNECT_DATE AS DD
+                               , SUM(S.CONNECT_NUM) AS SUM_CNT
+                            from CM_STS_USER_CONNECT S
+                            JOIN VW_USER VU ON S.USER_ID = VU.USER_ID and VU.TEST_YN = 'N'
+                           where 1 = 1
+                             and S.CONNECT_YEAR  = #{searchYear}
+                             and S.CONNECT_MONTH = #{searchMonth}
+                             <if test='sysId != "COM" and sysId != "BASE" and sysId != "WIDE"'>
+                             and VU.GRP_ID    = #{sysId}
+                             </if>
+                        group by CUBE(S.USER_ID, S.CONNECT_DATE)-->    
+                        ) A
+            group by USER_ID
+        ) A
+    </sql>
+
+    <select id="getUserConnStatsDayData" parameterType="java.util.HashMap" resultType="egovMap">
+    /* getUserConnStatsDayData */
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingHeader"/>
+        <include refid="getUserConnStatsDaySql"/>
+        order by ${sidx} ${sord}
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingBottom"/>
+    </select>
+
+    <select id="getUserConnStatsDayExcelData" parameterType="java.util.HashMap" resultType="egovMap">
+    /* getUserConnStatsDayExcelData */
+        <include refid="getUserConnStatsDaySql"/>
+        order by USER_NM
+    </select>
+
+    <!-- 
+    <select id="getConnectUser" parameterType="java.util.HashMap" resultType="egovMap" >
+        select DISTINCT   B.USER_ID
+                        , FN_USER_NM(B.USER_ID) AS USER_NM
+        from CM_STS_USER_CONNECT B
+        JOIN CM_GRP_USER A
+        ON A.USER_ID = B.USER_ID
+        where 1 = 1
+        <choose>
+            <when test='SYS_CD == "DUC"'> and A.GRP_ID IN ('112','119') </when>
+            <when test='SYS_CD == "COM"'>                               </when>
+            <otherwise> and A.GRP_ID = #{SYS_CD} </otherwise>
+        </choose>
+        order by USER_NM
+    </select>
+
+    <select id="userConnectStatsYear" parameterType="java.util.HashMap" resultType="egovMap" >
+        select B.CONNECT_YEAR AS YEAR
+        from  CM_STS_USER_CONNECT B
+            , CM_GRP_USER A
+        where A.USER_ID = B.USER_ID
+        <choose>
+            <when test='SYS_CD == "DUC"'> and A.GRP_ID IN ('112','119') </when>
+            <when test='SYS_CD == "COM"'>                               </when>
+            <otherwise> and A.GRP_ID = #{SYS_CD} </otherwise>
+        </choose>
+        group by B.CONNECT_YEAR
+        order by CONNECT_YEAR DESC
+    </select>
+     -->
+    
+</mapper>

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ucp.fin.service.FinchangeMapper">
+
+    <select id="selectFinchange" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectFinchange */
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingHeader"/>
+        select FT.STAN_YMD 
+             , FI.ACCT_GB 
+             , (SELECT ACCT_GB_NAME from TB_ACCT_GB AG where AG.ACCT_GB = FI.ACCT_GB) ACCT_GB_NAME
+             , FI.ASSET_GB 
+             , CASE WHEN ASSET_GB = '1' THEN '정기예적금'
+                    WHEN ASSET_GB = '2' THEN '일반예금'
+                    WHEN ASSET_GB = '3' THEN '대여금'
+                    WHEN ASSET_GB = '9' THEN '기타'
+                    ELSE '-'
+                END AS ASSET_GB_NAME
+             , FT.REMARK 
+             , FT.INOUT_GB 
+             , ( FT.MONEY_AMT + FT.INT_AMT ) AS MONEY_AMT 
+          from TB_FINANCE_TR FT
+     left join TB_FINANCE_INFO FI ON FI.ASSET_CODE = FT.ASSET_CODE 
+         where FT.STAN_YMD = #{stanYmd}
+      order by ${sidx} ${sord}
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingBottom"/>
+    </select>
+
+</mapper>

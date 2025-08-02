@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ucp.tvo.cctv.service.CctvMgmtMapper">
+
+    <select id="selectTvoCctvList" parameterType="map" resultType="egovMap">
+        select *
+          from ( select I.*
+                   from ( select ROW_NUMBER() OVER(order by FCLT_LBL_NM) RNUM
+                               , I.*
+                            from ( select COUNT(CF.FCLT_ID) OVER() as ROWCNT
+                                        , CF.FCLT_ID
+                                        , CF.FCLT_LBL_NM
+                                        , CF.CPLT_PRDT_TY            /* 영상녹화여부 - Y:녹화함, N:녹화안함 */
+                                        , CF.TVO_TRGT_YN             /* 반출대상여부 - Y:대상임, N:대상아님 */
+                                        , CF.FCLT_KND_CD
+                                        , FN_GET_TC_CODE('FCLT_KND', CF.FCLT_KND_CD)                 as FCLT_KND_NM
+                                        , CF.FCLT_USED_TY_CD
+                                        , ( select FCLT_USED_TY_NM from CM_TC_FCLT_USED where FCLT_KND_CD = CF.FCLT_KND_CD and FCLT_USED_TY_CD = CF.FCLT_USED_TY_CD
+                                          ) as FCLT_USED_TY_NM
+                                        , CF.FCLT_KND_DTL_CD
+                                        , FN_GET_TC_CODE(CF.FCLT_KND_CD, CF.FCLT_KND_DTL_CD)         as FCLT_KND_DTL_NM
+                                        , CF.FCLT_GDSDT_TY
+                                        , FN_GET_TC_CODE('FCLT_GDSDT_TY', CF.FCLT_GDSDT_TY)          as FCLT_GDSDT_NM
+                                        , CF.ROAD_ADRES_NM
+                                        , CF.LOTNO_ADRES_NM
+                                        , CF.POINT_X
+                                        , CF.POINT_Y
+                                        , CF.FCLT_UID
+                                        , CF.LINK_VMS_UID
+                                        , COALESCE(NULLIF(CF.FCLT_STTUS, ''), '2')                               as FCLT_STTUS
+                                        , FN_GET_TC_CODE('FCLT_STTUS', COALESCE(NULLIF(CF.FCLT_STTUS, ''), '2')) as FCLT_STTUS_NM
+                                     from CM_FACILITY CF
+                                    where CF.USE_TY_CD = 'Y'
+                                      and CF.FCLT_KND_CD = 'CTV'
+                            <!-- <choose>
+                                    <when test='cpltPrdtTy eq "N"'> and CPLT_PRDT_TY = 'N' </when>
+                                    <when test='cpltPrdtTy eq "Y"'> and CPLT_PRDT_TY = 'Y' </when>
+                                </choose> -->
+                                 <choose>
+                                    <when test='recordingYn eq "N"'> and RECORDING_YN = 'N' </when>
+                                    <when test='recordingYn eq "Y"'> and RECORDING_YN = 'Y' </when>
+                                </choose>
+                                 <choose>
+                                    <when test='tvoTrgtYn eq "N"'> and TVO_TRGT_YN = 'N' </when>
+                                    <when test='tvoTrgtYn eq "Y"'> and TVO_TRGT_YN = 'Y' </when>
+                                 </choose>
+                                      <if test='searchFcltUsedTyCd != null and searchFcltUsedTyCd != ""'>
+                                      and CF.FCLT_USED_TY_CD = #{searchFcltUsedTyCd}
+                                    </if>
+                                      <if test='searchKeyword != ""'>
+                                      and (  CF.FCLT_ID     like concat('%',#{searchKeyword},'%') or FCLT_LBL_NM   like concat('%',#{searchKeyword},'%')
+                                          or LOTNO_ADRES_NM like concat('%',#{searchKeyword},'%') or ROAD_ADRES_NM like concat('%',#{searchKeyword},'%')
+                                          )
+                                    </if>
+                                 ) I
+                        order by FCLT_LBL_NM
+                        ) I
+                  LIMIT #{lastIndex}
+               ) O
+           where RNUM >= #{firstIndex}
+    </select>
+
+    <update id="updateCctv" parameterType="map">
+        update CM_FACILITY
+           set FCLT_ID      = #{fcltId}
+      <!-- <if test='cpltPrdtTy != null and cpltPrdtTy != ""'> , CPLT_PRDT_TY = #{cpltPrdtTy} </if> -->
+           <if test='recordingYn != null and recordingYn != ""'> , RECORDING_YN = #{recordingYn} </if>
+           <if test='tvoTrgtYn   != null and tvoTrgtYn   != ""'> , TVO_TRGT_YN  = #{tvoTrgtYn}   </if>
+         where FCLT_ID      = #{fcltId}
+    </update>
+    <!-- 
+    <select id="selectApiDataList" parameterType="map" resultType="egovMap">
+        select CF.FCLT_ID                                          as CCTV_ID
+             , CF.FCLT_LBL_NM                                      as CCTV_NM
+             , CF.POINT_X
+             , CF.POINT_Y
+             , CF.ROAD_ADRES_NM || '(' || CF.LOTNO_ADRES_NM || ')' as POINT_NM
+             , CF.SVR_CONN_IP || ':' || CF.SVR_CONN_PORT           as VMS_ADDR
+             , CF.FCLT_UID                                         as VMS_CCTV_UID
+             , #{gwUrl}                                            as VRS_ADDR
+             , CF.LINK_VMS_UID                                     as VRS_CCTV_UID
+             , #{rtspUrl} || '/' || CF.LINK_VMS_UID                as RTSP_URL
+             , 0                                                   as PLAY_SPEED_MAX
+             , CASE WHEN CF.IVA_TY LIKE '__2__' THEN 'Y'
+                    ELSE 'N' END                                   as ALWAYS_YN
+             , CASE WHEN CF.FCLT_KND_DTL_CD = 'RT' THEN 'Y'
+                    ELSE 'N' END                                   as ROTATION_YN
+             , CASE WHEN CF.FCLT_GDSDT_TY = '0' THEN 'Y'
+                    ELSE 'N' END                                   as MAIN_CCTV_YN
+             , CF.FCLT_USED_TY_CD
+         from CM_FACILITY CF
+        where CF.USE_TY_CD = 'Y'
+          and CF.FCLT_KND_CD = 'CTV'
+          and (CF.IVA_TY LIKE '__1__' OR CF.IVA_TY LIKE '__2__')
+    </select>
+     -->
+</mapper>

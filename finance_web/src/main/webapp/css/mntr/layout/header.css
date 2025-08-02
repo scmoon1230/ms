@@ -1,0 +1,279 @@
+/* 공통 */
+
+
+b,strong {
+    font-size: 14px;
+}
+
+
+#main-nav.system-ess {
+	background-color: #24272c;
+}
+
+#main-nav.system-112 {
+	background-color: #008eeb;
+}
+
+#main-nav.system-119 {
+	background-color: #dc4343;
+}
+
+#main-nav.system-duc {
+	background-color: #71af48;
+}
+
+#main-nav.system-wps {
+	background-color: #be9100;
+}
+
+.dropdown-menu > li.divider:first-child {
+    /* display: none; */
+}
+
+/* Menu Level 1 */
+.dropdown.menu-lvl-1 > a {
+	font-size: 15px;
+	font-weight: bold;
+	color: #000 !important;
+}
+
+.dropdown.menu-lvl-1.open > a {
+	color: #ccc !important;
+	background-color: #000;
+}
+
+#main-nav .navbar-brand {
+	color: #000;
+	font-weight: bold;
+}
+
+#main-nav.system-ess .navbar-brand {
+	color: #ccc;
+	font-weight: bold;
+}
+
+#main-nav.system-ess .dropdown.menu-lvl-1 > a {
+	color: #ccc !important;
+}
+
+#main-nav.system-ess .dropdown.menu-lvl-1.open > a {
+	background-color: #000;
+}
+
+.dropdown.menu-lvl-1 > a:focus, .dropdown.menu-lvl-1 > a:hover,
+#dropdown-layers.dropdown > a:focus, #dropdown-user-info.dropdown > a:focus,
+#dropdown-event-receive.dropdown > a:focus {
+    color: #ccc !important;
+    background-color: #000 !important;
+}
+
+ul.dropdown-menu li.dropdown-header a.menu-all-lvl-1 {
+    color: inherit;
+    padding: inherit;
+    font-weight: inherit;
+}
+
+.dropdown.menu-lvl-1.open ul.dropdown-menu {
+	max-height: 540px;
+	overflow-y: auto;
+}
+
+.dropdown.menu-lvl-1.open .dropdown-header {
+    padding: 3px;
+}
+
+/* Menu Level 2 */
+.dropdown-header.menu-lvl-2 > a {
+	font-size: 14px;
+	padding-left: 0px;
+}
+
+.dropdown-header.menu-lvl-2 > a:hover, .dropdown-header.menu-lvl-2 > a:focus {
+	background-color: #fff;
+	text-decoration: underline;
+}
+
+.dropdown-header.menu-all-lvl-2 {
+	padding-left: 0px;
+}
+
+.dropdown-header.menu-all-lvl-2 > a {
+	padding-left: 0px !important;
+}
+
+li.menu-lvl-2 {
+	font-size: 14px;
+}
+
+/* Menu Level 3 */
+li.menu-lvl-3 {
+	font-size: 14px;
+	padding-left: 10px;
+	margin: 6px 0px 6px 0px;
+}
+
+li.menu-lvl-3 a {
+	font-size: 14px;
+}
+
+li.menu-lvl-3 > a:hover,
+li.menu-lvl-3 > a:focus {
+	background-color: #fff;
+	text-decoration: underline;
+}
+
+/* 전체 */
+.dropdown.menu-all > ul.dropdown-menu > li {
+	display: inline-block;
+	vertical-align: top;
+}
+
+.dropdown.menu-all > ul.dropdown-menu a {
+	color: #333;
+	text-decoration: none;
+	display: block;
+	padding: 3px 20px 3px 10px;
+	clear: both;
+	font-weight: 400;
+	white-space: nowrap;
+}
+
+.dropdown.menu-all > ul.dropdown-menu a:hover {
+	text-decoration: underline;
+}
+
+/* 레이어 */
+#dropdown-user-info.dropdown > ul.dropdown-menu a, #dropdown-layers.dropdown > ul.dropdown-menu a {
+	font-size: 14px;
+}
+
+ul#layerList {
+	height: auto;
+	max-height: 570px;
+	min-width: 500px;
+	overflow-x: hidden;
+	overflow-y: auto;
+}
+
+ul#layerList.dropdown-menu {
+	margin: 0px 0px 0px 0px;
+	padding: 0px 10px 0px 10px;
+}
+
+.dropdown-menu > li.item-all > a, .dropdown-menu > li.item-fclt > a,
+.dropdown-menu > li.item-etc > a {
+	display: inline-block;
+	padding: 3px 5px;
+	width: 150px;
+	font-size: 14px;
+	font-weight: normal;
+}
+
+.item-fclt > a > img, .item-etc > a > img {
+	vertical-align: middle;
+}
+
+#dropdown-layers.dropdown > a, #dropdown-user-info.dropdown > a,
+#dropdown-event-receive.dropdown > a {
+    color: #ccc;
+    font-size: 13px;
+    font-weight: bold;
+    padding: 5px 50px;
+    margin-top: 10px;
+}
+
+#main-nav.system-lpr #dropdown-layers.dropdown > a, #main-nav.system-lpr #dropdown-user-info.dropdown > a,
+#main-nav.system-lpr #dropdown-event-receive.dropdown > a {
+    color: #000;
+}
+
+#dropdown-layers.dropdown.open > a, #dropdown-user-info.dropdown.open > a
+#dropdown-event-receive.dropdown.open > a {
+    color: #ccc;
+    background-color: #000;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#dropdown-menu-event-received {
+    padding: 3px;
+    min-width: 187px;
+    max-height: 100px;
+    overflow-y: auto;
+}
+
+#dropdown-menu-event-received div.well.well-sm {
+    margin: 0;
+    padding: 3px;
+    white-space: nowrap;
+}
+
+#dropdown-menu-event-received div.well.well-sm span {
+    font-size: 11px;
+    cursor: default;
+}
+
+#dropdown-menu-event-received div.well.well-sm span a {
+    color: #428bca;
+}
+
+#dropdown-menu-event-received div.well.well-sm button.btn {
+    display: inline-block;
+    float: none;
+    margin-top: 0;
+    margin-bottom: 0;
+    padding: 1px 5px;
+    border: 1px solid transparent;
+    border-color: #ccc;
+    border-radius: 3px;
+    line-height: 1.5;
+    color: #333;
+    font-size: 14px;
+    font-weight: 400;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: middle;
+    cursor: pointer;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    background-image: none;
+    background-color: #fff;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

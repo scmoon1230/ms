@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ucp.wrks.evtctl.stats.service.TvoViewListMapper">
+
+	<!-- 영상접속목록 -->
+    <sql id="tvoViewListSql">
+    select A.*
+      from (
+        select A.VIEW_RQST_NO
+             , TO_CHAR(TO_TIMESTAMP(A.VIEW_RQST_YMDHMS, 'YYYYMMDDHH24MISS'), 'YYYY-MM-DD HH24:MI') VIEW_RQST_YMDHMS
+             , A.VIEW_RQST_USER_ID
+           <if test="saltText == null ">
+             , COALESCE(FN_USER_NM(A.VIEW_RQST_USER_ID), A.VIEW_RQST_USER_ID) as VIEW_RQST_USER_NM
+           </if>
+           <if test="saltText != null ">
+             , COALESCE(FN_USER_NM_DEC(A.VIEW_RQST_USER_ID, #{saltText}::bytea), A.VIEW_RQST_USER_ID) as VIEW_RQST_USER_NM
+           </if>
+             , A.EVT_NO
+             , A.EVT_NM
+             , A.RQST_RSN_TY_CD
+             , B.CD_NM_KO as RQST_RSN_TY_NM
+             , A.RQST_RSN_DTL
+             , CASE WHEN COALESCE(A.PAPER_NO,'') = '' THEN A.PAPER_NM
+                    WHEN COALESCE(A.PAPER_NM,'') = '' THEN A.PAPER_NO
+                    ELSE CONCAT(A.PAPER_NM,'/',A.PAPER_NO)
+                    END AS PAPER_NO
+             , TO_CHAR(TO_TIMESTAMP(A.EVT_YMDHMS, 'YYYYMMDDHH24MISS'), 'YYYY-MM-DD HH24:MI') as EVT_YMD_HMS
+             , A.EVT_ADDR
+             , CASE WHEN COALESCE(A.VIEW_END_YMDHMS,'') = ''              THEN '' 
+                    ELSE TO_CHAR(TO_TIMESTAMP(A.VIEW_END_YMDHMS, 'YYYYMMDDHH24MISS'), 'YYYY-MM-DD HH24:MI')
+               END AS VIEW_END_YMDHMS
+             , CASE WHEN COALESCE(A.TVO_PRGRS_DTL,'') = ''
+                    THEN FN_GET_TC_CODE('VIEW_PRGRS', COALESCE(A.TVO_PRGRS_CD, ''))
+                    ELSE CONCAT(FN_GET_TC_CODE('VIEW_PRGRS', COALESCE(A.TVO_PRGRS_CD, '')), ' (', A.TVO_PRGRS_DTL, ')')
+               END as TVO_PRGRS_NM
+          from TVO_VIEW_RQST A
+     left join ( select CD_ID, CD_NM_KO from CM_TC_CODE where CD_GRP_ID = 'RQST_RSN_TY' ) B
+            on A.RQST_RSN_TY_CD = B.CD_ID
+         where CONCAT(#{searchStartDate}, '000000') <![CDATA[ <= ]]> A.VIEW_RQST_YMDHMS
+           and A.VIEW_RQST_YMDHMS <![CDATA[ <= ]]> CONCAT(#{searchEndDate}, '235959')
+           <if test='searchEvtNo  != null and searchEvtNo  != ""'> and A.EVT_NO like '%' || #{searchEvtNo}  || '%' </if>
+           ) A
+     where 1 = 1
+           <if test='searchUserNm  != null and searchUserNm  != ""'> and VIEW_RQST_USER_NM like '%' || #{searchUserNm}  || '%' </if>
+           <if test='searchPaperNo  != null and searchPaperNo  != ""'> and PAPER_NO like '%' || #{searchPaperNo}  || '%' </if>
+           
+    </sql>
+    
+    <select id="tvoViewList" parameterType="java.util.HashMap" resultType="egovMap">
+    /* tvoViewList */
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingHeader"/>
+            <include refid="tvoViewListSql"/>
+        order by VIEW_RQST_YMDHMS desc
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingBottom"/>
+    </select>
+
+    <select id="tvoViewListExcel" parameterType="java.util.HashMap" resultType="egovMap">
+    /* tvoViewListExcel */
+        <include refid="tvoViewListSql"/>
+        order by VIEW_RQST_YMDHMS desc
+    </select>
+    
+</mapper>

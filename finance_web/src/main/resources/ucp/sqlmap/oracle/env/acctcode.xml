@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ucp.env.service.AcctcodeMapper">
+
+    <select id="stanYyList" parameterType="java.util.HashMap" resultType="egovMap">
+    /* stanYyList */
+        select ROWNUM AS RK
+             , tb.*
+          from ( select DISTINCT STAN_YY
+                   from TB_ACCTCODE
+               order by STAN_YY desc
+               ) tb
+    </select>
+
+    <select id="selectAcctcode" parameterType="java.util.HashMap" resultType="egovMap">
+    /* selectAcctcode */
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingHeader"/>
+        select STAN_YY
+             , ACCT_GB        , (SELECT ACCT_GB_NAME from TB_ACCT_GB AG where AG.ACCT_GB = U.ACCT_GB) ACCT_GB_NAME
+             , ACCT_CODE      , ACCT_NAME    , PRINT_NAME
+             , ACCT_LEVEL     , ACCT_LEVEL ACCT_LEVEL_NM
+             , SUM_YN         , CASE WHEN SUM_YN='Y' THEN '합산' WHEN SUM_YN='N' THEN '입력' ELSE '' END SUM_YN_NM
+             , INOUT_GB       , INOUT_GB INOUT_GB_NM
+             , IN_TYPE        , CASE WHEN IN_TYPE='1' THEN '일반헌금'     WHEN IN_TYPE='2' THEN '재정지원'
+                                     WHEN IN_TYPE='9' THEN '이자및기타'   ELSE ''
+                                      END IN_TYPE_NM
+             , ACCT_UP
+             , (SELECT ACCT_NAME from TB_ACCTCODE A where A.ACCT_CODE = U.ACCT_UP and A.STAN_YY=U.STAN_YY and A.ACCT_GB= U.ACCT_GB) ACCT_UP_NAME
+             , LINK_ACCT_CODE
+             , (SELECT ACCT_NAME from TB_ACCTCODE A where A.ACCT_CODE = U.LINK_ACCT_CODE and A.STAN_YY=U.STAN_YY and A.ACCT_GB= U.LINK_ACCT_GB) LINK_ACCT_NAME
+             , LINK_ACCT_GB   , (SELECT ACCT_GB_NAME from TB_ACCT_GB AG where AG.ACCT_GB = U.LINK_ACCT_GB) LINK_ACCT_GB_NAME
+             , USER_ID        , USE_YN
+          from TB_ACCTCODE U
+         where 1 = 1
+           <if test="stanYmd   != null and stanYmd   != '' ">
+           and STAN_YY = ( select STAN_YY from TB_ACCTYEAR AY where #{stanYmd} BETWEEN AY.FROM_YMD and AY.END_YMD )
+           </if>
+           <if test="stanYy    != null and stanYy    != '' "> and STAN_YY    = #{stanYy}            </if>
+           <if test="acctGb    != null and acctGb    != '' "> and ACCT_GB    = #{acctGb}            </if>
+           <if test="acctLevel != null and acctLevel != '' "> and ACCT_LEVEL = #{acctLevel}         </if>
+           <if test="sumYn     != null and sumYn     != '' "> and SUM_YN     = #{sumYn}             </if>
+           <if test="useYn     != null and useYn     != '' "> and USE_YN     = #{useYn}             </if>
+           <if test="inoutGb   != null and inoutGb   != '' "> and INOUT_GB   = #{inoutGb}           </if>
+           <if test="acctCode  != null and acctCode  != '' "> and ACCT_CODE LIKE #{acctCode} || '%' </if>
+           <if test="acctName  != null and acctName  != '' "> and ACCT_NAME LIKE #{acctName} || '%' </if>
+           <if test="acctQuery != null and acctQuery != '' ">
+           and ( ACCT_CODE LIKE #{acctQuery} || '%' or ACCT_NAME LIKE #{acctQuery} || '%' ) 
+           </if>
+           <if test="assetCode  != null and assetCode != '' ">
+           and ACCT_GB = (SELECT ACCT_GB from TB_FINANCE_INFO where ASSET_CODE = #{assetCode})
+           </if>
+           <if test="acctLevels != null and acctLevels   != '' ">
+           and ACCT_LEVEL IN <foreach item="item" index="index" collection="acctLevels" open="(" separator="," close=")">#{item}</foreach>
+           </if>
+      order by ${sidx} ${sord}
+    <include refid="kr.co.ucp.cmm.service.CmmMapper.pagingBottom"/>
+    </select>
+
+    <insert id="insertAcctcode" parameterType="java.util.HashMap">
+    /* insertAcctcode */
+        insert into TB_ACCTCODE
+             ( STAN_YY        , ACCT_GB        , ACCT_CODE        , ACCT_NAME
+             , PRINT_NAME     , ACCT_LEVEL     , SUM_YN           , INOUT_GB     , IN_TYPE
+             , ACCT_UP        , LINK_ACCT_GB   , LINK_ACCT_CODE   , USER_ID      , USE_YN       )
+        values
+             ( #{stanYy}      , #{acctGb}      , #{acctCode}      , #{acctName}
+             , #{printName}   , #{acctLevel}   , #{sumYn}         , #{inoutGb}   , #{inType}
+             , #{acctUp}      , #{linkAcctGb}  , #{linkAcctCode}  , #{userId}    , #{useYn}     )
+    </insert>
+    
+    <update id="updateAcctcode" parameterType="java.util.HashMap">
+    /* updateAcctcode */
+        update TB_ACCTCODE
+           set STAN_YY        = #{stanYy}
+             , ACCT_GB        = #{acctGb}
+             , ACCT_CODE      = #{acctCode}
+             , ACCT_NAME      = #{acctName}
+             , PRINT_NAME     = #{printName}
+             , ACCT_LEVEL     = #{acctLevel}
+             , SUM_YN         = #{sumYn}
+             , INOUT_GB       = #{inoutGb}
+             , IN_TYPE        = #{inType}
+             , ACCT_UP        = #{acctUp}
+             , LINK_ACCT_GB   = #{linkAcctGb}
+             , LINK_ACCT_CODE = #{linkAcctCode}
+             , USER_ID        = #{userId}
+             , USE_YN         = #{useYn}
+         where STAN_YY   = #{stanYy}
+           and ACCT_GB   = #{acctGb}
+           and ACCT_CODE = #{acctCode}
+    </update>
+
+    <delete id="deleteAcctcode" parameterType="java.util.HashMap">
+    /* deleteAcctcode */
+        delete from TB_ACCTCODE
+         where STAN_YY   = #{stanYy}
+           and ACCT_GB   = #{acctGb}
+           and ACCT_CODE = #{acctCode}
+    </delete>
+    
+    <select id="selectAcctcodeCnt" parameterType="java.util.HashMap" resultType="int">
+    /* selectAcctcodeCnt */
+        select count(ACCT_CODE)
+        from TB_ACCTCODE
+        where ACCT_CODE  = #{acctCode}
+    </select>
+    
+</mapper>

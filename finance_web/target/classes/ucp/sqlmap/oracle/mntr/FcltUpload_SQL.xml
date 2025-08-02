@@ -1,0 +1,895 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.co.ucp.mntr.fclt.service.impl.UploadManageMapper">
+
+	<select id="checkSigunguCode" parameterType="String" resultType="int">
+		select COUNT(1) from CM_TC_SIGUNGU where SIGUNGU_CD LIKE #{sigunguCode}
+	</select>
+
+	<select id="checkDstrtCd" parameterType="String" resultType="int">
+		select COUNT(1) from CM_DSTRT_CD_MNG where DSTRT_CD = #{dstrtCd}
+	</select>
+
+	<select id="checkCode" parameterType="cmmCode" resultType="int">
+		select COUNT(1)  from CM_TC_CODE where CD_GRP_ID = #{gCodeId} and CD_ID = #{codeId}
+	</select>
+
+	<!-- 시설물 필수항목 -->
+	<select id="strRequierdColumn" resultType="String">
+		select CD_DSCRT as FCLT_RQD_ITEM
+		  from CM_TC_CODE
+		 where CD_GRP_ID 	= 'FCLT_FILE'
+		   and CD_ID		= 'FCLT_FILE_ITEM_RQD'
+	</select>
+
+	<!-- 필수항목 체크 validation check
+	<select id="checkRequierdColumn" parameterType="String" resultType="int">
+		select COUNT(1)
+		  from CM_TC_CODE
+		 where CD_GRP_ID 	= 'FCLT_FILE'
+		   and CD_ID		= 'FCLT_FILE_ITEM_RQD'
+		   and CD_DSCRT LIKE CONCAT('%', #{strColumn}, '%')
+	</select> -->
+
+	<!-- 시설물용도별유형코드 validation check -->
+	<select id="checkFcltUsedTyCd" parameterType="String" resultType="int">
+		select COUNT(1)  from CM_TC_FCLT_USED where FCLT_USED_TY_CD = #{codeId}
+	</select>
+
+	<!-- 시스템코드 NEW 20170330 -->
+	<select id="checkSysCode" parameterType="cmmCode" resultType="int">
+		select COUNT(1)  from CM_SYS_CODE where SYS_CD = #{codeId}
+	</select>
+
+	<!-- 시설물아이디 유무 체크 -->
+	<select id="checkFcltForFacility" parameterType="String" resultType="int">
+		select COUNT(1) from CM_FACILITY where FCLT_ID = #{fcltId}
+	</select>
+
+	<select id="checkPrntFcltForFacility" parameterType="String" resultType="int">
+		select COUNT(1) from CM_FACILITY where FCLT_ID = #{prntFcltId}
+	</select>
+
+	<select id="checkPrntFcltForUpload" parameterType="String" resultType="int">
+		select COUNT(1) from CM_FACILITY_UPCHK where FCLT_ID = #{prntFcltId}
+	</select>
+
+	<!-- 시설물고유식별번호 유무 체크 NEW 20170508-->
+	<select id="checkFcltUid" parameterType="cmmCode" resultType="int">
+		select COUNT(1) from CM_FACILITY where FCLT_UID = #{gCodeId} and SYS_CD = #{codeId}
+	</select>
+
+	<insert id="insertUploadCheck" parameterType="java.util.List">
+		INSERT INTO CM_FACILITY_UPCHK (
+				 UPD_USER_ID
+				,UPD_DATE
+				,RGSUPD_TY
+				,FCLT_ID
+				,FCLT_ID_CHK
+				,SIGUNGU_CD
+				,SIGUNGU_CD_CHK
+				,FCLT_LBL_NM
+				,FCLT_LBL_NM_CHK
+				,FCLT_KND_CD
+				,FCLT_KND_CD_CHK
+				,FCLT_KND_DTL_CD
+				,FCLT_KND_DTL_CD_CHK
+				,SYS_CD
+				,SYS_CD_CHK
+				,FCLT_USED_TY_CD
+				,FCLT_USED_TY_CD_CHK
+				,FCLT_GDSDT_TY
+				,FCLT_GDSDT_TY_CHK
+				,LOTNO_ADRES_NM
+				,LOTNO_ADRES_NM_CHK
+				,ROAD_ADRES_NM
+				,ROAD_ADRES_NM_CHK
+				,POINT_X
+				,POINT_X_CHK
+				,POINT_Y
+				,POINT_Y_CHK
+				,POINT_Z
+				,POINT_Z_CHK
+				,USE_TY_CD
+				,USE_TY_CD_CHK
+				,FCLT_ICON_URL_0
+				,FCLT_ICON_URL_0_CHK
+				,FCLT_ICON_URL_1
+				,FCLT_ICON_URL_1_CHK
+				,FCLT_ICON_URL_2
+				,FCLT_ICON_URL_2_CHK
+				,FCLT_STTUS
+				,FCLT_STTUS_CHK
+				,FCLT_MNGR_TEL_NO
+				,FCLT_MNGR_TEL_NO_CHK
+				,FCLT_UID
+				,FCLT_UID_CHK
+				,CONN_IP
+				,CONN_IP_CHK
+				,CONN_PORT
+				,CONN_PORT_CHK
+				,CONN_ID
+				,CONN_ID_CHK
+				,CONN_PW
+				,CONN_PW_CHK
+				,FCLT_MAC_ADRES
+				,FCLT_MAC_ADRES_CHK
+				,GATE_WAY
+				,GATE_WAY_CHK
+				,SUBNET
+				,SUBNET_CHK
+				,FCLT_INSTL_YMD
+				,FCLT_INSTL_YMD_CHK
+				,SVR_CONN_IP
+				,SVR_CONN_IP_CHK
+				,SVR_CONN_PORT
+				,SVR_CONN_PORT_CHK
+				,SVR_CONN_ID
+				,SVR_CONN_ID_CHK
+				,SVR_CONN_PW
+				,SVR_CONN_PW_CHK
+				,DVC_SEE_CCTV_IP
+				,DVC_SEE_CCTV_IP_CHK
+				,DVC_SEE_CCTV_PORT
+				,DVC_SEE_CCTV_PORT_CHK
+				,DVC_SEE_CCTV_ID
+				,DVC_SEE_CCTV_ID_CHK
+				,DVC_SEE_CCTV_PW
+				,DVC_SEE_CCTV_PW_CHK
+				,TRA_LINK_ID
+				,TRA_LINK_ID_CHK
+				,CTR_CD
+				,CTR_CD_CHK
+				,DSTRT_CD
+				,DSTRT_CD_CHK
+				,ICON_GIS_DSP_YN
+				,ICON_GIS_DSP_YN_CHK
+				,BEFORE_FCLT_ID
+				,BEFORE_FCLT_ID_CHK
+				,LPR_CCTV_YN
+				,LPR_CCTV_YN_CHK
+				,PRNT_FCLT_ID
+				,PRNT_FCLT_ID_CHK
+				,CPLT_PRDT_TY
+				,CPLT_PRDT_TY_CHK
+				,VT_POINT_TEL_NO
+				,VT_POINT_TEL_NO_CHK
+				,VT_CENTER_TEL_NO
+				,VT_CENTER_TEL_NO_CHK
+				,MNG_AREA_CD
+				,MNG_AREA_CD_CHK
+				,CCTV_DUE_NT_AG
+				,CCTV_DUE_NT_AG_CHK
+				,CCTV_OSVT_DSTC
+				,CCTV_OSVT_DSTC_CHK
+				,CCTV_OSVT_X
+				,CCTV_OSVT_X_CHK
+				,CCTV_OSVT_Y
+				,CCTV_OSVT_Y_CHK
+				,CCTV_OSVT_Z
+				,CCTV_OSVT_Z_CHK
+				,CCTV_OSVT_AG
+				,CCTV_OSVT_AG_CHK
+				,CCTV_HEIGHT
+				,CCTV_HEIGHT_CHK
+				,CCTV_VIEW_AG
+				,CCTV_VIEW_AG_CHK
+				,CCTV_VOD_ID
+				,CCTV_VOD_ID_CHK
+				,EGB_YN
+				,EGB_YN_CHK
+				,PLC_PTR_DIV_CD
+				,PLC_PTR_DIV_CD_CHK
+				,ETC
+				,ETC_CHK
+				,DONG_CD
+				,DONG_CD_CHK
+				,DONG_NM
+				,DONG_NM_CHK
+				,LG_DONG_CD
+				,LG_DONG_CD_CHK
+				,LG_DONG_NM
+				,LG_DONG_NM_CHK
+				,CCTV_AG_YN
+				,CCTV_AG_YN_CHK
+				,MNG_SN
+				,MNG_SN_CHK
+				,LINK_VMS_UID
+				,LINK_VMS_UID_CHK
+			) values
+			<foreach collection="list" item="element" index="index" separator=",">
+			 (
+				#{element.updUserId},
+				NOW(),
+				#{element.rgsupdTy},
+				<choose>
+					<when test="element.rgsupdTy  eq 'U'.toString()">
+						#{element.fcltId},
+					</when>
+					<otherwise>
+						CONCAT(#{element.fcltKndCd}, #{element.dstrtCd}, #{element.fcltId}
+					</otherwise>
+				</choose>
+				#{element.fcltIdChk},
+				#{element.sigunguCd},
+				#{element.sigunguCdChk},
+				#{element.fcltLblNm},
+				#{element.fcltLblNmChk},
+				#{element.fcltKndCd},
+				#{element.fcltKndCdChk},
+				#{element.fcltKndDtlCd},
+				#{element.fcltKndDtlCdChk},
+				#{element.sysCd},
+				#{element.sysCdChk},
+				#{element.fcltUsedTyCd},
+				#{element.fcltUsedTyCdChk},
+				#{element.fcltGdsdtTy},
+				#{element.fcltGdsdtTyChk},
+				#{element.lotnoAdresNm},
+				#{element.lotnoAdresNmChk},
+				#{element.roadAdresNm},
+				#{element.roadAdresNmChk},
+				#{element.pointX},
+				#{element.pointXChk},
+				#{element.pointY},
+				#{element.pointYChk},
+				#{element.pointZ},
+				#{element.pointZChk},
+				#{element.useTyCd},
+				#{element.useTyCdChk},
+				#{element.fcltIconUrl0},
+				#{element.fcltIconUrl0Chk},
+				#{element.fcltIconUrl1},
+				#{element.fcltIconUrl1Chk},
+				#{element.fcltIconUrl2},
+				#{element.fcltIconUrl2Chk},
+				#{element.fcltSttus},
+				#{element.fcltSttusChk},
+				#{element.fcltMngrTelNo},
+				#{element.fcltMngrTelNoChk},
+				#{element.fcltUid},
+				#{element.fcltUidChk},
+				#{element.connIp},
+				#{element.connIpChk},
+				#{element.connPort},
+				#{element.connPortChk},
+				#{element.connId},
+				#{element.connIdChk},
+				#{element.connPw},
+				#{element.connPwChk},
+				#{element.fcltMacAdres},
+				#{element.fcltMacAdresChk},
+				#{element.gateWay},
+				#{element.gateWayChk},
+				#{element.subnet},
+				#{element.subnetChk},
+				#{element.fcltInstlYmd},
+				#{element.fcltInstlYmdChk},
+				#{element.svrConnIp},
+				#{element.svrConnIpChk},
+				#{element.svrConnPort},
+				#{element.svrConnPortChk},
+				#{element.svrConnId},
+				#{element.svrConnIdChk},
+				#{element.svrConnPw},
+				#{element.svrConnPwChk},
+				#{element.dvcSeeCctvIp},
+				#{element.dvcSeeCctvIpChk},
+				#{element.dvcSeeCctvPort},
+				#{element.dvcSeeCctvPortChk},
+				#{element.dvcSeeCctvId},
+				#{element.dvcSeeCctvIdChk},
+				#{element.dvcSeeCctvPw},
+				#{element.dvcSeeCctvPwChk},
+				#{element.traLinkId},
+				#{element.traLinkIdChk},
+				#{element.ctrCd},
+				#{element.ctrCdChk},
+				#{element.dstrtCd},
+				#{element.dstrtCdChk},
+				#{element.iconGisDspYn},
+				#{element.iconGisDspYnChk},
+				#{element.beforeFcltId},
+				#{element.beforeFcltIdChk},
+				#{element.lprCctvYn},
+				#{element.lprCctvYnChk},
+				#{element.prntFcltId},
+				#{element.prntFcltIdChk},
+				#{element.cpltPrdtTy},
+				#{element.cpltPrdtTyChk},
+				#{element.vtPointTelNo},
+				#{element.vtPointTelNoChk},
+				#{element.vtCenterTelNo},
+				#{element.vtCenterTelNoChk},
+				#{element.mngAreaCd},
+				#{element.mngAreaCdChk},
+				#{element.cctvDueNtAg},
+				#{element.cctvDueNtAgChk},
+				#{element.cctvOsvtDstc},
+				#{element.cctvOsvtDstcChk},
+				#{element.cctvOsvtX},
+				#{element.cctvOsvtXChk},
+				#{element.cctvOsvtY},
+				#{element.cctvOsvtYChk},
+				#{element.cctvOsvtZ},
+				#{element.cctvOsvtZChk},
+				#{element.cctvOsvtAg},
+				#{element.cctvOsvtAgChk},
+				#{element.cctvHeight},
+				#{element.cctvHeightChk},
+				#{element.cctvViewAg},
+				#{element.cctvViewAgChk},
+				#{element.cctvVodId},
+				#{element.cctvVodIdChk},
+				#{element.egbYn},
+				#{element.egbYnChk},
+				#{element.plcPtrDivCd},
+				#{element.plcPtrDivCdChk},
+				#{element.etc},
+				#{element.etcChk},
+				#{element.dongCd},
+				#{element.dongCdChk},
+				#{element.dongNm},
+				#{element.dongNmChk},
+				#{element.lgDongCd},
+				#{element.lgDongCdChk},
+				#{element.lgDongNm},
+				#{element.lgDongNmChk},
+				#{element.cctvAgYn},
+				#{element.cctvAgYnChK},
+				#{element.mngSn},
+				#{element.mngSnChk}
+				#{element.linkVmsUid},
+				#{element.linkVmsUidChk}
+			)
+		</foreach>
+	</insert>
+
+	<!-- 시설물아이디 New 생성규칙 적용 -->
+	<insert id="insertUploadCheck2" parameterType="java.util.List">
+		INSERT INTO CM_FACILITY_UPCHK (
+			 UPD_USER_ID
+			,UPD_DATE
+			,RGSUPD_TY
+			,RGSUPD_TY_CHK
+			,FCLT_ID
+			,FCLT_ID_CHK
+			,SIGUNGU_CD
+			,SIGUNGU_CD_CHK
+			,FCLT_LBL_NM
+			,FCLT_LBL_NM_CHK
+			,FCLT_KND_CD
+			,FCLT_KND_CD_CHK
+			,FCLT_KND_DTL_CD
+			,FCLT_KND_DTL_CD_CHK
+			,SYS_CD
+			,SYS_CD_CHK
+			,FCLT_USED_TY_CD
+			,FCLT_USED_TY_CD_CHK
+			,FCLT_GDSDT_TY
+			,FCLT_GDSDT_TY_CHK
+			,LOTNO_ADRES_NM
+			,LOTNO_ADRES_NM_CHK
+			,ROAD_ADRES_NM
+			,ROAD_ADRES_NM_CHK
+			,POINT_X
+			,POINT_X_CHK
+			,POINT_Y
+			,POINT_Y_CHK
+			,POINT_Z
+			,POINT_Z_CHK
+			,USE_TY_CD
+			,USE_TY_CD_CHK
+			,FCLT_ICON_URL_0
+			,FCLT_ICON_URL_0_CHK
+			,FCLT_ICON_URL_1
+			,FCLT_ICON_URL_1_CHK
+			,FCLT_ICON_URL_2
+			,FCLT_ICON_URL_2_CHK
+			,FCLT_STTUS
+			,FCLT_STTUS_CHK
+			,FCLT_MNGR_TEL_NO
+			,FCLT_MNGR_TEL_NO_CHK
+			,FCLT_UID
+			,FCLT_UID_CHK
+			,CONN_IP
+			,CONN_IP_CHK
+			,CONN_PORT
+			,CONN_PORT_CHK
+			,CONN_ID
+			,CONN_ID_CHK
+			,CONN_PW
+			,CONN_PW_CHK
+			,FCLT_MAC_ADRES
+			,FCLT_MAC_ADRES_CHK
+			,GATE_WAY
+			,GATE_WAY_CHK
+			,SUBNET
+			,SUBNET_CHK
+			,FCLT_INSTL_YMD
+			,FCLT_INSTL_YMD_CHK
+			,SVR_CONN_IP
+			,SVR_CONN_IP_CHK
+			,SVR_CONN_PORT
+			,SVR_CONN_PORT_CHK
+			,SVR_CONN_ID
+			,SVR_CONN_ID_CHK
+			,SVR_CONN_PW
+			,SVR_CONN_PW_CHK
+			,DVC_SEE_CCTV_IP
+			,DVC_SEE_CCTV_IP_CHK
+			,DVC_SEE_CCTV_PORT
+			,DVC_SEE_CCTV_PORT_CHK
+			,DVC_SEE_CCTV_ID
+			,DVC_SEE_CCTV_ID_CHK
+			,DVC_SEE_CCTV_PW
+			,DVC_SEE_CCTV_PW_CHK
+			,TRA_LINK_ID
+			,TRA_LINK_ID_CHK
+			,CTR_CD
+			,CTR_CD_CHK
+			,DSTRT_CD
+			,DSTRT_CD_CHK
+			,ICON_GIS_DSP_YN
+			,ICON_GIS_DSP_YN_CHK
+			,BEFORE_FCLT_ID
+			,BEFORE_FCLT_ID_CHK
+			,LPR_CCTV_YN
+			,LPR_CCTV_YN_CHK
+			,PRNT_FCLT_ID
+			,PRNT_FCLT_ID_CHK
+			,CPLT_PRDT_TY
+			,CPLT_PRDT_TY_CHK
+			,VT_POINT_TEL_NO
+			,VT_POINT_TEL_NO_CHK
+			,VT_CENTER_TEL_NO
+			,VT_CENTER_TEL_NO_CHK
+			,MNG_AREA_CD
+			,MNG_AREA_CD_CHK
+			,CCTV_DUE_NT_AG
+			,CCTV_DUE_NT_AG_CHK
+			,CCTV_OSVT_DSTC
+			,CCTV_OSVT_DSTC_CHK
+			,CCTV_OSVT_X
+			,CCTV_OSVT_X_CHK
+			,CCTV_OSVT_Y
+			,CCTV_OSVT_Y_CHK
+			,CCTV_OSVT_Z
+			,CCTV_OSVT_Z_CHK
+			,CCTV_OSVT_AG
+			,CCTV_OSVT_AG_CHK
+			,CCTV_HEIGHT
+			,CCTV_HEIGHT_CHK
+			,CCTV_VIEW_AG
+			,CCTV_VIEW_AG_CHK
+			,CCTV_VOD_ID
+			,CCTV_VOD_ID_CHK
+			,EGB_YN
+			,EGB_YN_CHK
+			,PLC_PTR_DIV_CD
+			,PLC_PTR_DIV_CD_CHK
+			,ETC
+			,ETC_CHK
+			,DONG_CD
+			,DONG_CD_CHK
+			,DONG_NM
+			,DONG_NM_CHK
+			,CCTV_AG_YN
+			,CCTV_AG_YN_CHK
+			,MNG_SN
+			,MNG_SN_CHK
+			,LG_DONG_CD
+			,LG_DONG_CD_CHK
+			,LG_DONG_NM
+			,LG_DONG_NM_CHK
+			,LINK_VMS_UID
+			,LINK_VMS_UID_CHK
+			,SEQ_NO
+		) values
+		<foreach collection="list" item="element" index="index" separator=",">
+		(
+			#{element.updUserId},
+			NOW(),
+			#{element.rgsupdTy},
+			#{element.rgsupdTyChk},
+			#{element.fcltId},
+			#{element.fcltIdChk},
+			#{element.sigunguCd},
+			#{element.sigunguCdChk},
+			#{element.fcltLblNm},
+			#{element.fcltLblNmChk},
+			#{element.fcltKndCd},
+			#{element.fcltKndCdChk},
+			#{element.fcltKndDtlCd},
+			#{element.fcltKndDtlCdChk},
+			#{element.sysCd},
+			#{element.sysCdChk},
+			#{element.fcltUsedTyCd},
+			#{element.fcltUsedTyCdChk},
+			#{element.fcltGdsdtTy},
+			#{element.fcltGdsdtTyChk},
+			#{element.lotnoAdresNm},
+			#{element.lotnoAdresNmChk},
+			#{element.roadAdresNm},
+			#{element.roadAdresNmChk},
+			#{element.pointX},
+			#{element.pointXChk},
+			#{element.pointY},
+			#{element.pointYChk},
+			#{element.pointZ},
+			#{element.pointZChk},
+			#{element.useTyCd},
+			#{element.useTyCdChk},
+			#{element.fcltIconUrl0},
+			#{element.fcltIconUrl0Chk},
+			#{element.fcltIconUrl1},
+			#{element.fcltIconUrl1Chk},
+			#{element.fcltIconUrl2},
+			#{element.fcltIconUrl2Chk},
+			#{element.fcltSttus},
+			#{element.fcltSttusChk},
+			#{element.fcltMngrTelNo},
+			#{element.fcltMngrTelNoChk},
+			#{element.fcltUid},
+			#{element.fcltUidChk},
+			#{element.connIp},
+			#{element.connIpChk},
+			#{element.connPort},
+			#{element.connPortChk},
+			#{element.connId},
+			#{element.connIdChk},
+			#{element.connPw},
+			#{element.connPwChk},
+			#{element.fcltMacAdres},
+			#{element.fcltMacAdresChk},
+			#{element.gateWay},
+			#{element.gateWayChk},
+			#{element.subnet},
+			#{element.subnetChk},
+			#{element.fcltInstlYmd},
+			#{element.fcltInstlYmdChk},
+			#{element.svrConnIp},
+			#{element.svrConnIpChk},
+			#{element.svrConnPort},
+			#{element.svrConnPortChk},
+			#{element.svrConnId},
+			#{element.svrConnIdChk},
+			#{element.svrConnPw},
+			#{element.svrConnPwChk},
+			#{element.dvcSeeCctvIp},
+			#{element.dvcSeeCctvIpChk},
+			#{element.dvcSeeCctvPort},
+			#{element.dvcSeeCctvPortChk},
+			#{element.dvcSeeCctvId},
+			#{element.dvcSeeCctvIdChk},
+			#{element.dvcSeeCctvPw},
+			#{element.dvcSeeCctvPwChk},
+			#{element.traLinkId},
+			#{element.traLinkIdChk},
+			#{element.ctrCd},
+			#{element.ctrCdChk},
+			#{element.dstrtCd},
+			#{element.dstrtCdChk},
+			#{element.iconGisDspYn},
+			#{element.iconGisDspYnChk},
+			#{element.beforeFcltId},
+			#{element.beforeFcltIdChk},
+			#{element.lprCctvYn},
+			#{element.lprCctvYnChk},
+			#{element.prntFcltId},
+			#{element.prntFcltIdChk},
+			#{element.cpltPrdtTy},
+			#{element.cpltPrdtTyChk},
+			#{element.vtPointTelNo},
+			#{element.vtPointTelNoChk},
+			#{element.vtCenterTelNo},
+			#{element.vtCenterTelNoChk},
+			#{element.mngAreaCd},
+			#{element.mngAreaCdChk},
+			#{element.cctvDueNtAg},
+			#{element.cctvDueNtAgChk},
+			#{element.cctvOsvtDstc},
+			#{element.cctvOsvtDstcChk},
+			#{element.cctvOsvtX},
+			#{element.cctvOsvtXChk},
+			#{element.cctvOsvtY},
+			#{element.cctvOsvtYChk},
+			#{element.cctvOsvtZ},
+			#{element.cctvOsvtZChk},
+			#{element.cctvOsvtAg},
+			#{element.cctvOsvtAgChk},
+			#{element.cctvHeight},
+			#{element.cctvHeightChk},
+			#{element.cctvViewAg},
+			#{element.cctvViewAgChk},
+			#{element.cctvVodId},
+			#{element.cctvVodIdChk},
+			#{element.egbYn},
+			#{element.egbYnChk},
+			#{element.plcPtrDivCd},
+			#{element.plcPtrDivCdChk},
+			#{element.etc},
+			#{element.etcChk},
+			#{element.dongCd},
+			#{element.dongCdChk},
+			#{element.dongNm},
+			#{element.dongNmChk},
+			#{element.cctvAgYn},
+			#{element.cctvAgYnChK},
+			#{element.mngSn},
+			#{element.mngSnChk},
+			#{element.lgDongCd},
+			#{element.lgDongCdChk},
+			#{element.lgDongNm},
+			#{element.lgDongNmChk},
+			#{element.linkVmsUid},
+			#{element.linkVmsUidChk},
+			#{element.seqNo}
+		  )
+		</foreach>
+	</insert>
+
+	<delete id="deleteUploadCheck" parameterType="String">
+		DELETE from CM_FACILITY_UPCHK where UPD_USER_ID = #{updUserId}
+	</delete>
+
+	<insert id="insertFcltList" parameterType="String">
+		INSERT INTO CM_FACILITY (
+			 FCLT_ID
+			,SIGUNGU_CD
+			,FCLT_LBL_NM
+			,FCLT_KND_CD
+			,FCLT_KND_DTL_CD
+			,SYS_CD
+			,FCLT_USED_TY_CD
+			,FCLT_GDSDT_TY
+			,LOTNO_ADRES_NM
+			,ROAD_ADRES_NM
+			,POINT_X
+			,POINT_Y
+			,POINT_Z
+			,USE_TY_CD
+			,FCLT_ICON_URL_0
+			,FCLT_ICON_URL_1
+			,FCLT_ICON_URL_2
+			,FCLT_STTUS
+			,FCLT_MNGR_TEL_NO
+			,FCLT_UID
+			,CONN_IP
+			,CONN_PORT
+			,CONN_ID
+			,CONN_PW
+			,FCLT_MAC_ADRES
+			,GATE_WAY
+			,SUBNET
+			,FCLT_INSTL_YMD
+			,SVR_CONN_IP
+			,SVR_CONN_PORT
+			,SVR_CONN_ID
+			,SVR_CONN_PW
+			,DVC_SEE_CCTV_IP
+			,DVC_SEE_CCTV_PORT
+			,DVC_SEE_CCTV_ID
+			,DVC_SEE_CCTV_PW
+			,TRA_LINK_ID
+			,CTR_CD
+			,DSTRT_CD
+			,ICON_GIS_DSP_YN
+			,BEFORE_FCLT_ID
+			,LPR_CCTV_YN
+			,PRNT_FCLT_ID
+			,CPLT_PRDT_TY
+			,VT_POINT_TEL_NO
+			,VT_CENTER_TEL_NO
+			,MNG_AREA_CD
+			,CCTV_DUE_NT_AG
+			,CCTV_OSVT_DSTC
+			,CCTV_OSVT_X
+			,CCTV_OSVT_Y
+			,CCTV_OSVT_Z
+			,CCTV_OSVT_AG
+			,CCTV_HEIGHT
+			,CCTV_VIEW_AG
+			,CCTV_VOD_ID
+			,EGB_YN
+			,PLC_PTR_DIV_CD
+			,RGS_USER_ID
+			,RGS_DATE
+			,UPD_USER_ID
+			,UPD_DATE
+			,ETC
+			,DONG_CD
+			,DONG_NM
+			,CCTV_AG_YN
+			,MNG_SN
+			,LG_DONG_CD
+			,LG_DONG_NM
+			,LINK_VMS_UID
+		) select
+			 CASE
+				WHEN FCLT_ID IS NULL THEN
+				  CONCAT(
+				  CASE
+				  WHEN FCLT_KND_CD IS NULL THEN
+					''
+				  ELSE
+					FCLT_KND_CD
+				  END
+				  , CASE
+				  WHEN DSTRT_CD IS NULL THEN
+					''
+				  ELSE
+					DSTRT_CD
+				  END
+				  , DATE_FORMAT(NOW(), '%Y')
+				  , #{nextFcltSeq}
+				  )
+				ELSE FCLT_ID
+			 END as FCLT_ID
+			,SIGUNGU_CD
+			,FCLT_LBL_NM
+			,FCLT_KND_CD
+			,FCLT_KND_DTL_CD
+			,SYS_CD
+			,FCLT_USED_TY_CD
+			,FCLT_GDSDT_TY
+			,LOTNO_ADRES_NM
+			,ROAD_ADRES_NM
+			,POINT_X
+			,POINT_Y
+			,POINT_Z
+			,USE_TY_CD
+			,FCLT_ICON_URL_0
+			,FCLT_ICON_URL_1
+			,FCLT_ICON_URL_2
+			,FCLT_STTUS
+			,FCLT_MNGR_TEL_NO
+			,FCLT_UID
+			,CONN_IP
+			,CONN_PORT
+			,CONN_ID
+			,CONN_PW
+			,FCLT_MAC_ADRES
+			,GATE_WAY
+			,SUBNET
+			,FCLT_INSTL_YMD
+			,SVR_CONN_IP
+			,SVR_CONN_PORT
+			,SVR_CONN_ID
+			,SVR_CONN_PW
+			,DVC_SEE_CCTV_IP
+			,DVC_SEE_CCTV_PORT
+			,DVC_SEE_CCTV_ID
+			,DVC_SEE_CCTV_PW
+			,TRA_LINK_ID
+			,CTR_CD
+			,DSTRT_CD
+			,ICON_GIS_DSP_YN
+			,BEFORE_FCLT_ID
+			,LPR_CCTV_YN
+			,PRNT_FCLT_ID
+			,CPLT_PRDT_TY
+			,VT_POINT_TEL_NO
+			,VT_CENTER_TEL_NO
+			,MNG_AREA_CD
+			,CCTV_DUE_NT_AG
+			,CCTV_OSVT_DSTC
+			,CCTV_OSVT_X
+			,CCTV_OSVT_Y
+			,CCTV_OSVT_Z
+			,CCTV_OSVT_AG
+			,CCTV_HEIGHT
+			,CCTV_VIEW_AG
+			,CCTV_VOD_ID
+			,EGB_YN
+			,PLC_PTR_DIV_CD
+			,UPD_USER_ID
+			,UPD_DATE
+			,UPD_USER_ID
+			,UPD_DATE
+			,ETC
+			,DONG_CD
+			,DONG_NM
+			,CCTV_AG_YN
+			,MNG_SN
+			,LG_DONG_CD
+			,LG_DONG_NM
+			,LINK_VMS_UID
+			from CM_FACILITY_UPCHK
+		   where UPD_USER_ID = #{updUserId}
+			 and RGSUPD_TY = 'I'
+	</insert>
+
+	<update id="uploadFcltList" parameterType="String">
+		update CM_FACILITY CF
+			 , ( select ${columnIdUpload}
+				from	CM_FACILITY_UPCHK
+		where   UPD_USER_ID = #{updUserId}
+		and	 RGSUPD_TY   = 'U'
+		)
+		CFU
+		set CF.UPD_DATE = NOW()
+		<foreach collection="columnIdUploads" item="item" open="," separator="," >
+		CF.${item} = CFU.${item}
+		</foreach>
+		where CF.FCLT_ID IN
+		(select FCLT_ID
+		from	CM_FACILITY_UPCHK
+		where   UPD_USER_ID = #{updUserId}
+		and	 RGSUPD_TY   = 'U'
+		)
+	</update>
+
+	<delete id="deleteFcltList" parameterType="String">
+		update CM_FACILITY set
+			USE_TY_CD = 'N'
+		where FCLT_ID IN ( select FCLT_ID
+							 from CM_FACILITY_UPCHK
+							where UPD_USER_ID = #{updUserId}
+							  and RGSUPD_TY = 'D' )
+	</delete>
+
+	<insert id="insertFcltHis" parameterType="kr.co.ucp.mntr.fclt.service.UploadVO">
+		INSERT INTO CM_FCLT_UPL_HIS (
+			 SRL_NO
+			,ALL_CNT
+			,REG_CNT
+			,UPD_CNT
+			,DEL_CNT
+			,RGS_USER_ID
+			,RGS_DATE
+			,UPL_COL
+		)
+		VALUES
+		(
+			DATE_FORMAT(now(),'%Y%m%d%H%i%s')
+			,#{allCnt}
+			,#{regCnt}
+			,#{updCnt}
+			,#{delCnt}
+			,#{updUserId}
+			,NOW()
+			,#{columnNmUpload}
+		)
+	</insert>
+
+	<!-- 시설물 엑셀업로드 이력 -->
+	<select id="selectFcltRegHisList" parameterType="kr.co.ucp.mntr.fclt.service.FcltRegHisVO" resultType="egovMap">
+		select (@ROWNUM := @ROWNUM + 1) + #{firstRecordIndex} as RNUM
+	   		 , A.SRL_NO
+			 , A.RGS_USER_ID
+			 , B.USER_NM_KO as USER_NM
+			 , A.ALL_CNT
+			 , A.REG_CNT
+			 , A.UPD_CNT
+			 , DATE_FORMAT(A.RGS_DATE, '%Y/%m/%d %H:%i:%s') as RGS_DATE
+			 , A.UPL_COL
+		from  CM_FCLT_UPL_HIS A, CM_USER B, (select @ROWNUM := 0 ) C
+		where A.RGS_USER_ID = B.USER_ID
+		<if test="searchCondition == ''">
+		 	<if test="searchKeyword ==''"></if>
+		 	<if test="searchKeyword !=''"> and (A.RGS_USER_ID LIKE  CONCAT('%', #{searchKeyword}, '%') or B.USER_NM_KO LIKE CONCAT('%', #{searchKeyword}, '%')) </if>
+		</if>
+		<if test="searchCondition == 'ID'"> and A.RGS_USER_ID LIKE CONCAT('%', #{searchKeyword}, '%') </if>
+		<if test="searchCondition == 'NM'"> and B.USER_NM_KO LIKE CONCAT('%', #{searchKeyword}, '%') </if>
+		<if test="searchTermStart != ''"> and DATE_FORMAT(A.RGS_DATE, '%Y/%m/%d') <![CDATA[>=]]> #{searchTermStart} </if>
+		<if test="searchTermEnd != ''"> and DATE_FORMAT(A.RGS_DATE, '%Y/%m/%d') <![CDATA[<=]]> #{searchTermEnd} </if>
+		order by RGS_DATE DESC
+		offset #{firstRecordIndex} limit #{recordCountPerPage}
+	</select>
+
+	<select id="selectFcltRegHisListTotCnt" parameterType="kr.co.ucp.mntr.fclt.service.FcltRegHisVO" resultType="int">
+			select COUNT(*) totcnt
+			  from CM_FCLT_UPL_HIS A, CM_USER B
+			 where A.RGS_USER_ID = B.USER_ID
+			 <if test="searchCondition == ''">
+			 	<if test="searchKeyword ==''"></if>
+			 	<if test="searchKeyword !=''"> and (A.RGS_USER_ID LIKE CONCAT('%', #{searchKeyword}, '%') or B.USER_NM_KO LIKE CONCAT('%', #{searchKeyword}, '%')) </if>
+			 </if>
+			<if test="searchCondition == 'ID'"> and A.RGS_USER_ID LIKE CONCAT('%', #{searchKeyword}, '%') </if>
+			<if test="searchCondition == 'NM'"> and B.USER_NM_KO LIKE CONCAT('%', #{searchKeyword}, '%') </if>
+			<if test="searchTermStart != ''"> and DATE_FORMAT(A.RGS_DATE, '%Y/%m/%d') <![CDATA[>=]]> #{searchTermStart} </if>
+			<if test="searchTermEnd != ''"> and DATE_FORMAT(A.RGS_DATE, '%Y/%m/%d') <![CDATA[<=]]> #{searchTermEnd} </if>
+	</select>
+</mapper>

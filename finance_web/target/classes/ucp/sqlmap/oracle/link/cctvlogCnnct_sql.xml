@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.co.ucp.link.job.cctvlog.service.JobCctvLogCnnctMapper">
+
+    <select id="selectCctvLogCnnctSend" resultType="cmlMap2" parameterType="map">
+    /* selectCctvLogCnnctSend */
+        select A.FCLT_ID    AS CCTV_ID
+             , A.EVT_OCR_NO AS OCR_NO
+             , A.USER_ID
+             , TO_CHAR(A.CONN_DATE,'YYYYMMDDHH24MISS') AS CNNCT_YMD_HMS
+             , CASE WHEN A.END_DATE IS NULL
+                    THEN ''
+                    ELSE TO_CHAR(A.END_DATE,'YYYYMMDDHH24MISS')
+               END  AS END_YMD_HMS
+             , B.DSTRT_CD
+             , #{wDstrtCd} W_DSTRT_CD
+          from UM_CCTV_VIEW_LOG A
+             , CM_FACILITY B
+         where A.FCLT_ID  = B.FCLT_ID
+           and B.DSTRT_CD = #{dstrtCd}
+           and A.CONN_DATE  BETWEEN to_timestamp(#{frYmdHms},'YYYYMMDDHH24MISS')
+                                and to_timestamp(#{toYmdHms},'YYYYMMDDHH24MISS')
+    </select>
+    
+</mapper>

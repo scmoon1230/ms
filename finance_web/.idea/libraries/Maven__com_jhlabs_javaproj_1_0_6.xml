@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="Maven: com.jhlabs:javaproj:1.0.6">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/../../../../cubeapps/pgms/maven_repository_3_10/com/jhlabs/javaproj/1.0.6/javaproj-1.0.6.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$PROJECT_DIR$/../../../../cubeapps/pgms/maven_repository_3_10/com/jhlabs/javaproj/1.0.6/javaproj-1.0.6-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$PROJECT_DIR$/../../../../cubeapps/pgms/maven_repository_3_10/com/jhlabs/javaproj/1.0.6/javaproj-1.0.6-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>
